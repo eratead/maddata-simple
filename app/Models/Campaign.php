@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Campaign extends Model
+{
+    protected $fillable = ['name', 'client_id', 'expected_impressions'];
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function data()
+    {
+        return $this->hasMany(CampaignData::class);
+    }
+}
