@@ -45,7 +45,7 @@ class CampaignPolicy
      */
     public function delete(User $user, Campaign $campaign): bool
     {
-        return false;
+        return $user->is_admin;
     }
 
     /**

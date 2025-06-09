@@ -212,4 +212,14 @@ class CampaignController extends Controller
 
         return redirect()->route('campaigns.index')->with('success', 'Campaign updated successfully.');
     }
+
+    public function destroy($id)
+    {
+        $campaign = Campaign::findOrFail($id);
+        $this->authorize('delete', $campaign);
+
+        $campaign->delete();
+
+        return redirect()->route('campaigns.index')->with('success', 'Campaign deleted successfully.');
+    }
 }
