@@ -48,7 +48,7 @@
                                                                 {{ $campaign->name }}
                                                         </a>
                                                         @auth
-                                                                @if (auth()->user()->is_admin)
+                                                                @if (auth()->user()->is_admin || (auth()->user()->is_report && auth()->user()->clients->contains($campaign->client_id)))
                                                                         <form id="upload-form-{{ $campaign->id }}"
                                                                                 action="{{ route('campaigns.upload', $campaign->id) }}"
                                                                                 method="POST" enctype="multipart/form-data"

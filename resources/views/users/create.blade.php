@@ -51,6 +51,12 @@
                                         <span class="ml-2 text-sm text-gray-700">Administrator</span>
                                 </label>
                         </div>
+                        <div>
+                                <label class="inline-flex items-center">
+                                        <input type="checkbox" name="is_report" class="rounded border-gray-300">
+                                        <span class="ml-2 text-sm text-gray-700">Reports upload</span>
+                                </label>
+                        </div>
 
                         <div>
                                 <button type="submit"

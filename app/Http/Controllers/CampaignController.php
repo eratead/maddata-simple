@@ -69,6 +69,10 @@ class CampaignController extends Controller
 
     public function upload(Request $request, Campaign $campaign)
     {
+        $user = Auth::user();
+        if (!$user->is_admin && !($user->is_report && $user->clients->contains($campaign->client_id))) {
+            abort(403, 'You do not have permission to upload a report for this campaign.');
+        }
         $request->validate([
             'report' => ['required', 'file', 'mimes:xlsx,xls,csv'],
         ]);
