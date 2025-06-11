@@ -13,8 +13,13 @@ class DashboardController extends Controller
 {
     use AuthorizesRequests;
 
-    public function show(Campaign $campaign)
+    public function show($campaignId)
     {
+        $campaign = Campaign::find($campaignId);
+        if (!$campaign) {
+            return redirect()->route('campaigns.index')->with('error', 'Campaign not found.');
+        }
+
         $startDate = request('start_date');
         $endDate = request('end_date');
 
