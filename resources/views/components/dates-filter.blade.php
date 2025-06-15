@@ -2,8 +2,21 @@
 
 <form x-data="{
     range: '',
-    start: '',
-    end: '',
+    start: '{{ request('start_date') ?? '' }}',
+    end: '{{ request('end_date') ?? '' }}',
+    init() {
+        const today = new Date().toISOString().split('T')[0];
+        if (!this.start) {
+            const startOfWeek = new Date();
+            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+            this.start = startOfWeek.toISOString().split('T')[0];
+            $refs.start_date.value = this.start;
+        }
+        if (!this.end) {
+            this.end = today;
+            $refs.end_date.value = this.end;
+        }
+    },
     updateDates(range) {
         const today = new Date();
 
@@ -69,13 +82,15 @@
                                 Date</label> --}}
                         <input x-ref="start_date" name="start_date" type="date" id="start_date" x-model="start"
                                 value="{{ request('start_date') ?? \Carbon\Carbon::today()->toDateString() }}"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm">
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
+                                @change="$refs.form.submit()">
                 </div>
                 <div>
                         {{-- <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label> --}}
                         <input x-ref="end_date" name="end_date" type="date" id="end_date" x-model="end"
                                 value="{{ request('end_date') ?? date('Y-m-d') }}"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm">
+                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
+                                @change="$refs.form.submit()">
                 </div>
         </div>
 </form>
