@@ -1,4 +1,4 @@
-@props(['action'])
+@props(['action', 'firstReportDate'])
 
 <form x-data="{
     range: '',
@@ -7,9 +7,7 @@
     init() {
         const today = new Date().toISOString().split('T')[0];
         if (!this.start) {
-            const startOfWeek = new Date();
-            startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-            this.start = startOfWeek.toISOString().split('T')[0];
+            this.start = '{{ $firstReportDate }}';
             $refs.start_date.value = this.start;
         }
         if (!this.end) {

@@ -65,7 +65,8 @@
                         <!-- Tabs -->
                         <div class="bg-white shadow rounded p-4 md:col-span-3 overflow-x-scroll hide-scrollbar"
                                 x-data="{ activeTab: 'date' }">
-                                <x-dates-filter action="{{ route('dashboard.campaign', $campaign->id) }}" />
+                                <x-dates-filter action="{{ route('dashboard.campaign', $campaign->id) }}"
+                                        :first-report-date="$firstReportDate" />
 
                                 <div class="border-b border-gray-200 mb-4">
                                         <nav class="-mb-px flex space-x-4">
