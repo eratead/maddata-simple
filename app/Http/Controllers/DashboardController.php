@@ -56,6 +56,8 @@ class DashboardController extends Controller
             ->groupBy("name")
             ->get();
 
+        $firstReportDate = CampaignData::where('campaign_id', $campaign->id)->min('report_date');
+
         return view('dashboard.index', compact(
             'campaign',
             'summary',
@@ -65,7 +67,8 @@ class DashboardController extends Controller
             'chartImpressions',
             'chartClicks',
             'startDate',
-            'endDate'
+            'endDate',
+            'firstReportDate'
         ));
     }
     private function calculateSummary(Campaign $campaign): array

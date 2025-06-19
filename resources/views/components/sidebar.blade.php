@@ -25,7 +25,7 @@
                                 <x-dropdown align="left" width="48" x-bind:open="open">
                                         <x-slot name="trigger">
                                                 <button type="button"
-                                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-500 w-full text-center {{ request()->is('clients*') || request()->is('users*') ? 'bg-gray-100' : 'hover:text-gray-700' }} transition">
+                                                        class="inline-flex items-center pl-5 py-2 border border-transparent text-sm font-medium rounded-md text-gray-500 w-full text-center {{ request()->is('clients*') || request()->is('users*') ? 'bg-gray-100' : 'hover:text-gray-700' }} transition">
                                                         <div class="flex flex-col items-center">
                                                                 <img src="{{ asset('images/icons/manage.png') }}"
                                                                         alt="Manage" class="h-10 mb-1">
@@ -54,7 +54,7 @@
                         <x-dropdown align="left" width="48" x-bind:open="open">
                                 <x-slot name="trigger">
                                         <button type="button"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-gray-500 w-full text-center {{ request()->is('profile*') ? 'bg-gray-100' : 'hover:text-gray-700' }} transition">
+                                                class="inline-flex items-center pl-5 py-2 border border-transparent text-sm font-medium rounded-md text-gray-500 w-full text-center {{ request()->is('profile*') ? 'bg-gray-100' : 'hover:text-gray-700' }} transition">
                                                 <div class="flex flex-col items-center">
                                                         <img src="{{ asset('images/icons/user.png') }}" alt="User"
                                                                 class="h-10 mb-1">
