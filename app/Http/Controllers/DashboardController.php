@@ -75,7 +75,7 @@ class DashboardController extends Controller
         $spent = ($summary['impressions'] ?? 0) * $cpm / 1000;
 
         if ($allClicks > 0) {
-            $cpc = $campaign->budget / $allClicks;
+            $cpc = $spent / $allClicks;
         }
         return view('dashboard.index', compact(
             'campaign',
