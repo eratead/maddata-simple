@@ -8,6 +8,8 @@ use App\Models\CampaignData;
 use App\Models\PlacementData;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\CampaignExport;
 
 class DashboardController extends Controller
 {
@@ -57,7 +59,24 @@ class DashboardController extends Controller
             ->get();
 
         $firstReportDate = CampaignData::where('campaign_id', $campaign->id)->min('report_date');
+        $allImpressions = \App\Models\CampaignData::where('campaign_id', $campaign->id)->sum('impressions');
+        $allClicks = \App\Models\CampaignData::where('campaign_id', $campaign->id)->sum('clicks');
 
+        $cpm = 0;
+        $cpc = 0;
+        $spent = 0;
+        $budget = $campaign->budget;
+
+        if ($campaign->expected_impressions > 0) {
+            $baseImpressions = max($campaign->expected_impressions, $allImpressions);
+            $cpm = ($campaign->budget / $baseImpressions) * 1000;
+        }
+
+        $spent = ($summary['impressions'] ?? 0) * $cpm / 1000;
+
+        if ($allClicks > 0) {
+            $cpc = $campaign->budget / $allClicks;
+        }
         return view('dashboard.index', compact(
             'campaign',
             'summary',
@@ -68,7 +87,11 @@ class DashboardController extends Controller
             'chartClicks',
             'startDate',
             'endDate',
-            'firstReportDate'
+            'firstReportDate',
+            'budget',
+            'spent',
+            'cpm',
+            'cpc'
         ));
     }
     private function calculateSummary(Campaign $campaign): array
@@ -100,7 +123,7 @@ class DashboardController extends Controller
         $startDate = request('start_date');
         $endDate = request('end_date');
 
-        $campaignData = CampaignData::where('campaign_id', $campaign->id)
+        $campaignDataByDate = CampaignData::where('campaign_id', $campaign->id)
             ->when($startDate && $endDate, fn($q) => $q->whereBetween('report_date', [$startDate, $endDate]))
             ->orderBy('report_date')
             ->get();
@@ -119,6 +142,22 @@ class DashboardController extends Controller
         $ctr = $summaryBase['impressions'] ? round($summaryBase['clicks'] / $summaryBase['impressions'] * 100, 2) : 0;
         $visibility = $summaryBase['impressions'] ? round($summaryBase['visible'] / $summaryBase['impressions'] * 100, 2) : 0;
 
+        $budget = $campaign->budget;
+        $allImpressions = CampaignData::where('campaign_id', $campaign->id)->sum('impressions');
+        $allClicks = CampaignData::where('campaign_id', $campaign->id)->sum('clicks');
+
+        $cpm = 0;
+        if ($campaign->expected_impressions > 0) {
+            $cpm = ($campaign->budget / max($campaign->expected_impressions, $allImpressions)) * 1000;
+        }
+
+        $spent = ($summaryBase['impressions'] ?? 0) * $cpm / 1000;
+
+        $cpc = 0;
+        if ($allClicks > 0) {
+            $cpc = $campaign->budget / $allClicks;
+        }
+
         $summary = [
             'impressions' => $summaryBase['impressions'],
             'clicks' => $summaryBase['clicks'],
@@ -126,11 +165,21 @@ class DashboardController extends Controller
             'unique_users' => $latestUniques,
             'visibility' => $visibility,
             'expected_impressions' => $campaign->expected_impressions,
+            'budget' => $budget,
+            'spent' => $spent,
+            'cpm' => $cpm,
+            'cpc' => $cpc,
         ];
 
-        return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\CampaignExport($campaign, $summary, $campaignData, $startDate, $endDate),
-            'campaign_' . $campaign->name . '_report.xlsx'
+        $campaignDataByPlacement = PlacementData::where('campaign_id', $campaign->id)
+            ->selectRaw('name as site, sum(impressions) as impressions, sum(clicks) as clicks, sum(visible_impressions) as visible')
+            ->groupBy('name')
+            ->get()
+            ->toArray();
+
+        return Excel::download(
+            new CampaignExport($campaign, $summary, $campaignDataByDate, $campaignDataByPlacement, $startDate, $endDate),
+            'campaign.xlsx'
         );
     }
 }

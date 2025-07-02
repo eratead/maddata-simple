@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->boolean('is_report')->default(false);
             $table->boolean('is_admin')->default(false);
+            $table->boolean('can_view_budget')->default(true);
             $table->rememberToken();
             $table->timestamps();
         });

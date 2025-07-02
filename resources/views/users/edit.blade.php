@@ -61,6 +61,14 @@
                                         <span class="ml-2 text-sm text-gray-700">Reports upload</span>
                                 </label>
                         </div>
+                        <div>
+                                <label class="inline-flex items-center">
+                                        <input type="checkbox" name="can_view_budget"
+                                                {{ $user->can_view_budget ? 'checked' : '' }}
+                                                class="rounded border-gray-300">
+                                        <span class="ml-2 text-sm text-gray-700">Can View Budget</span>
+                                </label>
+                        </div>
 
                         <div>
                                 <button type="submit"

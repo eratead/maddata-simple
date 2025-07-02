@@ -45,6 +45,12 @@
                                                         —
                                                 @endif
                                         </li>
+                                        @if (auth()->user()?->can_view_budget)
+                                                <li><strong>Budget:</strong> {{ number_format($budget ?? 0) }}</li>
+                                                <li><strong>Spent:</strong> {{ number_format($spent ?? 0) }}</li>
+                                                <li><strong>CPM:</strong> {{ number_format($cpm ?? 0, 2) }}</li>
+                                                <li><strong>CPC:</strong> {{ number_format($cpc ?? 0, 2) }}</li>
+                                        @endif
                                 </ul>
 
                                 <div class="mt-4">
@@ -234,4 +240,12 @@
                         });
                 </script>
         </x-page-box>
+        {{--
+@can('viewBudget', auth()->user())
+    <li><strong>Budget:</strong> {{ number_format($budget ?? 0) }}</li>
+    <li><strong>Spent:</strong> {{ number_format($spent ?? 0) }}</li>
+    <li><strong>CPM:</strong> {{ number_format($cpm ?? 0, 2) }}</li>
+    <li><strong>CPC:</strong> {{ number_format($cpc ?? 0, 2) }}</li>
+@endcan
+--}}
 </x-app-layout>

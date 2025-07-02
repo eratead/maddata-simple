@@ -42,7 +42,8 @@ class CampaignController extends Controller
             $client = Client::find($client_id);
             $clientName = $client?->name;
         }
-        return view('campaigns.index', compact('campaigns', 'clientName'));
+        $clients = $user->is_admin ? Client::all() : $user->clients;
+        return view('campaigns.index', compact('campaigns', 'clientName', 'clients'));
     }
 
     public function create()
@@ -60,6 +61,7 @@ class CampaignController extends Controller
             'name' => 'required|string|max:255',
             'client_id' => 'required|exists:clients,id',
             'expected_impressions' => 'nullable|integer|min:0',
+            'budget' => 'nullable|integer|min:0',
         ]);
 
         $campaign = Campaign::create($validated);
@@ -210,6 +212,7 @@ class CampaignController extends Controller
             'name' => 'required|string|max:255',
             'client_id' => 'required|exists:clients,id',
             'expected_impressions' => 'nullable|integer|min:0',
+            'budget' => 'nullable|integer|min:0',
         ]);
 
         $campaign->update($validated);

@@ -12,14 +12,16 @@ class CampaignExport implements WithMultipleSheets
     protected $campaign;
     protected $summary;
     protected $campaignData;
+    protected $campaignDataByPlacement;
     protected $startDate;
     protected $endDate;
 
-    public function __construct($campaign, $summary, $campaignData, $startDate, $endDate)
+    public function __construct($campaign, $summary, $campaignData, $campaignDataByPlacement, $startDate, $endDate)
     {
         $this->campaign = $campaign;
         $this->summary = $summary;
         $this->campaignData = $campaignData;
+        $this->campaignDataByPlacement = $campaignDataByPlacement;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
     }
@@ -27,7 +29,9 @@ class CampaignExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            new CampaignFullSheet($this->campaign, $this->summary, $this->campaignData, $this->startDate, $this->endDate),
+            new CampaignSummarySheet($this->campaign, $this->summary),
+            new CampaignByDatesSheet($this->campaignData, $this->startDate, $this->endDate),
+            new CampaignByPlacementsSheet($this->campaignDataByPlacement),
         ];
     }
 }

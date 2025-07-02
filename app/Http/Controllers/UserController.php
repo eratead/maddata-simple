@@ -46,6 +46,7 @@ class UserController extends Controller
             'password' => Hash::make($validated['password']),
             'is_admin' => $request->has('is_admin'),
             'is_report' => $request->has('is_report'),
+            'can_view_budget' => $request->has('can_view_budget'),
         ]);
 
         // Attach selected clients
@@ -97,6 +98,7 @@ class UserController extends Controller
         $user->email = $validated['email'];
         $user->is_admin = $request->has('is_admin');
         $user->is_report = $request->has('is_report');
+        $user->can_view_budget = $request->has('can_view_budget');
 
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);

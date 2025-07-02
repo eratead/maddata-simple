@@ -1,9 +1,18 @@
 <x-app-layout>
         <x-title>
-                Campaigns
-                @isset($clientName)
-                        for {{ $clientName }}
-                @endisset
+                Campaigns for client :
+                <form method="GET" class="inline-block ml-2">
+                        <select name="client_id" id="client_id" onchange="this.form.submit()"
+                                class="text-sm  border rounded w-64 px-4 py-1">
+                                <option value="">All clients</option>
+                                @foreach ($clients as $client)
+                                        <option value="{{ $client->id }}"
+                                                @if (request('client_id') == $client->id) selected @endif>
+                                                {{ $client->name }}
+                                        </option>
+                                @endforeach
+                        </select>
+                </form>
         </x-title>
         <x-page-box>
                 @if (session('success'))
