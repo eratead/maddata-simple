@@ -34,17 +34,44 @@
                                 @enderror
                         </div>
 
-                        <div>
-                                <label for="clients" class="block text-sm font-medium text-gray-700">Clients</label>
-                                <select name="clients[]" id="clients" multiple
-                                        class="mt-1 block w-full rounded border-gray-300 shadow-sm">
-                                        @foreach ($clients as $client)
-                                                <option value="{{ $client->id }}"
-                                                        {{ in_array($client->id, $user->clients->pluck('id')->toArray()) ? 'selected' : '' }}>
-                                                        {{ $client->name }}
-                                                </option>
-                                        @endforeach
-                                </select>
+                        @php
+                                $attachedClientIds = $user->clients->pluck('id')->toArray();
+                        @endphp
+
+                        <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 cursor-pointer"
+                                        onclick="toggleClientsPanel()">Clients</label>
+                                <div id="attached-clients-label" class="mt-1 text-sm text-gray-900"></div>
+                        </div>
+
+                        <div id="clients-panel" style="display: none;">
+                                <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Attach/Detach
+                                                Clients</label>
+                                        <div id="attached-clients-hidden-inputs"></div>
+                                        <input type="text" id="client-filter" placeholder="Filter clients..."
+                                                class="mb-2 w-full px-3 py-2 border rounded text-sm shadow-sm"
+                                                oninput="filterClients(this.value)">
+                                        <table id="clients-table"
+                                                class="min-w-full divide-y divide-gray-200 border rounded text-sm">
+                                                <thead class="bg-gray-50">
+                                                        <tr>
+                                                                <th class="px-4 py-2 text-left">Agency</th>
+                                                                <th class="px-4 py-2 text-left">Client</th>
+                                                        </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-gray-100">
+                                                        @foreach ($clients as $client)
+                                                                <tr data-id="{{ $client->id }}"
+                                                                        class="cursor-pointer hover:bg-blue-50"
+                                                                        onclick="toggleClient({{ $client->id }})">
+                                                                        <td class="px-4 py-2">{{ $client->agency }}</td>
+                                                                        <td class="px-4 py-2">{{ $client->name }}</td>
+                                                                </tr>
+                                                        @endforeach
+                                                </tbody>
+                                        </table>
+                                </div>
                         </div>
 
                         <div>
@@ -78,6 +105,62 @@
                                 <a href="{{ route('users.index') }}"
                                         class="ml-3 text-gray-600 hover:underline">Cancel</a>
                         </div>
+
+                        @php
+                                $clientNames = $clients->pluck('name', 'id');
+                        @endphp
+                        <script>
+                                const allClients = @json($clientNames);
+                                let attachedClientIds = @json($attachedClientIds);
+
+                                function updateClientUI() {
+                                        // Update label
+                                        const label = document.getElementById('attached-clients-label');
+                                        label.textContent = attachedClientIds.map(id => allClients[id]).filter(Boolean).join(', ');
+
+                                        // Update hidden inputs
+                                        const inputContainer = document.getElementById('attached-clients-hidden-inputs');
+                                        inputContainer.innerHTML = '';
+                                        attachedClientIds.forEach(id => {
+                                                const input = document.createElement('input');
+                                                input.type = 'hidden';
+                                                input.name = 'clients[]';
+                                                input.value = id;
+                                                inputContainer.appendChild(input);
+                                        });
+
+                                        // Update row highlighting
+                                        document.querySelectorAll('#clients-table tbody tr').forEach(row => {
+                                                const id = parseInt(row.dataset.id);
+                                                row.classList.toggle('bg-blue-100', attachedClientIds.includes(id));
+                                        });
+                                }
+
+                                function toggleClient(id) {
+                                        const index = attachedClientIds.indexOf(id);
+                                        if (index === -1) {
+                                                attachedClientIds.push(id);
+                                        } else {
+                                                attachedClientIds.splice(index, 1);
+                                        }
+                                        updateClientUI();
+                                }
+
+                                function filterClients(query) {
+                                        query = query.toLowerCase();
+                                        document.querySelectorAll('#clients-table tbody tr').forEach(row => {
+                                                const text = row.textContent.toLowerCase();
+                                                row.style.display = text.includes(query) ? '' : 'none';
+                                        });
+                                }
+
+                                function toggleClientsPanel() {
+                                        const panel = document.getElementById('clients-panel');
+                                        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+                                }
+
+                                document.addEventListener('DOMContentLoaded', updateClientUI);
+                        </script>
                 </form>
         </x-page-box>
 </x-app-layout>

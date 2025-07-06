@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained('clients')->cascadeOnDelete();
             $table->integer('uniques')->default(0);
             $table->integer('expected_impressions')->default(0)->nullable(true);
-            $table->integer('budget')->default(0);
+            $table->integer('budget')->default(0)->nullable(true);
             $table->timestamps();
         });
     }

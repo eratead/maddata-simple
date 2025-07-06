@@ -14,6 +14,14 @@
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                 @enderror
                         </div>
+                        <div class="mb-4">
+                                <label for="agency" class="block text-sm font-medium text-gray-700">Agency</label>
+                                <x-autocomplete-input name="agency" :options="$agencies"
+                                        placeholder="Select or type agency" />
+                                @error('agency')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                        </div>
 
                         <div class="flex justify-end">
                                 <a href="{{ route('clients.index') }}"

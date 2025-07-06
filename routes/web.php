@@ -36,6 +36,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('dashboard.campaign');
 
     Route::get('/dashboard/{campaign}/export', [DashboardController::class, 'exportExcel'])->name('dashboard.export.excel');
+
+    Route::get('/users/{user}/attach-client', [UserController::class, 'attachClient'])->name('users.attach-client');
 });
 
 // test

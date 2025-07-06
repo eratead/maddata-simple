@@ -1,18 +1,15 @@
 <x-app-layout>
         <x-title>
                 Campaigns for client :
-                <form method="GET" class="inline-block ml-2">
-                        <select name="client_id" id="client_id" onchange="this.form.submit()"
-                                class="text-sm  border rounded w-64 px-4 py-1">
-                                <option value="">All clients</option>
-                                @foreach ($clients as $client)
-                                        <option value="{{ $client->id }}"
-                                                @if (request('client_id') == $client->id) selected @endif>
-                                                {{ $client->name }}
-                                        </option>
-                                @endforeach
-                        </select>
-                </form>
+                <select name="client_id" id="client_id" class="text-sm border rounded w-64 px-4 py-1"
+                        onchange="window.location.href = '/campaigns/client/' + this.value;">
+                        <option value="">All clients</option>
+                        @foreach ($clients as $client)
+                                <option value="{{ $client->id }}" @if (request('client_id') == $client->id) selected @endif>
+                                        {{ $client->name }}
+                                </option>
+                        @endforeach
+                </select>
         </x-title>
         <x-page-box>
                 @if (session('success'))
@@ -33,7 +30,7 @@
                         <x-scripts.datatables table-id="campaigns-table" :column-defs="[
                             ['targets' => 2, 'width' => '8rem'],
                             ['targets' => 3, 'orderable' => false, 'width' => '8rem'],
-                        ]" :order="[[2, 'desc']]" />
+                        ]" :order="[2, 'desc']" />
                 @else
                         <x-scripts.datatables table-id="campaigns-table" :column-defs="[['targets' => 2, 'width' => '8rem']]" :order="[[2, 'desc']]" />
                 @endif

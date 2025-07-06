@@ -111,4 +111,13 @@ class UserController extends Controller
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
+
+    public function attachClient(User $user)
+    {
+        $this->authorize('update', $user);
+
+        return response()->json([
+            'message' => "Attach client dialog for user {$user->name} (ID: {$user->id})"
+        ]);
+    }
 }

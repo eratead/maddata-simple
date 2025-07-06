@@ -30,8 +30,8 @@ class ClientController extends Controller
     public function edit(Client $client)
     {
         $this->authorize('update', $client);
-
-        return view('clients.edit', compact('client'));
+        $agencies = Client::whereNotNull('agency')->select('agency')->distinct()->pluck('agency');
+        return view('clients.edit', compact('client', 'agencies'));
     }
 
     public function update(Request $request, \App\Models\Client $client)
@@ -40,6 +40,7 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'agency' => ['nullable', 'string', 'max:255'],
         ]);
 
         $client->update($validated);
@@ -51,8 +52,8 @@ class ClientController extends Controller
     public function create()
     {
         $this->authorize('create', Client::class);
-
-        return view('clients.create');
+        $agencies = Client::whereNotNull('agency')->select('agency')->distinct()->pluck('agency');
+        return view('clients.create', compact('agencies'));
     }
 
     public function store(Request $request)
@@ -61,6 +62,7 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'agency' => ['nullable', 'string', 'max:255'],
         ]);
 
         Client::create($validated);

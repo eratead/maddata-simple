@@ -16,6 +16,15 @@
                         </div>
 
                         <div>
+                                <label for="agency" class="block text-sm font-medium text-gray-700">Agency</label>
+                                <x-autocomplete-input name="agency" :options="$agencies"
+                                        placeholder="Select or type agency" :value="old('agency', $client->agency)" />
+                                @error('agency')
+                                        <div class="text-sm text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                        </div>
+
+                        <div>
                                 <button type="submit"
                                         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save</button>
                                 <a href="{{ route('clients.index') }}"

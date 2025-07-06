@@ -1,5 +1,5 @@
 <x-app-layout>
-        <x-title>Dashboard – {{ $campaign->name }}</x-title>
+        <x-title>Dashboard – {{ $campaign->name }} ({{ $campaign->client->name }})</x-title>
         <x-page-box>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                         <!-- Campaign Summary -->
@@ -92,7 +92,7 @@
                                 </div>
 
                                 <div x-show="activeTab === 'date'" x-cloak>
-                                        <x-scripts.datatables table-id="date-table" :order="[[1, 'desc']]" />
+                                        <x-scripts.datatables table-id="date-table" :order="[0, 'asc']" />
 
                                         <table id="date-table"
                                                 class="min-w-full text-sm text-gray-700 border rounded overflow-hidden">
@@ -130,7 +130,7 @@
                                 </div>
 
                                 <div x-show="activeTab === 'placement'" x-cloak>
-                                        <x-scripts.datatables table-id="placement-table" :order="[[1, 'desc']]" />
+                                        <x-scripts.datatables table-id="placement-table" :order="[1, 'desc']" />
 
                                         <table id="placement-table"
                                                 class="min-w-full text-sm text-gray-700 border rounded overflow-hidden">

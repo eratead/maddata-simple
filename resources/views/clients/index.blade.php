@@ -8,11 +8,12 @@
                                 + New Client
                         </a>
                 </div>
-                <x-scripts.datatables table-id="clients-table" :column-defs="[['targets' => 1, 'width' => '5rem', 'orderable' => false]]" :order="[[0, 'asc']]" />
+                <x-scripts.datatables table-id="clients-table" :column-defs="[['targets' => 2, 'width' => '5rem', 'orderable' => false]]" :order="[[0, 'asc'], [1, 'asc']]" />
 
                 <table id="clients-table" class="min-w-full bg-white shadow rounded">
                         <thead class="bg-gray-100 text-sm text-gray-600">
                                 <tr>
+                                        <th class="text-left px-4 py-2">Agency</th>
                                         <th class="text-left px-4 py-2">Name</th>
                                         <th class="text-left px-4 py-2">Actions</th>
                                 </tr>
@@ -20,6 +21,7 @@
                         <tbody class="text-sm divide-y divide-gray-100">
                                 @foreach ($clients as $client)
                                         <tr class="hover:bg-gray-50">
+                                                <td class="px-4 py-2 text-gray-700">{{ $client->agency }}</td>
                                                 <td class="px-4 py-2">
                                                         <a href="{{ url('/campaigns/client/' . $client->id) }}"
                                                                 class="text-blue-600 hover:underline">{{ $client->name }}</a>
