@@ -28,17 +28,22 @@
                 {{-- <x-scripts.datatables table-id="campaigns-table" /> --}}
                 @if (auth()->user()?->is_admin)
                         <x-scripts.datatables table-id="campaigns-table" :column-defs="[
-                            ['targets' => 2, 'width' => '8rem'],
-                            ['targets' => 3, 'orderable' => false, 'width' => '8rem'],
-                        ]" :order="[2, 'desc']" />
+                            ['targets' => 2, 'visible' => false, 'searchable' => true],
+                            ['targets' => 3, 'orderable' => true, 'width' => '8rem'],
+                            ['targets' => 4, 'orderable' => false, 'searchable' => false, 'width' => '8rem'],
+                        ]" :order="[3, 'desc']" />
                 @else
-                        <x-scripts.datatables table-id="campaigns-table" :column-defs="[['targets' => 2, 'width' => '8rem']]" :order="[[2, 'desc']]" />
+                        <x-scripts.datatables table-id="campaigns-table" :column-defs="[
+                            ['targets' => 2, 'width' => '8rem'],
+                            ['targets' => 3, 'visible' => false, 'searchable' => true],
+                        ]" :order="[3, 'desc']" />
                 @endif
                 <table id="campaigns-table" class="min-w-full bg-white shadow rounded">
                         <thead class="bg-gray-100 text-sm text-gray-600">
                                 <tr>
                                         <th class="text-left px-4 py-2">Campaign</th>
                                         <th class="text-left px-4 py-2">Client</th>
+                                        <th class="text-left px-4 py-2 hidden">Agency</th>
                                         <th class="text-left px-4 py-2">Create Date</th>
                                         @if (auth()->user()?->is_admin)
                                                 <th class="text-left px-4 py-2">Actions</th>
@@ -73,6 +78,8 @@
                                                         @endauth
                                                 </td>
                                                 <td class="px-4 py-2">{{ $campaign->client->name ?? '—' }}</td>
+                                                <td class="px-4 py-2 hidden">{{ $campaign->client->agency ?? '' }}
+                                                </td>
                                                 <td class="px-4 py-2">{{ $campaign->created_at->format('Y-m-d') }}</td>
                                                 @if (auth()->user()?->is_admin)
                                                         <td class="px-4 py-2">

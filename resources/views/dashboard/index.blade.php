@@ -211,7 +211,7 @@
                                                         },
                                                         title: {
                                                                 display: true,
-                                                                text: 'Test Chart'
+                                                                text: 'Chart'
                                                         }
                                                 },
                                                 scales: {

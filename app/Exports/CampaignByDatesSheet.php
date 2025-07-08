@@ -4,8 +4,9 @@ namespace App\Exports;
 
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class CampaignByDatesSheet implements FromView
+class CampaignByDatesSheet implements FromView, WithTitle
 {
     protected $campaignData;
     protected $startDate;
@@ -17,7 +18,10 @@ class CampaignByDatesSheet implements FromView
         $this->startDate = $startDate;
         $this->endDate = $endDate;
     }
-
+    public function title(): string
+    {
+        return 'Dates';
+    }
     public function view(): View
     {
         return view('exports.campaign_by_dates', [

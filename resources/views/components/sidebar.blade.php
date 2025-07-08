@@ -58,7 +58,7 @@
                                                 <div class="flex flex-col items-center">
                                                         <img src="{{ asset('images/icons/user.png') }}" alt="User"
                                                                 class="h-10 mb-1">
-                                                        <div>{{ Auth::user()->name }}</div>
+                                                        <div style="w-3">{{ Auth::user()->name }}</div>
                                                 </div>
                                         </button>
                                 </x-slot>

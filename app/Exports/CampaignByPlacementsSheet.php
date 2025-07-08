@@ -4,8 +4,9 @@ namespace App\Exports;
 
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class CampaignByPlacementsSheet implements FromView
+class CampaignByPlacementsSheet implements FromView, WithTitle
 {
     protected $campaignDataByPlacement;
 
@@ -13,7 +14,10 @@ class CampaignByPlacementsSheet implements FromView
     {
         $this->campaignDataByPlacement = $campaignDataByPlacement;
     }
-
+    public function title(): string
+    {
+        return 'Placements';
+    }
     public function view(): View
     {
         return view('exports.campaign_by_placements', [

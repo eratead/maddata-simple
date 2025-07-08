@@ -5,8 +5,11 @@ namespace App\Exports;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
-class CampaignSummarySheet implements FromView
+class CampaignSummarySheet implements FromView, WithTitle, WithDrawings
 {
     protected $campaign;
     protected $summary;
@@ -15,6 +18,10 @@ class CampaignSummarySheet implements FromView
     {
         $this->campaign = $campaign;
         $this->summary = $summary;
+    }
+    public function title(): string
+    {
+        return 'Summary';
     }
 
     public function view(): View
@@ -25,5 +32,17 @@ class CampaignSummarySheet implements FromView
             'user' => \Illuminate\Support\Facades\Auth::user(),
 
         ]);
+    }
+
+    public function drawings()
+    {
+        $drawing = new Drawing();
+        $drawing->setName('Logo');
+        $drawing->setDescription('MadData Logo');
+        $drawing->setPath(public_path('images/logo.png')); // Ensure this path is correct
+        $drawing->setHeight(40); // Resize the image
+        $drawing->setCoordinates('A1'); // Position in the sheet
+
+        return $drawing;
     }
 }

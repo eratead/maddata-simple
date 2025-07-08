@@ -47,7 +47,9 @@
                                                             $user->is_report ? 'Reports' : null,
                                                         ])->filter()->join(', ') }}
                                                 </td>
-                                                <td class="px-4 py-2">{{ $user->clients->pluck('name')->join(', ') }}
+                                                <td class="px-4 py-2"
+                                                        title="{{ $user->clients->pluck('name')->join(', ') }}">
+                                                        {{ \Illuminate\Support\Str::limit($user->clients->pluck('name')->join(', '), 25) }}
                                                 </td>
                                                 <td class="px-4 py-2">
                                                         @unless (auth()->id() === $user->id)

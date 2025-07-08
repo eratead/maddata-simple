@@ -1,7 +1,12 @@
+@for ($i = 0; $i < 6; $i++)
+        <br>
+@endfor
+
+
 <table>
         <thead>
                 <tr>
-                        <th colspan="2">Campaign Summary</th>
+                        <th colspan="2">{{ $campaign->name }} Summary</th>
                 </tr>
         </thead>
         <tbody>
