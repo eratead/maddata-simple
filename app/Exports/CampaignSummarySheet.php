@@ -7,9 +7,10 @@ use Maatwebsite\Excel\Concerns\FromView;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithDrawings;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 
-class CampaignSummarySheet implements FromView, WithTitle, WithDrawings
+class CampaignSummarySheet implements FromView, WithTitle, WithDrawings, WithColumnWidths
 {
     protected $campaign;
     protected $summary;
@@ -41,8 +42,16 @@ class CampaignSummarySheet implements FromView, WithTitle, WithDrawings
         $drawing->setDescription('MadData Logo');
         $drawing->setPath(public_path('images/logo.png')); // Ensure this path is correct
         $drawing->setHeight(40); // Resize the image
-        $drawing->setCoordinates('A1'); // Position in the sheet
+        $drawing->setCoordinates('B1'); // Position in the sheet
 
         return $drawing;
+    }
+
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 25,
+            'B' => 15,
+        ];
     }
 }

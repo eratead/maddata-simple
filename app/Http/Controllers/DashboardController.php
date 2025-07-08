@@ -172,14 +172,15 @@ class DashboardController extends Controller
         ];
 
         $campaignDataByPlacement = PlacementData::where('campaign_id', $campaign->id)
-            ->selectRaw('name as site, sum(impressions) as impressions, sum(clicks) as clicks, sum(visible_impressions) as visible')
+            ->selectRaw('name as name, sum(impressions) as impressions, sum(clicks) as clicks, sum(visible_impressions) as visible')
             ->groupBy('name')
+            ->orderByDesc('impressions')
             ->get()
             ->toArray();
 
         return Excel::download(
             new CampaignExport($campaign, $summary, $campaignDataByDate, $campaignDataByPlacement, $startDate, $endDate),
-            'campaign.xlsx'
+            'campaign_' . $campaign->name . '.xlsx'
         );
     }
 }

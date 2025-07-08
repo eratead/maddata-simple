@@ -5,8 +5,9 @@ namespace App\Exports;
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
 
-class CampaignByPlacementsSheet implements FromView, WithTitle
+class CampaignByPlacementsSheet implements FromView, WithTitle, WithColumnWidths
 {
     protected $campaignDataByPlacement;
 
@@ -23,5 +24,12 @@ class CampaignByPlacementsSheet implements FromView, WithTitle
         return view('exports.campaign_by_placements', [
             'campaignDataByPlacement' => $this->campaignDataByPlacement,
         ]);
+    }
+    public function columnWidths(): array
+    {
+        return [
+            'A' => 25,
+            'B' => 15,
+        ];
     }
 }
