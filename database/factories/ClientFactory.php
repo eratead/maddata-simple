@@ -13,6 +13,7 @@ class ClientFactory extends Factory
     {
         return [
             'name' => $this->faker->company,
+            'agency' => fake()->company(),
         ];
     }
 }

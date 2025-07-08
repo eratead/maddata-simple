@@ -50,6 +50,7 @@ class ClientControllerTest extends TestCase
         $this->actingAs($admin);
         $response = $this->post(route('clients.store'), [
             'name' => 'Test Client',
+            'agency' => 'Test Agency',
         ]);
 
         $response->assertRedirect(route('clients.index'));
