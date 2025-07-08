@@ -42,7 +42,7 @@ class CampaignSummarySheet implements FromView, WithTitle, WithDrawings, WithCol
         $drawing->setDescription('MadData Logo');
         $drawing->setPath(public_path('images/logo.png')); // Ensure this path is correct
         $drawing->setHeight(40); // Resize the image
-        $drawing->setCoordinates('B1'); // Position in the sheet
+        $drawing->setCoordinates('C1'); // Position in the sheet
 
         return $drawing;
     }
@@ -51,7 +51,7 @@ class CampaignSummarySheet implements FromView, WithTitle, WithDrawings, WithCol
     {
         return [
             'A' => 25,
-            'B' => 15,
+            'B' => 25,
         ];
     }
 }

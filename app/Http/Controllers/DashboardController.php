@@ -180,7 +180,7 @@ class DashboardController extends Controller
 
         return Excel::download(
             new CampaignExport($campaign, $summary, $campaignDataByDate, $campaignDataByPlacement, $startDate, $endDate),
-            'campaign_' . $campaign->name . '.xlsx'
+            'MadData_' . $campaign->name . '.xlsx'
         );
     }
 }
