@@ -54,8 +54,11 @@
                                         @if ($campaign->is_video)
                                                 <li><strong>Video Complete:</strong>
                                                         {{ number_format($summary['video_complete'] ?? 0) }}</li>
-                                                <li><strong>Avr. CPV:</strong>
-                                                        {{ number_format($summary['cpv'] ?? 0, 2) }}</li>
+                                                @if (auth()->user()?->can_view_budget)
+                                                        <li><strong>Avr. CPV:</strong>
+                                                                {{ number_format($summary['cpv'] ?? 0, 2) }}
+                                                        </li>
+                                                @endif
                                                 <li><strong>VCR:</strong>
                                                         @if (!empty($summary['vcr']))
                                                                 {{ number_format($summary['vcr'], 2) }}%
