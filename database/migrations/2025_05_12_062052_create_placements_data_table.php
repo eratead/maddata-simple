@@ -20,6 +20,10 @@ return new class extends Migration
             $table->unsignedInteger('clicks')->default(0);
             $table->unsignedInteger('visible_impressions')->default(0);
             $table->unsignedInteger('uniques')->default(0);
+            $table->unsignedInteger('video_25')->nullable();
+            $table->unsignedInteger('video_50')->nullable();
+            $table->unsignedInteger('video_75')->nullable();
+            $table->unsignedInteger('video_100')->nullable();
             $table->timestamps();
         });
     }

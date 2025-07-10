@@ -51,6 +51,19 @@
                                                 <li><strong>CPM:</strong> {{ number_format($cpm ?? 0, 2) }}</li>
                                                 <li><strong>CPC:</strong> {{ number_format($cpc ?? 0, 2) }}</li>
                                         @endif
+                                        @if ($campaign->is_video)
+                                                <li><strong>Video Complete:</strong>
+                                                        {{ number_format($summary['video_complete'] ?? 0) }}</li>
+                                                <li><strong>Avr. CPV:</strong>
+                                                        {{ number_format($summary['cpv'] ?? 0, 2) }}</li>
+                                                <li><strong>VCR:</strong>
+                                                        @if (!empty($summary['vcr']))
+                                                                {{ number_format($summary['vcr'], 2) }}%
+                                                        @else
+                                                                —
+                                                        @endif
+                                                </li>
+                                        @endif
                                 </ul>
 
                                 <div class="mt-4">
@@ -103,6 +116,16 @@
                                                                 <th class="px-4 py-2 text-left">Impressions</th>
                                                                 <th class="px-4 py-2 text-left">Clicks</th>
                                                                 <th class="px-4 py-2 text-left">CTR</th>
+                                                                @if ($campaign->is_video)
+                                                                        <th class="px-4 py-2 text-left">Video Views 25%
+                                                                        </th>
+                                                                        <th class="px-4 py-2 text-left">Video Views 50%
+                                                                        </th>
+                                                                        <th class="px-4 py-2 text-left">Video Views 75%
+                                                                        </th>
+                                                                        <th class="px-4 py-2 text-left">Video Completes
+                                                                        </th>
+                                                                @endif
                                                         </tr>
                                                 </thead>
                                                 <tbody class="divide-y divide-gray-100">
@@ -123,6 +146,20 @@
                                                                                         —
                                                                                 @endif
                                                                         </td>
+                                                                        @if ($campaign->is_video)
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_25) }}
+                                                                                </td>
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_50) }}
+                                                                                </td>
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_75) }}
+                                                                                </td>
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_100) }}
+                                                                                </td>
+                                                                        @endif
                                                                 </tr>
                                                         @endforeach
                                                 </tbody>
@@ -141,7 +178,16 @@
                                                                 <th class="px-4 py-2 text-left">Impressions</th>
                                                                 <th class="px-4 py-2 text-left">Clicks</th>
                                                                 <th class="px-4 py-2 text-left">CTR</th>
-
+                                                                @if ($campaign->is_video)
+                                                                        <th class="px-4 py-2 text-left">Video Views 25%
+                                                                        </th>
+                                                                        <th class="px-4 py-2 text-left">Video Views 50%
+                                                                        </th>
+                                                                        <th class="px-4 py-2 text-left">Video Views 75%
+                                                                        </th>
+                                                                        <th class="px-4 py-2 text-left">Video Completes
+                                                                        </th>
+                                                                @endif
                                                         </tr>
                                                 </thead>
                                                 <tbody class="divide-y divide-gray-100">
@@ -160,6 +206,20 @@
                                                                                         —
                                                                                 @endif
                                                                         </td>
+                                                                        @if ($campaign->is_video)
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_25) }}
+                                                                                </td>
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_50) }}
+                                                                                </td>
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_75) }}
+                                                                                </td>
+                                                                                <td class="px-4 py-2">
+                                                                                        {{ number_format($row->video_100) }}
+                                                                                </td>
+                                                                        @endif
                                                                 </tr>
                                                         @endforeach
                                                 </tbody>

@@ -71,6 +71,19 @@ class CampaignController extends Controller
 
     public function upload(Request $request, Campaign $campaign)
     {
+        $fieldMap = [
+            'placement' => 'Bundle_Name',
+            'impressions' => 'Impressions',
+            'clicks' => 'Clicks',
+            'viewability' => 'Viewability Rate_%',
+            'uniques' => 'Unique_Users',
+            'report_date' => 'Report_Date',
+            'video_25' => 'Video_Views_25%',
+            'video_50' => 'Video_Views_50%',
+            'video_75' => 'Video_Views_75%',
+            'video_100' => 'Video_Completes',
+        ];
+
         $user = Auth::user();
         if (!$user->is_admin && !($user->is_report && $user->clients->contains($campaign->client_id))) {
             abort(403, 'You do not have permission to upload a report for this campaign.');
@@ -82,7 +95,7 @@ class CampaignController extends Controller
         $collection = \Maatwebsite\Excel\Facades\Excel::toCollection(null, $request->file('report'))->first();
 
         $date = null;
-        $summary = ['impressions' => 0, 'clicks' => 0, 'visible' => 0, 'uniques' => 0];
+        $summary = ['impressions' => 0, 'clicks' => 0, 'visible' => 0, 'uniques' => 0, 'video_25' => 0, 'video_50' => 0, 'video_75' => 0, 'video_100' => 0];
 
         $headers = [];
         $viewability = 0;
@@ -90,6 +103,17 @@ class CampaignController extends Controller
             // If headers are not yet defined, try to capture them
             if (empty($headers) && !is_numeric($row[1] ?? null)) {
                 $headers = $row->toArray();
+                // Check for video fields and update campaign is_video if present
+                $videoFields = [
+                    $fieldMap['video_25'],
+                    $fieldMap['video_50'],
+                    $fieldMap['video_75'],
+                    $fieldMap['video_100']
+                ];
+
+                if (array_intersect($videoFields, $headers)) {
+                    $campaign->update(['is_video' => true]);
+                }
                 continue;
             }
 
@@ -97,16 +121,16 @@ class CampaignController extends Controller
             if (empty($headers)) continue;
 
             $data = array_combine($headers, $row->toArray());
-            $viewability = $viewability == 0 ? (float) ($data['Viewability Rate_%'] ?? 0) : $viewability;
+            $viewability = $viewability == 0 ? (float) ($data[$fieldMap['viewability']] ?? 0) : $viewability;
             // Skip if 'Impressions' is missing or not numeric
-            if (!isset($data['Impressions']) || !is_numeric($data['Impressions'])) {
+            if (!isset($data[$fieldMap['impressions']]) || !is_numeric($data[$fieldMap['impressions']])) {
                 continue;
             }
 
-            $placement = $data['Bundle_Name'] ?? null;
-            $impressions = (int) $data['Impressions'];
-            $clicks = (int) ($data['Clicks'] ?? 0);
-            $value = $data['Report_Date'] ?? null;
+            $placement = $data[$fieldMap['placement']] ?? null;
+            $impressions = (int) $data[$fieldMap['impressions']];
+            $clicks = (int) ($data[$fieldMap['clicks']] ?? 0);
+            $value = $data[$fieldMap['report_date']] ?? null;
 
             if (!$date && $value) {
                 if (is_numeric($value)) {
@@ -138,14 +162,18 @@ class CampaignController extends Controller
             $data = array_combine($headers, $row->toArray());
 
             // Skip if 'Impressions' is missing or not numeric
-            if (!isset($data['Impressions']) || !is_numeric($data['Impressions'])) {
+            if (!isset($data[$fieldMap['impressions']]) || !is_numeric($data[$fieldMap['impressions']])) {
                 continue;
             }
 
-            $placement = $data['Bundle_Name'] ?? null;
-            $impressions = (int) $data['Impressions'];
-            $clicks = (int) ($data['Clicks'] ?? 0);
+            $placement = $data[$fieldMap['placement']] ?? null;
+            $impressions = (int) $data[$fieldMap['impressions']];
+            $clicks = (int) ($data[$fieldMap['clicks']] ?? 0);
 
+            $video25 = isset($data[$fieldMap['video_25']]) && is_numeric($data[$fieldMap['video_25']]) ? (int) $data[$fieldMap['video_25']] : 0;
+            $video50 = isset($data[$fieldMap['video_50']]) && is_numeric($data[$fieldMap['video_50']]) ? (int) $data[$fieldMap['video_50']] : 0;
+            $video75 = isset($data[$fieldMap['video_75']]) && is_numeric($data[$fieldMap['video_75']]) ? (int) $data[$fieldMap['video_75']] : 0;
+            $video100 = isset($data[$fieldMap['video_100']]) && is_numeric($data[$fieldMap['video_100']]) ? (int) $data[$fieldMap['video_100']] : 0;
             $visible = (int) round($impressions * ($viewability / 100));
 
             PlacementData::create([
@@ -155,31 +183,44 @@ class CampaignController extends Controller
                 'impressions' => $impressions,
                 'clicks' => $clicks,
                 'visible_impressions' => $visible,
+                'video_25' => $video25,
+                'video_50' => $video50,
+                'video_75' => $video75,
+                'video_100' => $video100,
             ]);
 
             $summary['impressions'] += $impressions;
             $summary['clicks'] += $clicks;
             $summary['visible'] += $visible;
+            $summary['video_25'] += $video25;
+            $summary['video_50'] += $video50;
+            $summary['video_75'] += $video75;
+            $summary['video_100'] += $video100;
+            // dd($summary);
         }
 
-        $lastRowWithUniques = $collection->reverse()->first(function ($row) use ($headers) {
+        $lastRowWithUniques = $collection->reverse()->first(function ($row) use ($headers, $fieldMap) {
             $data = array_combine($headers, $row->toArray());
-            return isset($data['Unique_Users']) && is_numeric($data['Unique_Users']);
+            return isset($data[$fieldMap['uniques']]) && is_numeric($data[$fieldMap['uniques']]);
         });
 
         $summary['uniques'] = 0;
         if ($lastRowWithUniques) {
             $data = array_combine($headers, $lastRowWithUniques->toArray());
-            $summary['uniques'] = isset($data['Unique_Users']) ? (int) $data['Unique_Users'] : 0;
+            $summary['uniques'] = isset($data[$fieldMap['uniques']]) ? (int) $data[$fieldMap['uniques']] : 0;
         }
 
-        CampaignData::updateOrCreate(
+        $campaign_data = CampaignData::updateOrCreate(
             ['campaign_id' => $campaign->id, 'report_date' => $date],
             [
                 'impressions' => $summary['impressions'],
                 'clicks' => $summary['clicks'],
                 'visible_impressions' => $summary['visible'],
                 'uniques' => $summary['uniques'],
+                'video_25' => $summary['video_25'],
+                'video_50' => $summary['video_50'],
+                'video_75' => $summary['video_75'],
+                'video_100' => $summary['video_100'],
             ]
         );
 

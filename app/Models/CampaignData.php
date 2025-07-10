@@ -15,5 +15,9 @@ class CampaignData extends Model
         'visible_impressions',
         'uniques',
         'report_date',
+        'video_25',
+        'video_50',
+        'video_75',
+        'video_100',
     ];
 }

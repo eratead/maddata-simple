@@ -19,6 +19,10 @@ return new class extends Migration
             $table->unsignedInteger('clicks');
             $table->unsignedInteger('visible_impressions');
             $table->unsignedInteger('uniques');
+            $table->unsignedInteger('video_25')->nullable();
+            $table->unsignedInteger('video_50')->nullable();
+            $table->unsignedInteger('video_75')->nullable();
+            $table->unsignedInteger('video_100')->nullable();
             $table->timestamps();
             $table->unique(['campaign_id', 'report_date']);
         });

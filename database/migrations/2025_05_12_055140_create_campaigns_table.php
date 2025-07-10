@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('uniques')->default(0);
             $table->integer('expected_impressions')->default(0)->nullable(true);
             $table->integer('budget')->default(0)->nullable(true);
+            $table->boolean('is_video')->default(false);
             $table->timestamps();
         });
     }

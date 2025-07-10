@@ -17,5 +17,9 @@ class PlacementData extends Model
         'clicks',
         'visible_impressions',
         'uniques',
+        'video_25',
+        'video_50',
+        'video_75',
+        'video_100',
     ];
 }

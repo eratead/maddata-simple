@@ -43,15 +43,27 @@ class DashboardController extends Controller
             'uniques' => $latestUniques,
             'expected_impressions' => $campaign->expected_impressions,
         ]);
+        // Add video metrics if campaign is video
+        if ($campaign->is_video) {
+            $videoComplete = \App\Models\CampaignData::where('campaign_id', $campaign->id)
+                ->when($startDate && $endDate ?? false, fn($q) => $q->whereBetween('report_date', [$startDate, $endDate]))
+                ->sum('video_100');
+
+            $summary['video_complete'] = $videoComplete;
+            $spent = ($summary['impressions'] ?? 0) * (($campaign->expected_impressions > 0 ? ($campaign->budget / max($campaign->expected_impressions, \App\Models\CampaignData::where('campaign_id', $campaign->id)->sum('impressions'))) * 1000 : 0) / 1000);
+            $summary['cpv'] = $videoComplete > 0 ? round($spent / $videoComplete, 4) : 0;
+            $summary['vcr'] = $summary['impressions'] > 0 ? round($videoComplete / $summary['impressions'] * 100, 2) : 0;
+        }
 
         $campaignData = CampaignData::where('campaign_id', $campaign->id)
             ->when($startDate && $endDate, fn($q) => $q->whereBetween('report_date', [$startDate, $endDate]))
             ->orderBy('report_date')
             ->get();
+
         $chartLabels = $campaignData->pluck('report_date')->map(fn($d) => \Carbon\Carbon::parse($d)->format('M d'))->toArray();
         $chartImpressions = $campaignData->pluck('impressions')->toArray();
         $chartClicks = $campaignData->pluck('clicks')->toArray();
-        $placementData = PlacementData::selectRaw('MAX(report_date) as report_date, name, SUM(impressions) as impressions, SUM(clicks) as clicks, SUM(visible_impressions) as visible_impressions')
+        $placementData = PlacementData::selectRaw('MAX(report_date) as report_date, name, SUM(impressions) as impressions, SUM(clicks) as clicks, SUM(visible_impressions) as visible_impressions, sum(video_25) as video_25, sum(video_50) as video_50, sum(video_75) as video_75, sum(video_100) as video_100')
             ->where('campaign_id', $campaign->id)
             ->when($startDate && $endDate, fn($q) => $q->whereBetween('report_date', [$startDate, $endDate]))
             ->orderByDesc('report_date')
@@ -170,6 +182,16 @@ class DashboardController extends Controller
             'cpm' => $cpm,
             'cpc' => $cpc,
         ];
+        // Add video metrics if campaign is video
+        if ($campaign->is_video) {
+            $videoComplete = \App\Models\CampaignData::where('campaign_id', $campaign->id)
+                ->when($startDate && $endDate ?? false, fn($q) => $q->whereBetween('report_date', [$startDate, $endDate]))
+                ->sum('video_100');
+
+            $summary['video_complete'] = $videoComplete;
+            $summary['cpv'] = $videoComplete > 0 ? round($spent / $videoComplete, 4) : 0;
+            $summary['vcr'] = $summary['impressions'] > 0 ? round($videoComplete / $summary['impressions'] * 100, 2) : 0;
+        }
 
         $campaignDataByPlacement = PlacementData::where('campaign_id', $campaign->id)
             ->selectRaw('name as name, sum(impressions) as impressions, sum(clicks) as clicks, sum(visible_impressions) as visible')
