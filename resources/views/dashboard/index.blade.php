@@ -182,11 +182,11 @@
                                                                 <th class="px-4 py-2 text-left">Clicks</th>
                                                                 <th class="px-4 py-2 text-left">CTR</th>
                                                                 @if ($campaign->is_video)
-                                                                        <th class="px-4 py-2 text-left">Video Views 25%
+                                                                        <th class="px-4 py-2 text-left">Video 25%
                                                                         </th>
-                                                                        <th class="px-4 py-2 text-left">Video Views 50%
+                                                                        <th class="px-4 py-2 text-left">Video 50%
                                                                         </th>
-                                                                        <th class="px-4 py-2 text-left">Video Views 75%
+                                                                        <th class="px-4 py-2 text-left">Video 75%
                                                                         </th>
                                                                         <th class="px-4 py-2 text-left">Video Completes
                                                                         </th>
