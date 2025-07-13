@@ -54,7 +54,6 @@ class DashboardController extends Controller
             $summary['cpv'] = $videoComplete > 0 ? round($spent / $videoComplete, 4) : 0;
             $summary['vcr'] = $summary['impressions'] > 0 ? round($videoComplete / $summary['impressions'] * 100, 2) : 0;
         }
-
         $campaignData = CampaignData::where('campaign_id', $campaign->id)
             ->when($startDate && $endDate, fn($q) => $q->whereBetween('report_date', [$startDate, $endDate]))
             ->orderBy('report_date')
@@ -89,6 +88,7 @@ class DashboardController extends Controller
         if ($allClicks > 0) {
             $cpc = $spent / $allClicks;
         }
+
         return view('dashboard.index', compact(
             'campaign',
             'summary',
@@ -128,6 +128,8 @@ class DashboardController extends Controller
             'visibility' => $visibility,
         ];
     }
+
+
     public function exportExcel(Campaign $campaign)
     {
         $this->authorize('view', $campaign);
@@ -194,12 +196,11 @@ class DashboardController extends Controller
         }
 
         $campaignDataByPlacement = PlacementData::where('campaign_id', $campaign->id)
-            ->selectRaw('name as name, sum(impressions) as impressions, sum(clicks) as clicks, sum(visible_impressions) as visible')
+            ->selectRaw('name as name, sum(impressions) as impressions, sum(clicks) as clicks, sum(visible_impressions) as visible, sum(video_25) video_25, sum(video_50) video_50, sum(video_75) video_75, sum(video_100) video_100')
             ->groupBy('name')
             ->orderByDesc('impressions')
             ->get()
             ->toArray();
-
         return Excel::download(
             new CampaignExport($campaign, $summary, $campaignDataByDate, $campaignDataByPlacement, $startDate, $endDate),
             'MadData_' . $campaign->name . '.xlsx'

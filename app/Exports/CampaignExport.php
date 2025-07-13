@@ -30,8 +30,8 @@ class CampaignExport implements WithMultipleSheets
     {
         return [
             new CampaignSummarySheet($this->campaign, $this->summary),
-            new CampaignByDatesSheet($this->campaignData, $this->startDate, $this->endDate),
-            new CampaignByPlacementsSheet($this->campaignDataByPlacement),
+            new CampaignByDatesSheet($this->campaignData, $this->startDate, $this->endDate, $this->campaign),
+            new CampaignByPlacementsSheet($this->campaignDataByPlacement, $this->campaign),
         ];
     }
 }

@@ -12,12 +12,14 @@ class CampaignByDatesSheet implements FromView, WithTitle, WithColumnWidths
     protected $campaignData;
     protected $startDate;
     protected $endDate;
+    protected $campaign;
 
-    public function __construct($campaignData, $startDate, $endDate)
+    public function __construct($campaignData, $startDate, $endDate, $campaign)
     {
         $this->campaignData = $campaignData;
         $this->startDate = $startDate;
         $this->endDate = $endDate;
+        $this->campaign = $campaign;
     }
     public function title(): string
     {
@@ -26,6 +28,7 @@ class CampaignByDatesSheet implements FromView, WithTitle, WithColumnWidths
     public function view(): View
     {
         return view('exports.campaign_by_dates', [
+            'campaign' => $this->campaign,
             'campaignData' => $this->campaignData,
             'startDate' => $this->startDate,
             'endDate' => $this->endDate,

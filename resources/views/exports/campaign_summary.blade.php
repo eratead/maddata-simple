@@ -35,6 +35,15 @@
                         <td>{{ $summary['unique_users'] > 0 ? round($summary['impressions'] / $summary['unique_users'], 2) : 0 }}
                         </td>
                 </tr>
+                <tr>
+                        <td>Video Completes</td>
+                        <td>{{ $summary['video_completes'] ?? 0 }}</td>
+                </tr>
+                <tr>
+                        <td>VCR (%)</td>
+                        <td>{{ $summary['impressions'] > 0 ? round((($summary['video_completes'] ?? 0) / $summary['impressions']) * 100, 2) : 0 }}
+                        </td>
+                </tr>
                 @if ($user->can_view_budget)
                         <tr>
                                 <td>Budget</td>
@@ -51,6 +60,11 @@
                         <tr>
                                 <td>CPC</td>
                                 <td>{{ round($summary['cpc'], 2) }}</td>
+                        </tr>
+                        <tr>
+                                <td>Avr. CPV</td>
+                                <td>{{ round($summary['cpv'], 2) }}
+                                </td>
                         </tr>
                 @endif
         </tbody>

@@ -10,10 +10,12 @@ use Maatwebsite\Excel\Concerns\WithColumnWidths;
 class CampaignByPlacementsSheet implements FromView, WithTitle, WithColumnWidths
 {
     protected $campaignDataByPlacement;
+    protected $campaign;
 
-    public function __construct($campaignDataByPlacement)
+    public function __construct($campaignDataByPlacement, $campaign)
     {
         $this->campaignDataByPlacement = $campaignDataByPlacement;
+        $this->campaign = $campaign;
     }
     public function title(): string
     {
@@ -22,6 +24,7 @@ class CampaignByPlacementsSheet implements FromView, WithTitle, WithColumnWidths
     public function view(): View
     {
         return view('exports.campaign_by_placements', [
+            'campaign' => $this->campaign,
             'campaignDataByPlacement' => $this->campaignDataByPlacement,
         ]);
     }
