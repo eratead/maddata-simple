@@ -169,7 +169,7 @@ class DashboardController extends Controller
 
         $cpc = 0;
         if ($allClicks > 0) {
-            $cpc = $campaign->budget / $allClicks;
+            $cpc = $spent / $allClicks;
         }
 
         $summary = [
