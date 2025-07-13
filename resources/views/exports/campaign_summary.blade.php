@@ -37,11 +37,11 @@
                 </tr>
                 <tr>
                         <td>Video Completes</td>
-                        <td>{{ $summary['video_completes'] ?? 0 }}</td>
+                        <td>{{ $summary['video_complete'] ?? 0 }}</td>
                 </tr>
                 <tr>
                         <td>VCR (%)</td>
-                        <td>{{ $summary['impressions'] > 0 ? round((($summary['video_completes'] ?? 0) / $summary['impressions']) * 100, 2) : 0 }}
+                        <td>{{ $summary['vcr'] }}
                         </td>
                 </tr>
                 @if ($user->can_view_budget)
