@@ -47,7 +47,7 @@
                         </tr>
                         <tr>
                                 <td>Spent</td>
-                                <td>{{ round($summary['spent'], 2) }}</td>
+                                <td>{{ round($summary['spent'], 0) }}</td>
                         </tr>
                         <tr>
                                 <td>CPM</td>
