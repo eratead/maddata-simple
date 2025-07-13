@@ -22,6 +22,7 @@
                                 dom: '<"flex justify-between items-center mb-4"<"search"f><"length"l>>tip',
                                 columnDefs: @json($columnDefs),
                                 order: @json($order),
+                                stateSave: true,
                         });
                 }
         });
