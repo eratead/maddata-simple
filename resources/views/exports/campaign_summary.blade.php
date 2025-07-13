@@ -33,7 +33,7 @@
                 </tr>
                 <tr>
                         <td>Pacing (%)</td>
-                        <td>{{ $summary['impressions'] > 0 ? round($summary['impressions'] / $summary['expected_impressions'], 2) : 0 }}
+                        <td>{{ $summary['impressions'] > 0 ? round(($summary['impressions'] / $summary['expected_impressions']) * 100, 2) : 0 }}
                         </td>
                 </tr>
                 <tr>
