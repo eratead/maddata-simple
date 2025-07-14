@@ -12,11 +12,11 @@
         <tbody>
                 <tr>
                         <td>Impressions</td>
-                        <td>{{ $summary['impressions'] }}</td>
+                        <td>{{ number_format($summary['impressions'], 0) }}</td>
                 </tr>
                 <tr>
                         <td>Clicks</td>
-                        <td>{{ $summary['clicks'] }}</td>
+                        <td>{{ number_format($summary['clicks'], 0) }}</td>
                 </tr>
                 <tr>
                         <td>CTR (%)</td>
@@ -24,7 +24,7 @@
                 </tr>
                 <tr>
                         <td>Reach</td>
-                        <td>{{ $summary['unique_users'] }}</td>
+                        <td>{{ number_format($summary['unique_users'], 0) }}</td>
                 </tr>
                 <tr>
                         <td>Frequency</td>
@@ -43,11 +43,11 @@
                 @if ($user->can_view_budget)
                         <tr>
                                 <td>Budget</td>
-                                <td>{{ $summary['budget'] }}</td>
+                                <td>{{ number_format($summary['budget'], 0) }}</td>
                         </tr>
                         <tr>
                                 <td>Spent</td>
-                                <td>{{ round($summary['spent'], 0) }}</td>
+                                <td>{{ number_format(round($summary['spent'], 0), 0) }}</td>
                         </tr>
                         <tr>
                                 <td>CPM</td>
@@ -62,7 +62,7 @@
                 @if ($campaign->is_video)
                         <tr>
                                 <td>Video Complete</td>
-                                <td>{{ $summary['video_complete'] ?? 0 }}</td>
+                                <td>{{ number_format($summary['video_complete'] ?? 0, 0) }}</td>
                         </tr>
                         @if ($user->can_view_budget)
                                 <tr>

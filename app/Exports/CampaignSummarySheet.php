@@ -9,8 +9,11 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithDrawings;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class CampaignSummarySheet implements FromView, WithTitle, WithDrawings, WithColumnWidths
+class CampaignSummarySheet implements FromView, WithTitle, WithDrawings, WithColumnWidths, WithColumnFormatting, WithStyles
 {
     protected $campaign;
     protected $summary;
@@ -51,7 +54,17 @@ class CampaignSummarySheet implements FromView, WithTitle, WithDrawings, WithCol
     {
         return [
             'A' => 25,
-            'B' => 25,
+            'B' => 15,
         ];
+    }
+    public function columnFormats(): array
+    {
+        return [
+            'B' => '#,##0.00', // applies to column B
+        ];
+    }
+    public function styles(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet)
+    {
+        $sheet->getStyle('B:B')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT);
     }
 }
