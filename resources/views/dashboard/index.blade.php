@@ -86,7 +86,9 @@
 
                         <!-- Tabs -->
                         <div class="bg-white shadow rounded p-4 md:col-span-3 overflow-x-scroll hide-scrollbar"
-                                x-data="{ activeTab: 'date' }">
+                                x-data="{
+                                    activeTab: localStorage.getItem('dashboardActiveTab') || 'date'
+                                }" x-init="$watch('activeTab', value => localStorage.setItem('dashboardActiveTab', value))">
                                 <x-dates-filter action="{{ route('dashboard.campaign', $campaign->id) }}"
                                         :first-report-date="$firstReportDate" />
 

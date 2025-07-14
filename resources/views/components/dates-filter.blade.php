@@ -1,7 +1,7 @@
 @props(['action', 'firstReportDate'])
 
 <form x-data="{
-    range: '',
+    range: localStorage.getItem('dateRange') || '',
     start: '{{ request('start_date') ?? '' }}',
     end: '{{ request('end_date') ?? '' }}',
     init() {
@@ -14,6 +14,7 @@
             this.end = today;
             $refs.end_date.value = this.end;
         }
+        this.$watch('range', value => localStorage.setItem('dateRange', value));
     },
     updateDates(range) {
         const today = new Date();
@@ -59,18 +60,15 @@
         <div>
                 {{-- <label for="date_range" class="block text-sm font-medium text-gray-700">Date Range</label> --}}
                 <select id="date_range" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
+                        x-model="range"
                         @change="updateDates($event.target.value); $dispatch('daterange-changed', $event.target.value)">
-                        <option value="" disabled selected>Select dates</option>
-                        <option value="all" {{ request('date_range') === 'all' ? 'selected' : '' }}>All</option>
-                        <option value="today" {{ request('date_range') === 'today' ? 'selected' : '' }}>Today</option>
-                        <option value="yesterday" {{ request('date_range') === 'yesterday' ? 'selected' : '' }}>
-                                Yesterday</option>
-                        <option value="week_to_date" {{ request('date_range') === 'week_to_date' ? 'selected' : '' }}>
-                                Week to Date</option>
-                        <option value="month_to_date" {{ request('date_range') === 'month_to_date' ? 'selected' : '' }}>
-                                Month to Date</option>
-                        <option value="year_to_date" {{ request('date_range') === 'year_to_date' ? 'selected' : '' }}>
-                                Year to Date</option>
+                        <option value="" disabled>Select dates</option>
+                        <option value="all">All</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week_to_date">Week to Date</option>
+                        <option value="month_to_date">Month to Date</option>
+                        <option value="year_to_date">Year to Date</option>
                 </select>
         </div>
 
