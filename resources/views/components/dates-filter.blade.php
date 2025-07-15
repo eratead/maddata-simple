@@ -23,8 +23,6 @@
         let end = new Date(today);
 
         switch (range) {
-            case 'today':
-                break;
             case 'yesterday':
                 start.setDate(today.getDate() - 1);
                 end = new Date(start);
@@ -38,8 +36,11 @@
             case 'year_to_date':
                 start = new Date(today.getFullYear(), 0, 1);
                 break;
+            case 'last_7_days':
+                start.setDate(today.getDate() - 6);
+                break;
             case 'all':
-                this.start = '2025-01-01';
+                this.start = '{{ $firstReportDate }}';
                 this.end = today.toISOString().split('T')[0];
                 $refs.start_date.value = this.start;
                 $refs.end_date.value = this.end;
@@ -63,10 +64,10 @@
                         x-model="range"
                         @change="updateDates($event.target.value); $dispatch('daterange-changed', $event.target.value)">
                         <option value="" disabled>Select dates</option>
-                        <option value="all">All</option>
-                        <option value="today">Today</option>
+                        <option value="all">Lifetime</option>
                         <option value="yesterday">Yesterday</option>
                         <option value="week_to_date">Week to Date</option>
+                        <option value="last_7_days">Last 7 Days</option>
                         <option value="month_to_date">Month to Date</option>
                         <option value="year_to_date">Year to Date</option>
                 </select>
@@ -79,14 +80,14 @@
                         <input x-ref="start_date" name="start_date" type="date" id="start_date" x-model="start"
                                 value="{{ request('start_date') ?? \Carbon\Carbon::today()->toDateString() }}"
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
-                                @change="$refs.form.submit()">
+                                @change="range = ''; $refs.form.submit()">
                 </div>
                 <div>
                         {{-- <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label> --}}
                         <input x-ref="end_date" name="end_date" type="date" id="end_date" x-model="end"
                                 value="{{ request('end_date') ?? date('Y-m-d') }}"
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
-                                @change="$refs.form.submit()">
+                                @change="range = ''; $refs.form.submit()">
                 </div>
         </div>
 </form>

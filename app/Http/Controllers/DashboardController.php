@@ -70,8 +70,16 @@ class DashboardController extends Controller
             ->get();
 
         $firstReportDate = CampaignData::where('campaign_id', $campaign->id)->min('report_date');
-        $allImpressions = \App\Models\CampaignData::where('campaign_id', $campaign->id)->sum('impressions');
-        $allClicks = \App\Models\CampaignData::where('campaign_id', $campaign->id)->sum('clicks');
+        if ($startDate || $endDate) {
+            $allImpressions = \App\Models\CampaignData::where('campaign_id', $campaign->id)->whereBetween('report_date', [$startDate, $endDate])->sum('impressions');
+        } else {
+            $allImpressions = \App\Models\CampaignData::where('campaign_id', $campaign->id)->sum('impressions');
+        }
+        if ($startDate || $endDate) {
+            $allClicks = \App\Models\CampaignData::where('campaign_id', $campaign->id)->whereBetween('report_date', [$startDate, $endDate])->sum('clicks');
+        } else {
+            $allClicks = \App\Models\CampaignData::where('campaign_id', $campaign->id)->sum('clicks');
+        }
 
         $cpm = 0;
         $cpc = 0;
@@ -157,8 +165,17 @@ class DashboardController extends Controller
         $visibility = $summaryBase['impressions'] ? round($summaryBase['visible'] / $summaryBase['impressions'] * 100, 2) : 0;
 
         $budget = $campaign->budget;
-        $allImpressions = CampaignData::where('campaign_id', $campaign->id)->sum('impressions');
-        $allClicks = CampaignData::where('campaign_id', $campaign->id)->sum('clicks');
+
+        if ($startDate || $endDate) {
+            $allImpressions = CampaignData::where('campaign_id', $campaign->id)->whereBetween('report_date', [$startDate, $endDate])->sum('impressions');
+        } else {
+            $allImpressions = CampaignData::where('campaign_id', $campaign->id)->sum('impressions');
+        }
+        if ($startDate || $endDate) {
+            $allClicks = CampaignData::where('campaign_id', $campaign->id)->whereBetween('report_date', [$startDate, $endDate])->sum('clicks');
+        } else {
+            $allClicks = CampaignData::where('campaign_id', $campaign->id)->sum('clicks');
+        }
 
         $cpm = 0;
         if ($campaign->expected_impressions > 0) {
