@@ -239,6 +239,10 @@
                 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                 <canvas id="campaignChart" style="width: 100%; height: 400px;"></canvas>
                 <script>
+                        if (localStorage.getItem('campaign_id') != {{ $campaign->id }}) {
+                                localStorage.setItem('dateRange', '')
+                                localStorage.setItem('campaign_id', {{ $campaign->id }});
+                        }
                         document.addEventListener('DOMContentLoaded', () => {
                                 const ctx = document.getElementById('campaignChart');
                                 if (!ctx) return;

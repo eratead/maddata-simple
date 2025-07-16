@@ -1,7 +1,7 @@
 <table>
         <thead>
                 <tr>
-                        <th>Site</th>
+                        <th>Placement</th>
                         <th>Impressions</th>
                         <th>Clicks</th>
                         <th>CTR (%)</th>
