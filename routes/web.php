@@ -56,14 +56,12 @@ Route::prefix('api/reports')->middleware(['auth:sanctum', 'check-token-expiry'])
 /// API token
 use App\Http\Controllers\TokenController;
 
-if (app()->runningInConsole() || app('router')->has('login')) {
-    Route::middleware('auth')->group(function () {
-        Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
-        Route::post('/tokens', [TokenController::class, 'store'])->name('tokens.create');
-        Route::delete('/tokens/{id}', [TokenController::class, 'destroy'])->name('tokens.destroy');
-        Route::post('/tokens/{id}/extend', [TokenController::class, 'extend'])->name('tokens.extend');
-    });
-}
+Route::middleware('auth')->group(function () {
+    Route::get('/tokens', [TokenController::class, 'index'])->name('tokens.index');
+    Route::post('/tokens', [TokenController::class, 'store'])->name('tokens.create');
+    Route::delete('/tokens/{id}', [TokenController::class, 'destroy'])->name('tokens.destroy');
+    Route::post('/tokens/{id}/extend', [TokenController::class, 'extend'])->name('tokens.extend');
+});
 
 
 require __DIR__ . '/auth.php';
