@@ -68,7 +68,10 @@
                                 <x-slot name="content">
                                         <x-dropdown-link :href="route('profile.edit')">{{ __('My Account') }}</x-dropdown-link>
                                         @auth
-                                                <x-dropdown-link :href="route('tokens.index')">{{ __('API') }}</x-dropdown-link>
+                                                @if (\Illuminate\Support\Facades\Route::has('tokens.index'))
+                                                        <x-dropdown-link
+                                                                :href="route('tokens.index')">{{ __('API') }}</x-dropdown-link>
+                                                @endif
                                         @endauth
                                         <form method="POST" action="{{ route('logout') }}">
                                                 @csrf
