@@ -127,7 +127,7 @@ class ReportApiController extends Controller
     {
         $start = request('start');
         $end = request('end');
-
+        dump($start);
         $campaigns = \App\Models\Campaign::with('client')
             ->when($start && $end, function ($query) use ($start, $end) {
                 $query->whereBetween('created_at', [$start, $end]);
