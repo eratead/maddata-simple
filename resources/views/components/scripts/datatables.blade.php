@@ -22,6 +22,7 @@
                                 columnDefs: @json($columnDefs),
                                 order: @json($order),
                                 stateSave: true,
+                                pageLength: 25,
                         });
                 }
         });
