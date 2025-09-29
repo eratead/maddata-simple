@@ -100,4 +100,5 @@
                         </tbody>
                 </table>
         </x-page-box>
+
 </x-app-layout>

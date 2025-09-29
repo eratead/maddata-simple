@@ -240,9 +240,37 @@
                 <canvas id="campaignChart" style="width: 100%; height: 400px;"></canvas>
                 <script>
                         if (localStorage.getItem('campaign_id') != {{ $campaign->id }}) {
-                                localStorage.setItem('dateRange', '')
+                                localStorage.removeItem('dateRange');
+                                localStorage.removeItem('dashboardActiveTab');
                                 localStorage.setItem('campaign_id', {{ $campaign->id }});
                         }
+
+                        // After switching (or on any load), clean up expired keys (2h TTL expected)
+                        (function() {
+                                function removeIfExpired(key) {
+                                        const raw = localStorage.getItem(key);
+                                        if (!raw) return;
+                                        // Prefer shared helper if available
+                                        if (window.getWithExpiry) {
+                                                const val = window.getWithExpiry(key);
+                                                if (val === null) {
+                                                        localStorage.removeItem(key);
+                                                }
+                                                return;
+                                        }
+                                        // Fallback: parse JSON and check `expiry`
+                                        try {
+                                                const obj = JSON.parse(raw);
+                                                if (obj && typeof obj === 'object' && obj.expiry && Date.now() > obj.expiry) {
+                                                        localStorage.removeItem(key);
+                                                }
+                                        } catch (e) {
+                                                // Not a JSON with expiry – leave as-is
+                                        }
+                                }
+                                removeIfExpired('dateRange');
+                                removeIfExpired('dashboardActiveTab');
+                        })();
                         document.addEventListener('DOMContentLoaded', () => {
                                 const ctx = document.getElementById('campaignChart');
                                 if (!ctx) return;
@@ -309,12 +337,5 @@
                         });
                 </script>
         </x-page-box>
-        {{--
-@can('viewBudget', auth()->user())
-    <li><strong>Budget:</strong> {{ number_format($budget ?? 0) }}</li>
-    <li><strong>Spent:</strong> {{ number_format($spent ?? 0) }}</li>
-    <li><strong>CPM:</strong> {{ number_format($cpm ?? 0, 2) }}</li>
-    <li><strong>CPC:</strong> {{ number_format($cpc ?? 0, 2) }}</li>
-@endcan
---}}
+
 </x-app-layout>
