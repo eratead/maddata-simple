@@ -8,7 +8,15 @@ use Illuminate\Database\Eloquent\Model;
 class Campaign extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'client_id', 'expected_impressions', 'budget', 'is_video'];
+    protected $fillable = [
+        'name',
+        'client_id',
+        'expected_impressions',
+        'budget',
+        'is_video',
+        'start_date',
+        'end_date',
+    ];
 
     public function client()
     {

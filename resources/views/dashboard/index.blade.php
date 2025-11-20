@@ -28,11 +28,26 @@
                                         <li class="flex items-center space-x-2">
                                                 <strong class="whitespace-nowrap">Pacing :</strong>
                                                 @if (!empty($summary['expected_impressions']))
-                                                        <div title="{{ number_format(($summary['impressions'] / $summary['expected_impressions']) * 100, 2) }}%"
+                                                        @php
+                                                                $pacingPercent =
+                                                                    $summary['expected_impressions'] > 0
+                                                                        ? min(
+                                                                            100,
+                                                                            ($summary['impressions'] /
+                                                                                $summary['expected_impressions']) *
+                                                                                100,
+                                                                        )
+                                                                        : 0;
+                                                        @endphp
+                                                        <div title="{{ number_format($pacingPercent, 2) }}%"
                                                                 class="relative w-24 h-3 bg-gray-200 rounded overflow-hidden">
                                                                 <div class="absolute top-0 left-0 h-full bg-green-500"
-                                                                        style="width: {{ min(100, ($summary['impressions'] / $summary['expected_impressions']) * 100) }}%">
+                                                                        style="width: {{ $pacingPercent }}%">
                                                                 </div>
+                                                                <span
+                                                                        class="absolute inset-0 flex items-center justify-center text-[10px] text-black font-semibold">
+                                                                        {{ number_format($pacingPercent, 1) }}%
+                                                                </span>
                                                         </div>
                                                 @else
                                                         <span>—</span>

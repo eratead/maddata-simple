@@ -37,13 +37,47 @@ class CampaignController extends Controller
 
         $campaigns = $campaigns->get();
 
+        // Calculate pacing data for campaigns (impressions vs expected impressions)
+        $pacingData = [];
+        $campaignIds = $campaigns->pluck('id');
+
+        if ($campaignIds->isNotEmpty()) {
+            // Sum impressions per campaign from CampaignData
+            $impressionsByCampaign = CampaignData::selectRaw('campaign_id, SUM(impressions) as total_impressions')
+                ->whereIn('campaign_id', $campaignIds)
+                ->groupBy('campaign_id')
+                ->pluck('total_impressions', 'campaign_id');
+
+            foreach ($campaigns as $campaign) {
+                $expected = $campaign->expected_impressions ?? 0;
+                $impressions = $impressionsByCampaign[$campaign->id] ?? 0;
+
+                if ($expected > 0) {
+                    $rawPercent = ($impressions / $expected) * 100;
+                    $pacingData[$campaign->id] = [
+                        'impressions' => $impressions,
+                        'expected_impressions' => $expected,
+                        'percent' => min(100, $rawPercent),
+                        'percent_raw' => $rawPercent,
+                    ];
+                } else {
+                    $pacingData[$campaign->id] = [
+                        'impressions' => $impressions,
+                        'expected_impressions' => $expected,
+                        'percent' => null,
+                        'percent_raw' => null,
+                    ];
+                }
+            }
+        }
+
         $clientName = null;
         if ($client_id != 0) {
             $client = Client::find($client_id);
             $clientName = $client?->name;
         }
         $clients = $user->is_admin ? Client::all() : $user->clients;
-        return view('campaigns.index', compact('campaigns', 'clientName', 'clients'));
+        return view('campaigns.index', compact('campaigns', 'clientName', 'clients', 'pacingData'));
     }
 
     public function create()
@@ -62,9 +96,16 @@ class CampaignController extends Controller
             'client_id' => 'required|exists:clients,id',
             'expected_impressions' => 'nullable|integer|min:0',
             'budget' => 'nullable|integer|min:0',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         $campaign = Campaign::create($validated);
+
+        if (empty($campaign->start_date)) {
+            $campaign->start_date = $campaign->created_at->toDateString();
+            $campaign->save();
+        }
 
         return redirect()->route('campaigns.index')->with('success', 'Campaign created successfully.');
     }
@@ -254,9 +295,17 @@ class CampaignController extends Controller
             'client_id' => 'required|exists:clients,id',
             'expected_impressions' => 'nullable|integer|min:0',
             'budget' => 'nullable|integer|min:0',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         $campaign->update($validated);
+
+        $campaign->refresh();
+        if (empty($campaign->start_date)) {
+            $campaign->start_date = $campaign->created_at->toDateString();
+            $campaign->save();
+        }
 
         return redirect()->route('campaigns.index')->with('success', 'Campaign updated successfully.');
     }

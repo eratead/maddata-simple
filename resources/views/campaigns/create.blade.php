@@ -38,6 +38,18 @@
                                         class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
                         </div>
 
+                        <div>
+                                <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                                <input type="date" name="start_date"
+                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        </div>
+
+                        <div>
+                                <label class="block text-sm font-medium text-gray-700">End Date</label>
+                                <input type="date" name="end_date"
+                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        </div>
+
                         <div class="flex justify-end">
                                 <button type="submit"
                                         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">

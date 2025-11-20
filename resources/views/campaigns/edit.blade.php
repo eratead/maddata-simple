@@ -44,6 +44,19 @@
                                         class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
                         </div>
 
+                        <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                                <input type="date" name="start_date"
+                                        value="{{ old('start_date', $campaign->start_date ? \Carbon\Carbon::parse($campaign->start_date)->format('Y-m-d') : '') }}"
+                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        </div>
+
+                        <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700">End Date</label>
+                                <input type="date" name="end_date"
+                                        value="{{ old('end_date', $campaign->end_date ? \Carbon\Carbon::parse($campaign->end_date)->format('Y-m-d') : '') }}"
+                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        </div>
                         <div class="text-right">
                                 <button type="submit"
                                         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
