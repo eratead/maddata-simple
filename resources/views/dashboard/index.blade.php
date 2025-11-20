@@ -31,12 +31,9 @@
                                                         @php
                                                                 $pacingPercent =
                                                                     $summary['expected_impressions'] > 0
-                                                                        ? min(
-                                                                            100,
-                                                                            ($summary['impressions'] /
+                                                                        ? ($summary['impressions'] /
                                                                                 $summary['expected_impressions']) *
-                                                                                100,
-                                                                        )
+                                                                            100
                                                                         : 0;
                                                         @endphp
                                                         <div title="{{ number_format($pacingPercent, 2) }}%"
@@ -45,8 +42,8 @@
                                                                         style="width: {{ $pacingPercent }}%">
                                                                 </div>
                                                                 <span
-                                                                        class="absolute inset-0 flex items-center justify-center text-[10px] text-black font-semibold">
-                                                                        {{ number_format($pacingPercent, 1) }}%
+                                                                        class="absolute inset-0 flex items-center justify-center text-[10px] text-black ">
+                                                                        {{ number_format($pacingPercent, 0) }}%
                                                                 </span>
                                                         </div>
                                                 @else

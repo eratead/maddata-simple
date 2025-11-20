@@ -39,7 +39,7 @@
                     ['targets' => 2, 'visible' => false, 'searchable' => true],
                     //['targets' => 3, 'orderable' => true, 'width' => '8rem'],
                     // ['targets' => 4, 'orderable' => false, 'searchable' => false, 'width' => '8rem'],
-                ]" :order="[3, 'desc']" />
+                ]" :order="[2, 'desc']" />
                 <table id="campaigns-table" class="min-w-full bg-white shadow rounded">
                         <thead class="bg-gray-100 text-sm text-gray-600">
                                 <tr>
@@ -85,7 +85,10 @@
                                                 <td class="px-4 py-2 hidden">{{ $campaign->client->agency ?? '' }}
                                                 </td>
                                                 <td class="px-4 py-2">
-                                                        {{ $campaign->start_date ? \Carbon\Carbon::parse($campaign->start_date)->format('d M Y') : '' }}
+                                                        @php
+                                                                $start = $campaign->start_date ?: $campaign->created_at;
+                                                        @endphp
+                                                        {{ \Carbon\Carbon::parse($start)->format('d M Y') }}
                                                 </td>
                                                 <td class="px-4 py-2">
                                                         {{ $campaign->end_date ? \Carbon\Carbon::parse($campaign->end_date)->format('d M Y') : '' }}
@@ -101,7 +104,7 @@
                                                                                 style="width: {{ min(100, $p['percent_raw']) }}%">
                                                                         </div>
                                                                         <span
-                                                                                class="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-black">
+                                                                                class="absolute inset-0 flex items-center justify-center text-[10px]  text-black">
                                                                                 {{ number_format($p['percent_raw'], 0) }}%
                                                                         </span>
                                                                 </div>
