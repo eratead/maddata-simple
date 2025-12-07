@@ -197,6 +197,7 @@ class ReportApiController extends Controller
                     'id' => $campaign->id,
                     'name' => $campaign->name,
                     'client_name' => $campaign->client->name ?? '',
+                    'client_id' => $campaign->client->id ?? '',
                     'created_at' => $campaign->created_at->toDateTimeString(),
                 ];
             });
