@@ -31,7 +31,7 @@ class ReportApiController extends Controller
             'campaign_name' => $campaign->name,
             'campaign_start' => $campaign->start_date
                 ? Carbon::parse($campaign->start_date)->toDateString()
-                : null,
+                : $campaign->created_at->toDateString(),
             'campaign_end' => $campaign->end_date
                 ? Carbon::parse($campaign->end_date)->toDateString()
                 : null,
