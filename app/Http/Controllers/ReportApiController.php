@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Campaign;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Carbon;
 
 class ReportApiController extends Controller
 {
@@ -15,7 +16,6 @@ class ReportApiController extends Controller
         $this->authorize('view', $campaign);
         $start = request('start');
         $end = request('end');
-
 
         // Apply optional date filtering for summary
         $data = $campaign->data()
@@ -29,6 +29,12 @@ class ReportApiController extends Controller
         $summary = [
             'campaign_id' => $campaign->id,
             'campaign_name' => $campaign->name,
+            'campaign_start' => $campaign->start_date
+                ? Carbon::parse($campaign->start_date)->toDateString()
+                : null,
+            'campaign_end' => $campaign->end_date
+                ? Carbon::parse($campaign->end_date)->toDateString()
+                : null,
             'impressions' => $sumImpressions,
             'clicks' => $sumClicks,
             'ctr' => round($sumClicks / max(1, $sumImpressions) * 100, 2),
@@ -61,7 +67,6 @@ class ReportApiController extends Controller
             }
             $summary['vcr'] = $sumImpressions > 0 ? round($videoComplete / $sumImpressions * 100, 2) : 0;
         }
-
         return response()->json($summary, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
