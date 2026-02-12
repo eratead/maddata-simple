@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \App\Models\Creative::observe(\App\Observers\CreativeObserver::class);
+        \App\Models\CreativeFile::observe(\App\Observers\CreativeFileObserver::class);
     }
 }

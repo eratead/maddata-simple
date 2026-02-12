@@ -39,14 +39,34 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('auth')
         ->name('dashboard.campaign');
 
+    // Creative Routes
+    Route::controller(\App\Http\Controllers\CreativeController::class)->group(function () {
+        Route::get('campaigns/{campaign}/creatives/create', 'create')->name('creatives.create');
+        Route::post('campaigns/{campaign}/creatives', 'store')->name('creatives.store');
+        Route::get('creatives/{creative}/edit', 'edit')->name('creatives.edit');
+        Route::put('creatives/{creative}', 'update')->name('creatives.update');
+        Route::delete('creatives/{creative}', 'destroy')->name('creatives.destroy');
+        // File management
+        Route::post('/creatives/{creative}/upload', 'upload')->name('creatives.upload');
+        Route::delete('/creatives/files/{file}', 'deleteFile')->name('creatives.files.delete');
+        Route::get('/creatives/files/{file}/preview', 'preview')->name('creatives.files.preview');
+        Route::get('/creatives/files/{file}/download', 'downloadFile')->name('creatives.files.download');
+        Route::get('/creatives/{creative}/download-all', 'downloadAll')->name('creatives.download-all');
+    })->middleware('auth');
+
     Route::get('/dashboard/{campaign}/export', [DashboardController::class, 'exportExcel'])->name('dashboard.export.excel');
 
     Route::get('/users/{user}/attach-client', [UserController::class, 'attachClient'])->name('users.attach-client');
+
+    // Admin Routes
+    Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(function () {
+        Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+    });
 });
 
 /// API
 Route::prefix('api/reports')->middleware(['auth:sanctum', 'check-token-expiry'])->group(function () {
-    Route::get('/summary/{campaign}', [ReportApiController::class, 'summary']);
+    Route::get('/summary/{campaign}', [ReportApiController::class, 'summary'])->name('reports.summary');
     Route::get('/by-date/{campaign}', [ReportApiController::class, 'byDate']);
     Route::get('/by-placement/{campaign}', [ReportApiController::class, 'byPlacement']);
     Route::get('/campaigns', [\App\Http\Controllers\ReportApiController::class, 'campaigns']);

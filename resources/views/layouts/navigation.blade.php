@@ -32,15 +32,15 @@
                                                         </button>
                                                 </x-slot>
                                                 <x-slot name="content">
-                                                        <x-dropdown-link
-                                                                :href="route('clients.index')">{{ __('Clients') }}</x-dropdown-link>
-                                                        @auth
-                                                                @if (auth()->user()->is_admin)
-                                                                        <x-dropdown-link :href="route('users.index')">
-                                                                                {{ __('Users') }}
-                                                                        </x-dropdown-link>
-                                                                @endif
-                                                        @endauth
+                                                        <x-dropdown-link :href="route('clients.index')">
+                                                                {{ __('Clients') }}
+                                                        </x-dropdown-link>
+                                                        <x-dropdown-link :href="route('users.index')">
+                                                                {{ __('Users') }}
+                                                        </x-dropdown-link>
+                                                        <x-dropdown-link :href="route('admin.activity-logs.index')">
+                                                                {{ __('Activity Logs') }}
+                                                        </x-dropdown-link>
                                                 </x-slot>
                                         </x-dropdown>
                                 @endif
@@ -109,6 +109,9 @@
                                 </x-responsive-nav-link>
                                 <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
                                         {{ __('Manage Users') }}
+                                </x-responsive-nav-link>
+                                <x-responsive-nav-link :href="route('admin.activity-logs.index')" :active="request()->routeIs('admin.activity-logs.index')">
+                                        {{ __('Activity Logs') }}
                                 </x-responsive-nav-link>
                         @endif
                 </div>

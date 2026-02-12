@@ -45,8 +45,10 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'is_admin' => $request->has('is_admin'),
+            'receive_activity_notifications' => $request->has('is_admin') && $request->has('receive_activity_notifications'),
             'is_report' => $request->has('is_report'),
             'can_view_budget' => $request->has('can_view_budget'),
+            'receive_activity_notifications' => $request->has('receive_activity_notifications'),
         ]);
 
         // Attach selected clients
@@ -97,8 +99,10 @@ class UserController extends Controller
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->is_admin = $request->has('is_admin');
+        $user->receive_activity_notifications = $request->has('is_admin') && $request->has('receive_activity_notifications');
         $user->is_report = $request->has('is_report');
         $user->can_view_budget = $request->has('can_view_budget');
+        $user->receive_activity_notifications = $request->has('receive_activity_notifications');
 
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);

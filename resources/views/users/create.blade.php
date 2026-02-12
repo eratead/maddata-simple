@@ -141,6 +141,13 @@
                                         <span class="ml-2 text-sm text-gray-700">Can View Budget</span>
                                 </label>
                         </div>
+                        <div x-show="document.querySelector('input[name=is_admin]').checked">
+                                <label class="inline-flex items-center">
+                                        <input type="checkbox" name="receive_activity_notifications"
+                                                class="rounded border-gray-300">
+                                        <span class="ml-2 text-sm text-gray-700">Receive Activity Notifications</span>
+                                </label>
+                        </div>
 
                         <div>
                                 <button type="submit"

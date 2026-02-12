@@ -60,6 +60,11 @@ return [
             'report' => false,
         ],
 
+        'creatives' => [
+            'driver' => 'local',
+            'root' => storage_path('app/creatives'),
+            'throw' => false,
+        ],
     ],
 
     /*

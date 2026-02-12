@@ -98,6 +98,7 @@ class CampaignController extends Controller
             'budget' => 'nullable|integer|min:0',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'required_sizes' => 'nullable|string',
         ]);
 
         $campaign = Campaign::create($validated);
@@ -280,6 +281,7 @@ class CampaignController extends Controller
     public function edit(Campaign $campaign)
     {
         $this->authorize('update', $campaign);
+        $campaign->load('creatives');
 
         $clients = Client::all(); // Or limit by user access
         return view('campaigns.edit', compact('campaign', 'clients'));
@@ -297,6 +299,7 @@ class CampaignController extends Controller
             'budget' => 'nullable|integer|min:0',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'required_sizes' => 'nullable|string',
         ]);
 
         $campaign->update($validated);

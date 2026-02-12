@@ -16,6 +16,12 @@ class Campaign extends Model
         'is_video',
         'start_date',
         'end_date',
+        'required_sizes',
+    ];
+
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
     public function client()
@@ -26,5 +32,10 @@ class Campaign extends Model
     public function data()
     {
         return $this->hasMany(CampaignData::class);
+    }
+
+    public function creatives()
+    {
+        return $this->hasMany(Creative::class);
     }
 }
