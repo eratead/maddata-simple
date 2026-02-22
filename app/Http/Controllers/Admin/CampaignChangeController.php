@@ -39,9 +39,15 @@ class CampaignChangeController extends Controller
         // Filter to keep only the latest log for each (creative_id + width + height) tuple
         $logs = $allLogs->unique(function ($log) {
             $changes = $log->changes;
-            if (is_array($changes) && isset($changes['width'], $changes['height'], $changes['creative_id'])) {
-                $key = $changes['creative_id'] . '_' . $changes['width'] . 'x' . $changes['height'];
-                return $key;
+            if (is_array($changes)) {
+                if (isset($changes['width'], $changes['height'], $changes['creative_id'])) {
+                    $key = $changes['creative_id'] . '_' . $changes['width'] . 'x' . $changes['height'];
+                    return $key;
+                }
+                
+                if (isset($changes['creative_optimization'])) {
+                    return 'creative_optimization_change';
+                }
             }
             // Fallback for logs without dimension data (e.g. old logs or non-file logs)
             return 'log_' . $log->id;

@@ -15,6 +15,11 @@ class CampaignObserver implements ShouldHandleEventsAfterCommit
         $this->logger = $logger;
     }
 
+    public function created(Campaign $campaign): void
+    {
+        $this->logger->log('created', $campaign, 'Created campaign "' . $campaign->name . '"');
+    }
+
     public function updated(Campaign $campaign): void
     {
         if ($campaign->isDirty('creative_optimization')) {
