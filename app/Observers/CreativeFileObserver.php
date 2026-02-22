@@ -20,19 +20,34 @@ class CreativeFileObserver implements ShouldHandleEventsAfterCommit
 
     public function created(CreativeFile $creativeFile): void
     {
-        $this->logger->log('created', $creativeFile, 'Uploaded file "' . $creativeFile->name . '"');
+        $data = [
+            'width' => $creativeFile->width,
+            'height' => $creativeFile->height,
+            'creative_id' => $creativeFile->creative_id,
+        ];
+        $this->logger->log('created', $creativeFile, 'Uploaded file "' . $creativeFile->name . '"', $data);
     }
 
     public function updated(CreativeFile $creativeFile): void
     {
         $changes = $creativeFile->getChanges();
         if (!empty($changes)) {
+            // Merge dimension data into changes so we can always track by dimension
+            $changes['width'] = $creativeFile->width;
+            $changes['height'] = $creativeFile->height;
+            $changes['creative_id'] = $creativeFile->creative_id;
+            
             $this->logger->log('updated', $creativeFile, 'Updated file "' . $creativeFile->name . '"', $changes);
         }
     }
 
     public function deleted(CreativeFile $creativeFile): void
     {
-        $this->logger->log('deleted', $creativeFile, 'Deleted file "' . $creativeFile->name . '"');
+        $data = [
+            'width' => $creativeFile->width,
+            'height' => $creativeFile->height,
+            'creative_id' => $creativeFile->creative_id,
+        ];
+        $this->logger->log('deleted', $creativeFile, 'Deleted file "' . $creativeFile->name . '"', $data);
     }
 }

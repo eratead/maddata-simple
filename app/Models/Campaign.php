@@ -17,11 +17,13 @@ class Campaign extends Model
         'start_date',
         'end_date',
         'required_sizes',
+        'creative_optimization',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'creative_optimization' => 'boolean',
     ];
 
     public function client()
@@ -37,5 +39,10 @@ class Campaign extends Model
     public function creatives()
     {
         return $this->hasMany(Creative::class);
+    }
+
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
     }
 }

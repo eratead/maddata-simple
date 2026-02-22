@@ -21,5 +21,6 @@ class AppServiceProvider extends ServiceProvider
     {
         \App\Models\Creative::observe(\App\Observers\CreativeObserver::class);
         \App\Models\CreativeFile::observe(\App\Observers\CreativeFileObserver::class);
+        \App\Models\Campaign::observe(\App\Observers\CampaignObserver::class);
     }
 }

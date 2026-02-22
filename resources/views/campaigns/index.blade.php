@@ -45,9 +45,7 @@
                                         <th class="text-left px-4 py-2">Start Date</th>
                                         <th class="text-left px-4 py-2">End Date</th>
                                         <th class="text-left px-4 py-2">Pacing</th>
-                                        @if (auth()->user()?->is_admin)
-                                                <th class="text-left px-4 py-2 ">Actions</th>
-                                        @endif
+                                        <th class="text-left px-4 py-2 ">Actions</th>
                                 </tr>
                         </thead>
                         <tbody class="text-sm divide-y divide-gray-100">
@@ -109,10 +107,12 @@
                                                                 —
                                                         @endif
                                                 </td>
-                                                @if (auth()->user()?->is_admin)
-                                                        <td class="px-4 py-2">
+                                                <td class="px-4 py-2">
+                                                        @can('update', $campaign)
                                                                 <a href="{{ route('campaigns.edit', $campaign->id) }}"
                                                                         class="text-blue-600 hover:underline mr-2">Edit</a>
+                                                        @endcan
+                                                        @can('delete', $campaign)
                                                                 <form action="{{ route('campaigns.destroy', $campaign->id) }}"
                                                                         method="POST" class="inline-block"
                                                                         onsubmit="return confirm('Are you sure?');">
@@ -121,8 +121,8 @@
                                                                         <button type="submit"
                                                                                 class="text-red-600 hover:underline">Delete</button>
                                                                 </form>
-                                                        </td>
-                                                @endif
+                                                        @endcan
+                                                </td>
                                         </tr>
                                 @endforeach
                         </tbody>

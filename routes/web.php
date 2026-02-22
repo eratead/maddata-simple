@@ -25,6 +25,8 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+
+
     Route::resource('clients', \App\Http\Controllers\ClientController::class);
 
     Route::get('/campaigns/client/{client_id?}', [\App\Http\Controllers\CampaignController::class, 'index'])->name('campaigns_client.index');
@@ -61,6 +63,15 @@ Route::middleware(['auth'])->group(function () {
     // Admin Routes
     Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(function () {
         Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+
+        // Campaign Changes CRM
+        Route::prefix('campaign-changes')->name('campaign_changes.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\CampaignChangeController::class, 'index'])->name('index');
+            Route::get('/{campaign}', [App\Http\Controllers\Admin\CampaignChangeController::class, 'show'])->name('show');
+            Route::post('/{campaign}/handle', [App\Http\Controllers\Admin\CampaignChangeController::class, 'markAsHandled'])->name('handle');
+            Route::post('/{campaign}/download-all', [App\Http\Controllers\Admin\CampaignChangeController::class, 'downloadAll'])->name('download_all');
+            Route::get('/log/{log}/download', [App\Http\Controllers\Admin\CampaignChangeController::class, 'download'])->name('download');
+        });
     });
 });
 

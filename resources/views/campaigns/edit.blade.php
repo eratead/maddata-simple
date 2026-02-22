@@ -34,15 +34,19 @@
                                 <label class="block text-sm font-medium text-gray-700">Expected Impressions</label>
                                 <input type="number" name="expected_impressions" min="0"
                                         value="{{ old('expected_impressions', $campaign->expected_impressions) }}"
-                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                                        {{ auth()->user()->is_admin ? '' : 'disabled' }}
+                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ auth()->user()->is_admin ? '' : 'bg-gray-100 cursor-not-allowed' }}">
                         </div>
 
-                        <div class="mb-4">
-                                <label class="block text-sm font-medium text-gray-700">Budget</label>
-                                <input type="number" name="budget" min="0"
-                                        value="{{ old('budget', $campaign->budget) }}"
-                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
-                        </div>
+                        @if (auth()->user()->can_view_budget)
+                                <div class="mb-4">
+                                        <label class="block text-sm font-medium text-gray-700">Budget</label>
+                                        <input type="number" name="budget" min="0"
+                                                value="{{ old('budget', $campaign->budget) }}"
+                                                {{ auth()->user()->is_admin ? '' : 'disabled' }}
+                                                class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ auth()->user()->is_admin ? '' : 'bg-gray-100 cursor-not-allowed' }}">
+                                </div>
+                        @endif
 
                         <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700">Start Date</label>
@@ -58,10 +62,12 @@
                                         class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
                         </div>
 
+                        @if(auth()->user()->is_admin)
                         <div x-data="{
                             selectedSizes: ['{{ implode("','", explode(',', $campaign->required_sizes ?? '')) }}'].filter(s => s !== ''),
                             videoSizes: ['1920x1080', '1080x1920'],
                             staticSizes: ['640x820', '640x960', '640x1175', '640x1280', '640x1370', '640x360', '300x250', '1080x1920'],
+                            isAdmin: true,
                             toggleSize(size) {
                                 if (this.selectedSizes.includes(size)) {
                                     this.selectedSizes = this.selectedSizes.filter(s => s !== size);
@@ -87,7 +93,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Required Creative Sizes</label>
                             
                             <div class="mb-4">
-                                <h4 @click="toggleGroup(videoSizes)" class="text-sm font-medium text-gray-600 mb-2 cursor-pointer hover:text-blue-600 select-none">Video Sizes</h4>
+                                <h4 @click="toggleGroup(videoSizes)" class="text-sm font-medium text-gray-600 mb-2 select-none cursor-pointer hover:text-blue-600">Video Sizes</h4>
                                 <div class="flex flex-wrap gap-2">
                                     <template x-for="size in videoSizes">
                                         <button type="button" 
@@ -101,7 +107,7 @@
                             </div>
 
                             <div class="mb-4">
-                                <h4 @click="toggleGroup(staticSizes)" class="text-sm font-medium text-gray-600 mb-2 cursor-pointer hover:text-blue-600 select-none">Static Sizes</h4>
+                                <h4 @click="toggleGroup(staticSizes)" class="text-sm font-medium text-gray-600 mb-2 select-none cursor-pointer hover:text-blue-600">Static Sizes</h4>
                                 <div class="flex flex-wrap gap-2">
                                     <template x-for="size in staticSizes">
                                         <button type="button" 
@@ -123,6 +129,9 @@
                                     placeholder="e.g. 100x100, 200x200">
                             </div>
                         </div>
+                        @else
+                            <!-- Show read-only Required Sizes for non-admins if desired, or just hide completely? Request said "Hide sizes area". I'll hide it completely. -->
+                        @endif
 
                         <!-- Accordion -->
                         <div x-data="{ active: null }" class="space-y-4 mb-6">
@@ -138,11 +147,33 @@
                                     </span>
                                 </button>
                                 <div x-show="active === 'creatives'" x-collapse class="p-4 bg-white border-t border-gray-200">
-                                    <div class="mb-4 text-right">
+                                    <div class="mb-4 flex justify-between items-center">
+                                        <div class="flex items-center" x-data="{ optimization: {{ old('creative_optimization', $campaign->creative_optimization) ? '1' : '0' }} }">
+                                            <input type="hidden" name="creative_optimization" :value="optimization">
+                                            <span class="block text-sm font-medium text-gray-700 mr-3">Creative optimization:</span>
+                                            
+                                            <div class="flex space-x-2">
+                                                <button type="button" 
+                                                    @click="optimization = 1"
+                                                    :class="optimization == 1 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+                                                    class="px-3 py-1 rounded-full text-sm border transition-colors duration-200">
+                                                    CTR
+                                                </button>
+                                                
+                                                <button type="button" 
+                                                    @click="optimization = 0"
+                                                    :class="optimization == 0 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+                                                    class="px-3 py-1 rounded-full text-sm border transition-colors duration-200">
+                                                    Equal Weights
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <a href="{{ route('creatives.create', $campaign) }}" class="inline-flex items-center px-3 py-1 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
                                             + Add Creative
                                         </a>
                                     </div>
+
                                     @if($campaign->creatives->isEmpty())
                                         <p class="text-gray-500 text-sm">No creatives found.</p>
                                     @else

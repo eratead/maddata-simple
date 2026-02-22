@@ -145,14 +145,14 @@
             @endif
 
             <!-- Upload Zone -->
-            <div x-data="{ dragging: false, fileCount: 0 }" 
+            <div x-data="uploadHandler()" 
                  class="bg-gray-50 p-4 rounded-md border-2 border-dashed transition-colors duration-200"
                  :class="dragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
                  @dragover.prevent="dragging = true"
                  @dragleave.prevent="dragging = false"
-                 @drop.prevent="dragging = false; $refs.fileInput.files = $event.dataTransfer.files; fileCount = $event.dataTransfer.files.length">
+                 @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)">
                 
-                <form action="{{ route('creatives.upload', $creative) }}" method="POST" enctype="multipart/form-data">
+                <form x-ref="uploadForm" action="{{ route('creatives.upload', $creative) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="text-center">
                         <svg class="mx-auto h-12 w-12 text-gray-400" style="height: 3rem; width: 3rem;" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
@@ -161,7 +161,7 @@
                         <div class="mt-2 flex text-sm text-gray-600 justify-center">
                             <label for="file-upload" class="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
                                 <span>Upload files</span>
-                                <input id="file-upload" x-ref="fileInput" name="files[]" type="file" class="sr-only" multiple @change="fileCount = $el.files.length" required>
+                                <input id="file-upload" x-ref="fileInput" name="files[]" type="file" class="sr-only" multiple @change="handleFiles($el.files)" required>
                             </label>
                             <p class="pl-1">or drag and drop</p>
                         </div>
@@ -173,8 +173,12 @@
                             <span x-text="fileCount"></span> file(s) selected
                         </div>
 
+                        <div class="mt-2" x-show="processing">
+                             <span class="text-xs text-gray-500">Processing files...</span>
+                        </div>
+
                         <div class="mt-2">
-                            <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <button type="button" @click="$refs.uploadForm.submit()" x-show="fileCount > 0 && !processing" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 Upload All
                             </button>
                         </div>
@@ -182,6 +186,60 @@
                 </form>
             </div>
         </div>
+
+        <script>
+            function uploadHandler() {
+                return {
+                    dragging: false,
+                    fileCount: 0,
+                    processing: false,
+                    uploadedSizes: @json($uploadedSizes ?? []),
+                    async handleFiles(files) {
+                        this.processing = true;
+                        this.fileCount = 0;
+                        const validFiles = new DataTransfer();
+                        
+                        for (let i = 0; i < files.length; i++) {
+                            const file = files[i];
+                            let shouldUpload = true;
+                            
+                            if (file.type.startsWith('image/')) {
+                                try {
+                                    const dimensions = await this.getImageDimensions(file);
+                                    const sizeKey = `${dimensions.width}x${dimensions.height}`;
+                                    
+                                    if (this.uploadedSizes.includes(sizeKey)) {
+                                        if (!confirm(`File "${file.name}" has dimensions ${sizeKey} which already exist. Do you want to replace the existing file?`)) {
+                                            shouldUpload = false;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.error('Error checking dimensions', e);
+                                }
+                            }
+                            // Video dimension check client-side is complex and slow, skipping for now or can add later if critical.
+                            // Currently focusing on images as per common use case. 
+                            
+                            if (shouldUpload) {
+                                validFiles.items.add(file);
+                            }
+                        }
+                        
+                        this.$refs.fileInput.files = validFiles.files;
+                        this.fileCount = validFiles.files.length;
+                        this.processing = false;
+                    },
+                    getImageDimensions(file) {
+                        return new Promise((resolve, reject) => {
+                            const img = new Image();
+                            img.onload = () => resolve({ width: img.width, height: img.height });
+                            img.onerror = reject;
+                            img.src = URL.createObjectURL(file);
+                        });
+                    }
+                }
+            }
+        </script>
 
         <!-- Footer Actions -->
         <div class="pt-6 border-t border-gray-200">

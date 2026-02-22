@@ -99,6 +99,7 @@ class CampaignController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'required_sizes' => 'nullable|string',
+            'creative_optimization' => 'boolean',
         ]);
 
         $campaign = Campaign::create($validated);
@@ -300,6 +301,7 @@ class CampaignController extends Controller
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'required_sizes' => 'nullable|string',
+            'creative_optimization' => 'boolean',
         ]);
 
         $campaign->update($validated);

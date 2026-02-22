@@ -37,7 +37,7 @@ class CampaignPolicy
      */
     public function update(User $user, Campaign $campaign): bool
     {
-        return $user->is_admin;
+        return $user->is_admin || $user->clients->contains($campaign->client_id);
     }
 
     /**

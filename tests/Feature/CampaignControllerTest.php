@@ -107,10 +107,39 @@ class CampaignControllerTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_non_admin_cannot_update_campaign()
+    public function test_non_admin_can_update_campaign_for_their_client()
     {
         $user = User::factory()->create(['is_admin' => false]);
-        $campaign = \App\Models\Campaign::factory()->create(['name' => 'Original']);
+        $client = \App\Models\Client::factory()->create();
+        $user->clients()->attach($client);
+        
+        $campaign = \App\Models\Campaign::factory()->create([
+            'name' => 'Original',
+            'client_id' => $client->id,
+        ]);
+
+        $this->actingAs($user);
+        $response = $this->put(route('campaigns.update', $campaign), [
+            'name' => 'Updated by User',
+            'client_id' => $campaign->client_id,
+            'expected_impressions' => $campaign->expected_impressions,
+        ]);
+
+        $response->assertRedirect(route('campaigns.index'));
+        $this->assertDatabaseHas('campaigns', ['id' => $campaign->id, 'name' => 'Updated by User']);
+    }
+
+    public function test_non_admin_cannot_update_campaign_for_other_client()
+    {
+        $user = User::factory()->create(['is_admin' => false]);
+        $userClient = \App\Models\Client::factory()->create();
+        $user->clients()->attach($userClient);
+        
+        $otherClient = \App\Models\Client::factory()->create();
+        $campaign = \App\Models\Campaign::factory()->create([
+            'name' => 'Original',
+            'client_id' => $otherClient->id,
+        ]);
 
         $this->actingAs($user);
         $response = $this->put(route('campaigns.update', $campaign), [

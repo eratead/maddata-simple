@@ -45,6 +45,9 @@
                                                                 <x-dropdown-link :href="route('admin.activity-logs.index')" :class="request()->is('admin/activity-logs*') ? 'bg-gray-100' : ''">
                                                                         {{ __('Activity Logs') }}
                                                                 </x-dropdown-link>
+                                                                <x-dropdown-link :href="route('admin.campaign_changes.index')" :class="request()->is('admin/campaign-changes*') ? 'bg-gray-100' : ''">
+                                                                        {{ __('Campaign Changes') }}
+                                                                </x-dropdown-link>
                                                         @endif
                                                 @endauth
                                         </x-slot>

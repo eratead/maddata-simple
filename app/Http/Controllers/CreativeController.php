@@ -99,6 +99,19 @@ class CreativeController extends Controller
                 }
             }
 
+            // Remove existing file with same dimensions
+            if ($width > 0 && $height > 0) {
+                $existingFiles = $creative->files()
+                    ->where('width', $width)
+                    ->where('height', $height)
+                    ->get();
+
+                foreach ($existingFiles as $existingFile) {
+                    Storage::disk('creatives')->delete($existingFile->path);
+                    $existingFile->delete();
+                }
+            }
+
             $creative->files()->create([
                 'name' => $file->getClientOriginalName(),
                 'width' => $width,
@@ -145,7 +158,7 @@ class CreativeController extends Controller
 
         if ($files->isEmpty()) {
             return back()->with('error', 'No files to download.');
-        }
+        }   
 
         $zipFileName = 'creative-' . $creative->id . '-files-' . now()->timestamp . '.zip';
         $zipPath = storage_path('app/public/' . $zipFileName); // Temporarily store in public disk

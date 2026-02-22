@@ -26,8 +26,21 @@ class CreativeObserver implements ShouldHandleEventsAfterCommit
     public function updated(Creative $creative): void
     {
         $changes = $creative->getChanges();
+        
+        // Remove updated_at from changes to avoid noise
+        unset($changes['updated_at']);
+
         if (!empty($changes)) {
-            $this->logger->log('updated', $creative, 'Updated creative "' . $creative->name . '"', $changes);
+            $description = 'Updated creative "' . $creative->name . '"';
+            $changeDetails = [];
+            foreach ($changes as $key => $value) {
+                $changeDetails[] = $key . ': "' . $value . '"';
+            }
+            if (!empty($changeDetails)) {
+                $description .= ': ' . implode(', ', $changeDetails);
+            }
+            
+            $this->logger->log('updated', $creative, $description, $changes);
         }
     }
 

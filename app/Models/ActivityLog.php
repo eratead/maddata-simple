@@ -17,11 +17,17 @@ class ActivityLog extends Model
         'action',
         'description',
         'changes',
+        'status',
     ];
 
     protected $casts = [
         'changes' => 'array',
     ];
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
 
     public function user()
     {
