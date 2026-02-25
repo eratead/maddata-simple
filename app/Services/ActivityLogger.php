@@ -52,9 +52,8 @@ class ActivityLogger
                 ->get();
             
             if ($logs->isNotEmpty()) {
-                // Get admins who opted in
-                $recipients = User::where('is_admin', true)
-                    ->where('receive_activity_notifications', true)
+                // Get users who opted in
+                $recipients = User::where('receive_activity_notifications', true)
                     ->pluck('email');
                 
                 if ($recipients->isNotEmpty()) {

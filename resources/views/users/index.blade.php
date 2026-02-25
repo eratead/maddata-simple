@@ -41,11 +41,7 @@
                                                 </td>
                                                 <td class="px-4 py-2">{{ $user->email }}</td>
                                                 <td class="px-4 py-2">
-                                                        {{ collect([
-                                                            $user->is_admin ? 'Admin' : null,
-                                                            $user->can_view_budget ? 'Budget' : null,
-                                                            $user->is_report ? 'Reports' : null,
-                                                        ])->filter()->join(', ') }}
+                                                        {{ $user->userRole?->name ?? 'None' }}
                                                 </td>
                                                 <td class="px-4 py-2"
                                                         title="{{ $user->clients->pluck('name')->join(', ') }}">

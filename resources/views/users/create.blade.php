@@ -31,6 +31,19 @@
                                 @enderror
                         </div>
 
+                        <div>
+                                <label for="role_id" class="block text-sm font-medium text-gray-700">Role</label>
+                                <select id="role_id" name="role_id" class="mt-1 block w-full rounded border-gray-300 shadow-sm">
+                                    <option value="">No Role (Legacy Permissions)</option>
+                                    @foreach($roles as $role)
+                                        <option value="{{ $role->id }}" {{ old('role_id') == $role->id ? 'selected' : '' }}>{{ $role->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('role_id')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                        </div>
+
                         <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 cursor-pointer"
                                         onclick="toggleClientsPanel()">Assign to Clients</label>
@@ -124,24 +137,6 @@
                         </script>
 
                         <div>
-                                <label class="inline-flex items-center">
-                                        <input type="checkbox" name="is_admin" class="rounded border-gray-300">
-                                        <span class="ml-2 text-sm text-gray-700">Administrator</span>
-                                </label>
-                        </div>
-                        <div>
-                                <label class="inline-flex items-center">
-                                        <input type="checkbox" name="is_report" class="rounded border-gray-300">
-                                        <span class="ml-2 text-sm text-gray-700">Reports upload</span>
-                                </label>
-                        </div>
-                        <div>
-                                <label class="inline-flex items-center">
-                                        <input type="checkbox" name="can_view_budget" class="rounded border-gray-300">
-                                        <span class="ml-2 text-sm text-gray-700">Can View Budget</span>
-                                </label>
-                        </div>
-                        <div x-show="document.querySelector('input[name=is_admin]').checked">
                                 <label class="inline-flex items-center">
                                         <input type="checkbox" name="receive_activity_notifications"
                                                 class="rounded border-gray-300">

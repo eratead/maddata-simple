@@ -20,7 +20,7 @@
                 </a>
 
                 <!-- Manage Clients/Users Dropdown -->
-                @if (Auth::user() && Auth::user()->is_admin)
+                @if (Auth::user() && Auth::user()->hasPermission('is_admin'))
                         <div x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false">
                                 <x-dropdown align="left" width="48" x-bind:open="open">
                                         <x-slot name="trigger">
@@ -38,9 +38,12 @@
                                                         {{ __('Clients') }}
                                                 </x-dropdown-link>
                                                 @auth
-                                                        @if (auth()->user()->is_admin)
+                                                        @if (auth()->user()->hasPermission('is_admin'))
                                                                 <x-dropdown-link :href="route('users.index')" :class="request()->is('users*') ? 'bg-gray-100' : ''">
                                                                         {{ __('Users') }}
+                                                                </x-dropdown-link>
+                                                                <x-dropdown-link :href="route('admin.roles.index')" :class="request()->is('admin/roles*') ? 'bg-gray-100' : ''">
+                                                                        {{ __('Roles') }}
                                                                 </x-dropdown-link>
                                                                 <x-dropdown-link :href="route('admin.activity-logs.index')" :class="request()->is('admin/activity-logs*') ? 'bg-gray-100' : ''">
                                                                         {{ __('Activity Logs') }}

@@ -63,6 +63,8 @@ Route::middleware(['auth'])->group(function () {
     // Admin Routes
     Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(function () {
         Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+        Route::post('roles/reorder', [\App\Http\Controllers\Admin\RoleController::class, 'reorder'])->name('roles.reorder');
+        Route::resource('roles', \App\Http\Controllers\Admin\RoleController::class);
 
         // Campaign Changes CRM
         Route::prefix('campaign-changes')->name('campaign_changes.')->group(function () {

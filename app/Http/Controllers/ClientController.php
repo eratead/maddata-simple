@@ -21,7 +21,7 @@ class ClientController extends Controller
 
 
         // If admin, show all clients; otherwise, only their own
-        $clients = $user->is_admin
+        $clients = $user->hasPermission('is_admin')
             ? Client::all()
             : $user->clients;
         return view('clients.index', compact('clients'));

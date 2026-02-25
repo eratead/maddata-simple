@@ -17,7 +17,7 @@
                                 {{ session('success') }}
                         </div>
                 @endif
-                @if (auth()->user()?->is_admin)
+                @if (auth()->user()?->hasPermission('is_admin'))
                         <div class="flex justify-end mb-4">
                                 <a href="{{ route('campaigns.create') }}"
                                         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
@@ -57,7 +57,7 @@
                                                                 {{ $campaign->name }}
                                                         </a>
                                                         @auth
-                                                                @if (auth()->user()->is_admin || (auth()->user()->is_report && auth()->user()->clients->contains($campaign->client_id)))
+                                                                @if (auth()->user()->hasPermission('is_admin') || (auth()->user()->hasPermission('can_upload_reports') && auth()->user()->clients->contains($campaign->client_id)))
                                                                         <form id="upload-form-{{ $campaign->id }}"
                                                                                 action="{{ route('campaigns.upload', $campaign->id) }}"
                                                                                 method="POST" enctype="multipart/form-data"

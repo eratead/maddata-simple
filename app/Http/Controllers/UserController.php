@@ -26,8 +26,9 @@ class UserController extends Controller
         $this->authorize('create', User::class); // Optional if policy is used
 
         $clients = \App\Models\Client::all();
+        $roles = \App\Models\Role::orderBy('sort_order')->get();
 
-        return view('users.create', compact('clients'));
+        return view('users.create', compact('clients', 'roles'));
     }
 
     public function store(Request $request)
@@ -38,17 +39,15 @@ class UserController extends Controller
             'password' => ['required', 'min:6'],
             'clients' => ['array'],
             'clients.*' => ['exists:clients,id'],
+            'role_id' => ['nullable', 'exists:roles,id'],
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'is_admin' => $request->has('is_admin'),
-            'receive_activity_notifications' => $request->has('is_admin') && $request->has('receive_activity_notifications'),
-            'is_report' => $request->has('is_report'),
-            'can_view_budget' => $request->has('can_view_budget'),
             'receive_activity_notifications' => $request->has('receive_activity_notifications'),
+            'role_id' => $validated['role_id'] ?? null,
         ]);
 
         // Attach selected clients
@@ -79,8 +78,9 @@ class UserController extends Controller
         $this->authorize('update', $user); // Optional, for admin control
 
         $clients = Client::all();
+        $roles = \App\Models\Role::orderBy('sort_order')->get();
 
-        return view('users.edit', compact('user', 'clients'));
+        return view('users.edit', compact('user', 'clients', 'roles'));
     }
 
     public function update(Request $request, User $user)
@@ -93,16 +93,14 @@ class UserController extends Controller
             'password' => ['nullable', 'min:6'],
             'clients' => ['array'],
             'clients.*' => ['exists:clients,id'],
+            'role_id' => ['nullable', 'exists:roles,id'],
         ]);
 
         // Update user info
         $user->name = $validated['name'];
         $user->email = $validated['email'];
-        $user->is_admin = $request->has('is_admin');
-        $user->receive_activity_notifications = $request->has('is_admin') && $request->has('receive_activity_notifications');
-        $user->is_report = $request->has('is_report');
-        $user->can_view_budget = $request->has('can_view_budget');
         $user->receive_activity_notifications = $request->has('receive_activity_notifications');
+        $user->role_id = $validated['role_id'] ?? null;
 
         if (!empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);

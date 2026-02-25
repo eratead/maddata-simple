@@ -40,7 +40,7 @@
                         <td>Viewability (%)</td>
                         <td>{{ $summary['visibility'] }}</td>
                 </tr>
-                @if ($user->can_view_budget)
+                @if ($user->hasPermission('can_view_budget'))
                         <tr>
                                 <td>Budget</td>
                                 <td>{{ $summary['budget'] }}</td>
@@ -64,7 +64,7 @@
                                 <td>Video Complete</td>
                                 <td>{{ $summary['video_complete'] ?? 0 }}</td>
                         </tr>
-                        @if ($user->can_view_budget)
+                        @if ($user->hasPermission('can_view_budget'))
                                 <tr>
                                         <td>Avr. CPV</td>
                                         <td>{{ round($summary['cpv'], 2) }}

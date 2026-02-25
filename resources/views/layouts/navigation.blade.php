@@ -15,7 +15,7 @@
                         <!-- Settings Dropdown -->
                         <div class="hidden sm:flex sm:items-center sm:gap-4 sm:ms-6">
                                 <!-- Manage Clients/Users Dropdown -->
-                                @if (Auth::user() && Auth::user()->is_admin)
+                                @if (Auth::user() && Auth::user()->hasPermission('is_admin'))
                                         <x-dropdown align="right" width="48">
                                                 <x-slot name="trigger">
                                                         <button
@@ -103,7 +103,7 @@
                         <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                                 {{ __('Report') }}
                         </x-responsive-nav-link>
-                        @if (Auth::user() && Auth::user()->is_admin)
+                        @if (Auth::user() && Auth::user()->hasPermission('is_admin'))
                                 <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.index')">
                                         {{ __('Manage Clients') }}
                                 </x-responsive-nav-link>

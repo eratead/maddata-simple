@@ -45,7 +45,7 @@ class ReportApiController extends Controller
         ];
 
         $spentForCalc = 0;
-        if (Auth::user()->can_view_budget) {
+        if (Auth::user()->hasPermission('can_view_budget')) {
             $summary['budget'] = $campaign->budget;
 
             // CPM is derived from budget and either expected_impressions or actual impressions in the filtered range (whichever is larger)
@@ -62,7 +62,7 @@ class ReportApiController extends Controller
         if ($campaign->is_video) {
             $videoComplete = (int) $data->sum('video_100');
             $summary['video_complete'] = $videoComplete;
-            if (Auth::user()->can_view_budget) {
+            if (Auth::user()->hasPermission('can_view_budget')) {
                 $summary['cpv'] = $videoComplete > 0 ? round($spentForCalc / $videoComplete, 4) : 0;
             }
             $summary['vcr'] = $sumImpressions > 0 ? round($videoComplete / $sumImpressions * 100, 2) : 0;
@@ -83,7 +83,7 @@ class ReportApiController extends Controller
 
         // Compute CPM for spent calculation (only if user can view budget)
         $cpm = 0;
-        if (Auth::user()->can_view_budget) {
+        if (Auth::user()->hasPermission('can_view_budget')) {
             $totalImpsForPeriod = (clone $baseQuery)->sum('impressions');
             if ($campaign->expected_impressions > 0) {
                 $cpm = ($campaign->budget / max($campaign->expected_impressions, $totalImpsForPeriod)) * 1000; // do not round yet
@@ -113,7 +113,7 @@ class ReportApiController extends Controller
                 $item['video_100'] = (int) $row->video_100;
             }
 
-            if (Auth::user()->can_view_budget) {
+            if (Auth::user()->hasPermission('can_view_budget')) {
                 $rowSpent = ($cpm > 0) ? (($row->impressions * $cpm) / 1000) : 0;
                 $runningSpent += $rowSpent;
                 // Spent until this date (cumulative)
@@ -139,7 +139,7 @@ class ReportApiController extends Controller
 
         // Compute CPM for this period (only if user can view budget)
         $cpm = 0;
-        if (Auth::user()->can_view_budget) {
+        if (Auth::user()->hasPermission('can_view_budget')) {
             $periodQuery = $campaign->data()
                 ->when($start && $end, fn($q) => $q->whereBetween('report_date', [$start, $end]));
             $totalImpsForPeriod = (clone $periodQuery)->sum('impressions');
@@ -168,7 +168,7 @@ class ReportApiController extends Controller
                     $item['video_75'] = (int) $row->video_75;
                     $item['video_100'] = (int) $row->video_100;
                 }
-                if (Auth::user()->can_view_budget) {
+                if (Auth::user()->hasPermission('can_view_budget')) {
                     // $item['spent'] = round(($cpm > 0) ? (($row->impressions * $cpm) / 1000) : 0, 2);
                 }
                 return $item;
@@ -191,7 +191,7 @@ class ReportApiController extends Controller
                 $query->whereBetween('created_at', [$start, $end]);
             })
             ->whereHas('client', function ($query) {
-                if (!Auth::user()->is_admin) {
+                if (!Auth::user()->hasPermission('is_admin')) {
                     $query->whereIn('id', Auth::user()->clients->pluck('id'));
                 }
             })

@@ -13,7 +13,7 @@ class ClientPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->is_admin;
+        return $user->hasPermission('is_admin');
     }
 
     /**
@@ -29,7 +29,7 @@ class ClientPolicy
      */
     public function create(User $user): bool
     {
-        return $user->is_admin;
+        return $user->hasPermission('is_admin');
     }
 
     /**
@@ -37,7 +37,7 @@ class ClientPolicy
      */
     public function update(User $user, Client $client): bool
     {
-        return $user->is_admin || $user->clients->contains($client->id);
+        return $user->hasPermission('is_admin') || $user->clients->contains($client->id);
     }
 
     /**
@@ -45,7 +45,7 @@ class ClientPolicy
      */
     public function delete(User $user, Client $client): bool
     {
-        return $user->is_admin;
+        return $user->hasPermission('is_admin');
     }
 
     /**

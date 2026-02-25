@@ -25,11 +25,11 @@ class CampaignController extends Controller
         $campaigns = Campaign::with('client');
 
         if ($client_id != 0) {
-            if (!$user->is_admin && !$user->clients->contains('id', $client_id)) {
+            if (!$user->hasPermission('is_admin') && !$user->clients->contains('id', $client_id)) {
                 abort(403, 'Unauthorized access to this client\'s campaigns.');
             }
             $campaigns->where('client_id', $client_id);
-        } elseif (!$user->is_admin) {
+        } elseif (!$user->hasPermission('is_admin')) {
             // Non-admin, show only campaigns for accessible clients
             $clientIds = $user->clients()->pluck('clients.id');
             $campaigns->whereIn('client_id', $clientIds);
@@ -76,7 +76,7 @@ class CampaignController extends Controller
             $client = Client::find($client_id);
             $clientName = $client?->name;
         }
-        $clients = $user->is_admin ? Client::all() : $user->clients;
+        $clients = $user->hasPermission('is_admin') ? Client::all() : $user->clients;
         return view('campaigns.index', compact('campaigns', 'clientName', 'clients', 'pacingData'));
     }
 
@@ -101,6 +101,10 @@ class CampaignController extends Controller
             'required_sizes' => 'nullable|string',
             'creative_optimization' => 'boolean',
         ]);
+
+        if (!Auth::user()->hasPermission('can_view_budget')) {
+            unset($validated['budget']);
+        }
 
         $campaign = Campaign::create($validated);
 
@@ -128,7 +132,7 @@ class CampaignController extends Controller
         ];
 
         $user = Auth::user();
-        if (!$user->is_admin && !($user->is_report && $user->clients->contains($campaign->client_id))) {
+        if (!$user->hasPermission('is_admin') && !($user->hasPermission('can_upload_reports') && $user->clients->contains($campaign->client_id))) {
             abort(403, 'You do not have permission to upload a report for this campaign.');
         }
         $request->validate([
@@ -303,6 +307,13 @@ class CampaignController extends Controller
             'required_sizes' => 'nullable|string',
             'creative_optimization' => 'boolean',
         ]);
+
+        if (!Auth::user()->can('editBudget', Campaign::class)) {
+            unset($validated['budget']);
+        }
+        if (!Auth::user()->hasPermission('is_admin')) {
+            unset($validated['expected_impressions']);
+        }
 
         $campaign->update($validated);
 

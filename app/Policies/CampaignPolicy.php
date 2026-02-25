@@ -21,7 +21,10 @@ class CampaignPolicy
      */
     public function view(User $user, Campaign $campaign): bool
     {
-        return $user->is_admin || $user->clients->contains($campaign->client_id);
+        if ($user->hasPermission('is_admin')) return true;
+        if (!$user->role_id) return $user->clients->contains($campaign->client_id);
+        
+        return $user->hasPermission('can_view_campaigns') && $user->clients->contains($campaign->client_id);
     }
 
     /**
@@ -29,7 +32,9 @@ class CampaignPolicy
      */
     public function create(User $user): bool
     {
-        return $user->is_admin;
+        if (!$user->role_id) return $user->hasPermission('is_admin');
+
+        return $user->hasPermission('is_admin') || $user->hasPermission('can_edit_campaigns');
     }
 
     /**
@@ -37,7 +42,10 @@ class CampaignPolicy
      */
     public function update(User $user, Campaign $campaign): bool
     {
-        return $user->is_admin || $user->clients->contains($campaign->client_id);
+        if ($user->hasPermission('is_admin')) return true;
+        if (!$user->role_id) return $user->clients->contains($campaign->client_id);
+
+        return $user->hasPermission('can_edit_campaigns') && $user->clients->contains($campaign->client_id);
     }
 
     /**
@@ -45,7 +53,18 @@ class CampaignPolicy
      */
     public function delete(User $user, Campaign $campaign): bool
     {
-        return $user->is_admin;
+        if ($user->hasPermission('is_admin')) return true;
+        if (!$user->role_id) return $user->clients->contains($campaign->client_id);
+
+        return $user->hasPermission('can_edit_campaigns') && $user->clients->contains($campaign->client_id);
+    }
+
+    /**
+     * Determine whether the user can edit the budget of the campaign.
+     */
+    public function editBudget(User $user): bool
+    {
+        return $user->hasPermission('is_admin');
     }
 
     /**

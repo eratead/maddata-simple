@@ -34,17 +34,17 @@
                                 <label class="block text-sm font-medium text-gray-700">Expected Impressions</label>
                                 <input type="number" name="expected_impressions" min="0"
                                         value="{{ old('expected_impressions', $campaign->expected_impressions) }}"
-                                        {{ auth()->user()->is_admin ? '' : 'disabled' }}
-                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ auth()->user()->is_admin ? '' : 'bg-gray-100 cursor-not-allowed' }}">
+                                        {{ auth()->user()->hasPermission('is_admin') ? '' : 'disabled' }}
+                                        class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ auth()->user()->hasPermission('is_admin') ? '' : 'bg-gray-100 cursor-not-allowed' }}">
                         </div>
 
-                        @if (auth()->user()->can_view_budget)
+                        @if (auth()->user()->hasPermission('can_view_budget'))
                                 <div class="mb-4">
                                         <label class="block text-sm font-medium text-gray-700">Budget</label>
                                         <input type="number" name="budget" min="0"
                                                 value="{{ old('budget', $campaign->budget) }}"
-                                                {{ auth()->user()->is_admin ? '' : 'disabled' }}
-                                                class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ auth()->user()->is_admin ? '' : 'bg-gray-100 cursor-not-allowed' }}">
+                                                {{ auth()->user()->can('editBudget', App\Models\Campaign::class) ? '' : 'disabled' }}
+                                                class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300 {{ auth()->user()->can('editBudget', App\Models\Campaign::class) ? '' : 'bg-gray-100 cursor-not-allowed' }}">
                                 </div>
                         @endif
 
@@ -64,7 +64,7 @@
 
                         <!-- Accordion -->
                         <div x-data="{ active: null }" class="space-y-4 mb-6">
-                            @if(auth()->user()->is_admin)
+                            @if(auth()->user()->hasPermission('is_admin'))
                             <!-- Required Sizes Section -->
                             <div class="border rounded-md" style="border-color: #E85E26;" x-data="{
                                 selectedSizes: ['{{ implode("','", explode(',', $campaign->required_sizes ?? '')) }}'].filter(s => s !== ''),

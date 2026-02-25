@@ -32,11 +32,13 @@
                                         class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
                         </div>
 
+                        @if(auth()->user()->hasPermission('can_view_budget'))
                         <div>
                                 <label class="block text-sm font-medium text-gray-700">Budget</label>
                                 <input type="number" name="budget" min="0"
                                         class="mt-1 block w-full border border-gray-300 rounded px-3 py-2 shadow-sm focus:outline-none focus:ring focus:border-blue-300">
                         </div>
+                        @endif
 
                         <div>
                                 <label class="block text-sm font-medium text-gray-700">Start Date</label>
