@@ -15,7 +15,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
                     <!-- Left Column: Summary -->
-                    <div class="lg:col-span-4 lg:col-start-1 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 flex flex-col h-full hover:border-gray-200 hover:shadow-md transition-all group">
+                    <div class="lg:col-span-4 lg:col-start-1 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 flex flex-col h-fit self-start hover:border-gray-200 hover:shadow-md transition-all group">
                         <h2 class="text-lg font-bold text-gray-900 mb-3 md:mb-5">Summary</h2>
 
                         <div class="grid grid-cols-2 gap-3 flex-grow">
