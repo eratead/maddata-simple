@@ -414,16 +414,17 @@
                                 removeIfExpired('dateRange');
                                 removeIfExpired('dashboardActiveTab');
                         })();
-                                const ctx = document.getElementById('campaignChart').getContext('2d');
+                        document.addEventListener('DOMContentLoaded', () => {
+                                const ctx = document.getElementById('campaignChart');
                                 if (!ctx) return;
 
                                 // Gradient for Impressions
-                                const gradientBlue = ctx.createLinearGradient(0, 0, 0, 400);
+                                const gradientBlue = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
                                 gradientBlue.addColorStop(0, 'rgba(59, 130, 246, 0.2)'); // Blue 500 light
                                 gradientBlue.addColorStop(1, 'rgba(59, 130, 246, 0)');
 
                                 // Gradient for CTR
-                                const gradientYellow = ctx.createLinearGradient(0, 0, 0, 400);
+                                const gradientYellow = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
                                 gradientYellow.addColorStop(0, 'rgba(250, 204, 21, 0.15)'); // Yellow 400 light
                                 gradientYellow.addColorStop(1, 'rgba(250, 204, 21, 0)');
 
