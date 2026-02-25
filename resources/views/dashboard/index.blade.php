@@ -234,7 +234,7 @@
                         <x-dates-filter action="{{ route('dashboard.campaign', $campaign->id) }}"
                                         :first-report-date="$firstReportDate" />
 
-                        <div class="border-b border-gray-200 mb-4 md:mb-5 flex gap-4 md:gap-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                        <div class="border-b border-gray-200 mb-4 md:mb-5 flex gap-4 md:gap-6 overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                                         <nav class="-mb-px flex space-x-4">
                                                 <button @click.prevent="activeTab = 'date'"
                                                         :class="activeTab === 'date' ? 'text-primary border-primary' : 'text-gray-500 hover:text-gray-700'"
