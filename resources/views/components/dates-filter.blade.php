@@ -57,10 +57,9 @@
         $refs.form.submit();
     }
 }" x-ref="form" method="GET" action="{{ $action }}"
-        class="flex flex-wrap items-end gap-4">
-        <div>
-                {{-- <label for="date_range" class="block text-sm font-medium text-gray-700">Date Range</label> --}}
-                <select id="date_range" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
+        class="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 mb-4 md:mb-6">
+        <div class="relative w-full sm:w-auto">
+                <select id="date_range" class="appearance-none w-full sm:w-auto bg-white border border-gray-200 text-gray-700 py-1.5 px-3 pr-8 rounded text-sm focus:outline-none focus:border-gray-400"
                         x-model="range"
                         @change="updateDates($event.target.value); $dispatch('daterange-changed', $event.target.value)">
                         <option value="" disabled>Select dates</option>
@@ -71,22 +70,24 @@
                         <option value="month_to_date">Month to Date</option>
                         <option value="year_to_date">Year to Date</option>
                 </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                        </svg>
+                </div>
         </div>
 
-        <div class="flex gap-4">
-                <div>
-                        {{-- <label for="start_date" class="block text-sm font-medium text-gray-700">Start
-                                Date</label> --}}
+        <div class="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
+                <div class="flex-1 sm:flex-none flex justify-between items-center border border-gray-200 rounded px-3 py-1 bg-white focus-within:border-gray-400">
                         <input x-ref="start_date" name="start_date" type="date" id="start_date" x-model="start"
                                 value="{{ request('start_date') ?? \Carbon\Carbon::today()->toDateString() }}"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
+                                class="border-none bg-transparent focus:ring-0 text-sm text-gray-700 p-0"
                                 @change="range = ''; $refs.form.submit()">
                 </div>
-                <div>
-                        {{-- <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label> --}}
+                <div class="flex-1 sm:flex-none flex justify-between items-center border border-gray-200 rounded px-3 py-1 bg-white focus-within:border-gray-400">
                         <input x-ref="end_date" name="end_date" type="date" id="end_date" x-model="end"
                                 value="{{ request('end_date') ?? date('Y-m-d') }}"
-                                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm text-sm"
+                                class="border-none bg-transparent focus:ring-0 text-sm text-gray-700 p-0"
                                 @change="range = ''; $refs.form.submit()">
                 </div>
         </div>

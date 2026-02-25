@@ -18,21 +18,14 @@
         <!-- Scripts -->
 </head>
 
-<body class="h-full w-full font-sans antialiased">
-        <div id="app" class="min-h-screen flex flex-row bg-gray-100 ">
+<body class="bg-gray-100 text-gray-900 font-sans antialiased">
+        <div id="app" class="flex min-h-screen relative">
                 @include('components.sidebar')
 
-                <div class="flex-1 flex flex-col ">
-                        @include('layouts.navigation')
-
-                        <main class="flex-1 overflow-y-auto">
-                                <div class="p-1 pt-4 min-h-screen">
-                                        <div class="p-holder  p-2 md:p-6">
-                                                {{ $slot }}
-                                        </div>
-                                </div>
-                        </main>
-                </div>
+                <!-- Main Content -->
+                <main class="flex-grow w-full md:w-[calc(100%-250px)] p-3 md:p-8 bg-gray-50/50 min-h-screen relative">
+                        {{ $slot }}
+                </main>
         </div> {{-- end #app --}}
         @stack('styles')
         @stack('scripts')
