@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Tailwind CSS Admin Dashboard</title>
+    <!-- Modern Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS Script -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2563EB',
+                        primaryHover: '#1D4ED8',
+                        'primary-hover': '#1D4ED8', /* For test1 compatibility */
+                        primaryLight: '#EFF6FF',
+                        accent: '#F97316',
+                        accentHover: '#EA580C',
+                        surface: '#FFFFFF',
+                        background: '#F8FAFC',
+                        border: '#E2E8F0',
+                        borderHover: '#CBD5E1',
+                        textMain: '#0F172A',
+                        textMuted: '#475569',
+                        textLight: '#94A3B8',
+                        success: '#16A34A',
+                        successLight: '#DCFCE7',
+                        warning: '#EAB308',
+                        warningLight: '#FEF9C3',
+                        danger: '#DC2626',
+                        dangerLight: '#FEE2E2',
+                    },
+                    boxShadow: {
+                        'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
+                        'elevated': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
+                        'focus': '0 0 0 3px rgba(37, 99, 235, 0.2)',
+                        'sidebar': '4px 0 24px -4px rgba(0, 0, 0, 0.08)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(8px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Accordion Animations since standard Tailwind doesn't have transition max-height built for unmeasured content */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .accordion.open .accordion-icon {
+            transform: rotate(180deg);
+        }
+
+        .accordion.open .accordion-content {
+            max-height: 1000px;
+            /* Arbitrary large number for animation */
+        }
+
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        /* Accordion transition */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+            opacity: 0;
+        }
+
+        .accordion.open .accordion-content {
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        /* Sidebar nav active indicator */
+        .nav-active {
+            position: relative;
+        }
+
+        .nav-active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: #2563EB;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Input focus ring animation */
+        .input-focus-ring {
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .input-focus-ring:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Smooth hover lift */
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Respect reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .accordion-content {
+                transition: none;
+            }
+
+            .hover-lift:hover {
+                transform: none;
+            }
+        }
+
+        /* Status badge pulse */
+        .status-dot {
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-900 font-sans antialiased">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden flex items-center p-4 bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+        <button
+            class="text-gray-500 focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-gray-100"
+            onclick="toggleSidebar()">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                </path>
+            </svg>
+        </button>
+        <a href="#" class="ml-4 flex items-center">
+            <div class="bg-white rounded p-1 flex items-center justify-center h-8">
+                <img src="/images/logo.png" alt="MadData Logo" class="h-full object-contain">
+            </div>
+        </a>
+    </div>
+
+    <!-- Layout Wrapper -->
+    <div class="flex min-h-screen relative">
+
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 md:hidden opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm"
+            id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar / Aside -->
+        <aside id="sidebar"
+            class="fixed lg:sticky top-0 left-0 h-screen w-72 lg:w-[220px] xl:w-64 bg-surface border-r border-border flex flex-col z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-sidebar lg:shadow-none shrink-0">
+
+            <!-- Mobile Close -->
+            <button
+                class="lg:hidden absolute top-4 right-4 p-2 text-textMuted hover:text-textMain focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-xl transition-colors cursor-pointer"
+                onclick="toggleMobileMenu()" aria-label="Close navigation menu">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <!-- Logo -->
+            <div class="px-6 py-6 flex items-center border-b border-border/50">
+                <img src="logo.png" alt="MadData Logo" class="h-8 w-auto object-contain">
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 py-4 px-3 space-y-1 overflow-visible" aria-label="Main navigation">
+
+                <!-- Campaigns -->
+                <a href="demo-edit-campaign.html" id="nav-campaigns"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain font-medium text-sm transition-all duration-200 cursor-pointer group">
+                    <svg class="w-5 h-5 flex-shrink-0 text-textLight group-hover:text-textMuted transition-colors"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                    </svg>
+                    <span>Campaigns</span>
+                </a>
+
+                <!-- Report (Active) -->
+                <a href="demo-report.html" id="nav-report"
+                    class="nav-active flex items-center gap-3 px-4 py-3 rounded-xl bg-primaryLight text-primary font-semibold text-sm transition-all duration-200 cursor-pointer group">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    <span>Report</span>
+                </a>
+
+                <!-- Manage -->
+                <div class="relative group">
+                    <a href="#" id="nav-manage"
+                        class="flex items-center gap-3 px-4 py-3 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain font-medium text-sm transition-all duration-200 cursor-pointer group">
+                        <svg class="w-5 h-5 flex-shrink-0 flex-shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>Manage</span>
+                    </a>
+
+                    <!-- Submenu -->
+                    <div
+                        class="absolute left-full top-0 ml-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 hidden group-hover:flex flex-col z-[100]">
+                        <a href="#"
+                            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Clients</a>
+                        <a href="#"
+                            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Users</a>
+                        <a href="#"
+                            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Roles</a>
+                        <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Activity
+                            Logs</a>
+                        <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Campaign
+                            Changes</a>
+                    </div>
+
+                </div>
+
+                <!-- Divider -->
+                <div class="my-3 border-t border-border/60"></div>
+
+
+
+
+            </nav>
+
+            <!-- User Profile -->
+            <div class="border-t border-border/60 px-3 py-3 relative group">
+                <a href="#" id="nav-user"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain transition-all duration-200 cursor-pointer group">
+                    <div
+                        class="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                        <span class="text-sm font-bold text-primary">M</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-sm font-semibold text-textMain truncate">Michael</span>
+                        <span class="text-xs text-textLight truncate">Admin</span>
+                    </div>
+                    <svg class="w-4 h-4 ml-auto text-textLight flex-shrink-0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                    </svg>
+                </a>
+
+                <!-- Submenu -->
+                <div
+                    class="absolute left-full bottom-0 ml-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 hidden group-hover:flex flex-col z-[100]">
+                    <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">My
+                        Account</a>
+                    <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">API</a>
+                    <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Log Out</a>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-grow w-full md:w-[calc(100%-250px)] p-3 md:p-8 bg-gray-50/50 min-h-screen">
+            <div class="max-w-7xl mx-auto space-y-4 md:space-y-6">
+
+                <!-- Page Header -->
+                <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
+                            Dashboard – Black Friday - 25 נובמבר (ACE)
+                        </h1>
+                    </div>
+                </header>
+
+                <!-- Top Layout Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    <!-- Left Column: Summary -->
+                    <div
+                        class="lg:col-span-4 lg:col-start-1 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 flex flex-col h-full hover:border-gray-200 hover:shadow-md transition-all group">
+                        <h2 class="text-lg font-bold text-gray-900 mb-3 md:mb-5">Summary</h2>
+
+                        <div class="grid grid-cols-2 gap-3 flex-grow">
+                            <!-- Stat Card: Impressions -->
+                            <div
+                                class="bg-blue-50/50 border border-blue-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-blue-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-blue-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1">
+                                    Impressions</div>
+                                <div class="text-xl font-black text-gray-900 leading-none relative z-10">483,142</div>
+                            </div>
+
+                            <!-- Stat Card: Clicks -->
+                            <div
+                                class="bg-purple-50/50 border border-purple-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-purple-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-purple-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-1">Clicks
+                                </div>
+                                <div class="text-xl font-black text-gray-900 leading-none relative z-10">10,091</div>
+                            </div>
+
+                            <!-- Stat Card: CTR -->
+                            <div
+                                class="bg-rose-50/50 border border-rose-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-rose-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-rose-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-rose-600 uppercase tracking-wider mb-1">CTR</div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">2.09%</div>
+                            </div>
+
+                            <!-- Stat Card: Reach -->
+                            <div
+                                class="bg-orange-50/50 border border-orange-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-orange-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-orange-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 20h5V10H2v10h5m10 0v-5a3 3 0 00-3-3h-4a3 3 0 00-3 3v5m10 0H7m5-11a3 3 0 110-6 3 3 0 010 6z" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-orange-600 uppercase tracking-wider mb-1">Reach
+                                </div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">154,903</div>
+                            </div>
+
+                            <!-- Stat Card: Frequency -->
+                            <div
+                                class="bg-teal-50/50 border border-teal-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-teal-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-teal-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-teal-600 uppercase tracking-wider mb-1">Frequency
+                                </div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">3.12</div>
+                            </div>
+
+                            <!-- Stat Card: Viewability -->
+                            <div
+                                class="bg-cyan-50/50 border border-cyan-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-cyan-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-cyan-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-cyan-600 uppercase tracking-wider mb-1">
+                                    Viewability</div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">92.35%</div>
+                            </div>
+
+                            <!-- Stat Card: Budget -->
+                            <div
+                                class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-emerald-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-emerald-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v1m0 0v1m0-1h1m-1 0h-1m-4 8h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Budget
+                                </div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">₪15,000</div>
+                            </div>
+
+                            <!-- Stat Card: Spent -->
+                            <div
+                                class="bg-green-50/50 border border-green-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-green-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-green-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-green-600 uppercase tracking-wider mb-1">Spent
+                                </div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">₪15,000</div>
+                            </div>
+
+                            <!-- Stat Card: CPM -->
+                            <div
+                                class="bg-amber-50/50 border border-amber-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-amber-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-amber-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-amber-600 uppercase tracking-wider mb-1">CPM
+                                </div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">₪31.05</div>
+                            </div>
+
+                            <!-- Stat Card: CPC -->
+                            <div
+                                class="bg-yellow-50/50 border border-yellow-100 rounded-xl p-3 flex flex-col justify-center relative overflow-hidden group hover:shadow-md hover:border-yellow-200 transition-all hover:-translate-y-0.5">
+                                <div
+                                    class="absolute -right-3 -bottom-3 opacity-10 text-yellow-600 group-hover:scale-110 transition-transform duration-300">
+                                    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                                    </svg>
+                                </div>
+                                <div class="text-[10px] font-bold text-yellow-600 uppercase tracking-wider mb-1">CPC
+                                </div>
+                                <div class="text-lg font-black text-gray-900 leading-none relative z-10">₪1.49</div>
+                            </div>
+
+                            <!-- Pacing Bar spanning full width -->
+                            <div
+                                class="col-span-2 bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col justify-center relative overflow-hidden shadow-sm">
+                                <div class="flex justify-between items-end mb-2">
+                                    <div class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pacing
+                                    </div>
+                                    <div class="text-sm font-bold text-gray-800">110%</div>
+                                </div>
+                                <div
+                                    class="w-full h-4 bg-gray-200 rounded-full overflow-hidden flex items-center relative shadow-inner">
+                                    <div
+                                        class="h-full bg-gradient-to-r from-green-400 to-green-500 w-full transition-all duration-1000">
+                                    </div>
+                                    <span
+                                        class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow-md tracking-wider">OVERDELIVERING</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            class="w-full mt-6 py-2.5 bg-[#4F46E5] hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors">
+                            Download Excel
+                        </button>
+                    </div>
+
+                    <!-- Right Column: Tabs & Table -->
+                    <div
+                        class="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 flex flex-col h-full w-full overflow-hidden hover:border-gray-200 hover:shadow-md transition-all group">
+
+                        <!-- Top Controls: Datepickers -->
+                        <div class="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-3 mb-4 md:mb-6">
+                            <div class="relative w-full sm:w-auto">
+                                <select
+                                    class="appearance-none w-full sm:w-auto bg-white border border-gray-200 text-gray-700 py-1.5 px-3 pr-8 rounded text-sm focus:outline-none focus:border-gray-400">
+                                    <option>Select dates</option>
+                                </select>
+                                <div
+                                    class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20">
+                                        <path
+                                            d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2">
+                                <div
+                                    class="flex-1 sm:flex-none flex justify-between items-center border border-gray-200 rounded px-3 py-1.5 text-sm text-gray-700 bg-white">
+                                    <span>25/11/2025</span>
+                                    <svg class="ml-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <div
+                                    class="flex-1 sm:flex-none flex justify-between items-center border border-gray-200 rounded px-3 py-1.5 text-sm text-gray-700 bg-white">
+                                    <span>25/02/2026</span>
+                                    <svg class="ml-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                        </path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabs -->
+                        <div
+                            class="border-b border-gray-200 mb-4 md:mb-5 flex gap-4 md:gap-6 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                            <button onclick="switchTab('by-date')" id="tab-btn-by-date"
+                                class="text-xs md:text-sm font-medium text-gray-500 hover:text-gray-700 pb-2 relative transition-colors focus:outline-none shrink-0">By
+                                Date</button>
+                            <button onclick="switchTab('by-placement')" id="tab-btn-by-placement"
+                                class="text-xs md:text-sm font-medium text-primary pb-2 relative transition-colors focus:outline-none shrink-0">
+                                By Placement
+                                <span class="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-t-sm"></span>
+                            </button>
+                        </div>
+
+                        <!-- Table Controls (Search and Entries) -->
+                        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
+                            <div class="flex items-center gap-2 max-w-full">
+                                <label for="table-search"
+                                    class="text-xs md:text-sm text-gray-700 shrink-0">Search:</label>
+                                <input type="text" id="table-search"
+                                    class="border border-gray-300 rounded px-2 py-1 flex-1 min-w-0 text-xs md:text-sm focus:outline-none focus:border-primary">
+                            </div>
+                            <div
+                                class="flex items-center gap-2 text-xs md:text-sm text-gray-700 self-end sm:self-auto shrink-0">
+                                <span>Show</span>
+                                <select
+                                    class="border border-gray-300 rounded px-2 py-1 text-xs md:text-sm focus:outline-none">
+                                    <option>10</option>
+                                    <option>25</option>
+                                    <option>50</option>
+                                </select>
+                                <span class="hidden sm:inline">entries</span>
+                            </div>
+                        </div>
+
+                        <!-- Placement Table (Visible by default) -->
+                        <div id="table-by-placement" class="overflow-x-auto">
+                            <table class="w-full text-xs md:text-sm text-left border-collapse">
+                                <thead
+                                    class="bg-gray-50 text-gray-500 uppercase text-[10px] md:text-[11px] font-bold border-y border-gray-200 tracking-wide">
+                                    <tr>
+                                        <th
+                                            class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100 flex items-center justify-between">
+                                            PLACEMENT <span class="text-gray-300 ml-1">&#8693;</span></th>
+                                        <th class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100">
+                                            IMPRESSIONS <span class="text-gray-300 ml-1">&#8693;</span></th>
+                                        <th class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100">CLICKS
+                                            <span class="text-gray-300 ml-1">&#8693;</span>
+                                        </th>
+                                        <th class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100">CTR <span
+                                                class="text-gray-300 ml-1">&#8693;</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-700 divide-y divide-gray-100 bg-white">
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            Mako</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">85,351</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,953</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.29%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            Israelhayom</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">67,130</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,481</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.21%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            Maariv</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">57,209</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,208</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.11%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            Ynet</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">50,807</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,042</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.05%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            13tv</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">40,035</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">816</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.04%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            Haaretz</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">36,328</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">774</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.13%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            One</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">26,231</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">482</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1.84%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            Investing.com: Stocks & News</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">19,310</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">386</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.00%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">
+                                            Walla</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">16,987</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">364</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.14%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50 grid grid-cols-4 md:table-row">
+                                        <td
+                                            class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none col-span-1 block md:table-cell">
+                                            BizPortal</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3 block md:table-cell">13,745</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3 block md:table-cell">275</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3 block md:table-cell">2.00%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Date Table (Hidden by default) -->
+                        <div id="table-by-date" class="overflow-x-auto hidden">
+                            <table class="w-full text-xs md:text-sm text-left border-collapse">
+                                <thead
+                                    class="bg-gray-50 text-gray-500 uppercase text-[10px] md:text-[11px] font-bold border-y border-gray-200 tracking-wide">
+                                    <tr>
+                                        <th
+                                            class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100 flex items-center justify-between">
+                                            DATE <span class="text-gray-300 ml-1">&#8693;</span></th>
+                                        <th class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100">
+                                            IMPRESSIONS <span class="text-gray-300 ml-1">&#8693;</span></th>
+                                        <th class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100">CLICKS
+                                            <span class="text-gray-300 ml-1">&#8693;</span>
+                                        </th>
+                                        <th class="px-2 py-2 md:px-4 md:py-3 cursor-pointer hover:bg-gray-100">CTR <span
+                                                class="text-gray-300 ml-1">&#8693;</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-700 divide-y divide-gray-100 bg-white">
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50">2025-11-25</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">75,249</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,572</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.09%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50">2025-11-26</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">78,315</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,673</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.14%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50">2025-11-27</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">82,743</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,720</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.08%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50">2025-11-28</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">84,971</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,746</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.05%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50">2025-11-29</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">85,614</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,709</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.00%</td>
+                                    </tr>
+                                    <tr class="hover:bg-gray-50/50">
+                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50">2025-11-30</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">76,250</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">1,671</td>
+                                        <td class="px-2 py-2 md:px-4 md:py-3">2.19%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Footer -->
+                        <div
+                            class="mt-4 pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs md:text-sm">
+                            <span class="text-gray-600 w-full sm:w-auto text-center sm:text-left"
+                                id="table-entries-info">Showing 1 to 10 of 23 entries</span>
+                            <div class="flex flex-wrap justify-center items-center gap-1 w-full sm:w-auto">
+                                <button
+                                    class="px-2 py-1 md:px-3 md:py-1 text-gray-500 hover:text-gray-700 bg-white">Previous</button>
+                                <button
+                                    class="px-2 py-1 md:px-3 md:py-1 text-gray-700 bg-gray-100 rounded border border-gray-200">1</button>
+                                <button
+                                    class="px-2 py-1 md:px-3 md:py-1 text-gray-500 hover:text-gray-700 bg-white">2</button>
+                                <button
+                                    class="px-2 py-1 md:px-3 md:py-1 text-gray-500 hover:text-gray-700 bg-white">3</button>
+                                <button
+                                    class="px-2 py-1 md:px-3 md:py-1 text-gray-500 hover:text-gray-700 bg-white">Next</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Bottom Section: Chart -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex flex-col items-center mb-6">
+                        <span class="text-xs font-bold text-gray-500 mb-2 uppercase">Chart</span>
+                        <div class="flex items-center gap-6">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-3 border-2 border-blue-500 bg-white rounded-sm"></div>
+                                <span class="text-xs text-gray-600">Impressions</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-3 border-2 border-yellow-400 bg-white rounded-sm"></div>
+                                <span class="text-xs text-gray-600">CTR (%)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-[400px]">
+                        <canvas id="reportChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Sidebar Toggle for Mobile
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+
+            const overlay = document.getElementById('sidebar-overlay');
+            if (overlay.classList.contains('opacity-0')) {
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                overlay.classList.add('opacity-100', 'pointer-events-auto');
+            } else {
+                overlay.classList.remove('opacity-100', 'pointer-events-auto');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        // Pill Toggles
+        function togglePill(element) {
+            const isActive = element.classList.contains('bg-primary');
+            if (isActive) {
+                // Remove active classes
+                element.className = "px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none bg-white border border-gray-200 text-gray-500 hover:border-primary hover:text-primary hover:bg-indigo-50";
+            } else {
+                // Add active classes
+                element.className = "px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none bg-primary text-white border border-primary shadow-[0_2px_4px_rgba(79,70,229,0.2)]";
+            }
+        }
+
+        // Toggle Accordions
+        function toggleAccordion(element) {
+            const accordion = element.parentElement;
+            accordion.classList.toggle('open');
+        }
+
+        // Optimization toggle (Radio behavior)
+
+        // Advanced Switch toggle
+        // Advanced Switch toggle
+        function toggleOptimizationSwitch(container) {
+            const slider = container.querySelector('#optimization-slider');
+            const btns = container.querySelectorAll('.opt-btn');
+
+            if (slider.classList.contains('translate-x-full')) {
+                // Move to CTR
+                slider.classList.remove('translate-x-full');
+                btns[0].classList.replace('text-gray-600', 'text-white');
+                btns[0].classList.replace('text-gray-900', 'text-white');
+                btns[1].classList.replace('text-white', 'text-gray-600');
+            } else {
+                // Move to Equal Weights
+                slider.classList.add('translate-x-full');
+                btns[0].classList.replace('text-white', 'text-gray-600');
+                btns[1].classList.replace('text-gray-600', 'text-white');
+                btns[1].classList.replace('text-gray-900', 'text-white');
+            }
+        }
+
+        function toggleOptimization(element) {
+            const parent = element.parentElement;
+            const pills = parent.querySelectorAll('.creative-pill');
+
+            pills.forEach(p => {
+                p.className = "px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none bg-white border border-gray-200 text-gray-500 hover:border-primary hover:text-primary hover:bg-indigo-50 creative-pill";
+            });
+
+            element.className = "px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none bg-blue-500 text-white border border-blue-500 shadow-sm creative-pill";
+        }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            const btnDate = document.getElementById('tab-btn-by-date');
+            const btnPlacement = document.getElementById('tab-btn-by-placement');
+            const tableDate = document.getElementById('table-by-date');
+            const tablePlacement = document.getElementById('table-by-placement');
+            const entriesInfo = document.getElementById('table-entries-info');
+
+            // Reset styles
+            btnDate.className = "text-sm font-medium text-gray-500 hover:text-gray-700 pb-2 relative transition-colors focus:outline-none";
+            btnDate.innerHTML = 'By Date';
+            btnPlacement.className = "text-sm font-medium text-gray-500 hover:text-gray-700 pb-2 relative transition-colors focus:outline-none";
+            btnPlacement.innerHTML = 'By Placement';
+
+            tableDate.classList.add('hidden');
+            tablePlacement.classList.add('hidden');
+
+            // Apply active styles
+            if (tabId === 'by-date') {
+                btnDate.className = "text-sm font-medium text-primary pb-2 relative transition-colors focus:outline-none";
+                btnDate.innerHTML = 'By Date <span class="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-t-sm"></span>';
+                tableDate.classList.remove('hidden');
+                entriesInfo.innerText = "Showing 1 to 6 of 6 entries";
+            } else {
+                btnPlacement.className = "text-sm font-medium text-primary pb-2 relative transition-colors focus:outline-none";
+                btnPlacement.innerHTML = 'By Placement <span class="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-t-sm"></span>';
+                tablePlacement.classList.remove('hidden');
+                entriesInfo.innerText = "Showing 1 to 10 of 23 entries";
+            }
+        }
+
+        // Initialize Chart.js
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('reportChart').getContext('2d');
+
+            // Gradient for Impressions
+            const gradientBlue = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientBlue.addColorStop(0, 'rgba(59, 130, 246, 0.2)'); // Blue 500 light
+            gradientBlue.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+            // Gradient for CTR
+            const gradientYellow = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientYellow.addColorStop(0, 'rgba(250, 204, 21, 0.15)'); // Yellow 400 light
+            gradientYellow.addColorStop(1, 'rgba(250, 204, 21, 0)');
+
+            const labels = ['Nov 25', 'Nov 26', 'Nov 27', 'Nov 28', 'Nov 29', 'Nov 30'];
+            const dataImpressions = [75249, 78315, 82743, 84971, 85614, 76250];
+            const dataCTR = [2.09, 2.14, 2.08, 2.05, 2.00, 2.19];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Impressions',
+                            data: dataImpressions,
+                            borderColor: '#3B82F6', // Blue 500
+                            backgroundColor: gradientBlue,
+                            borderWidth: 2,
+                            tension: 0.4, // Curved effect
+                            fill: true,
+                            yAxisID: 'y',
+                            pointBackgroundColor: '#3B82F6',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'CTR (%)',
+                            data: dataCTR,
+                            borderColor: '#FBBF24', // Amber/Yellow
+                            backgroundColor: gradientYellow,
+                            borderWidth: 2,
+                            tension: 0.4, // Curved effect
+                            fill: true,
+                            yAxisID: 'y1',
+                            pointBackgroundColor: '#FBBF24',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: false // We built a custom legend in HTML
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(31, 41, 55, 0.9)', // Gray-800
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        if (context.dataset.yAxisID === 'y1') {
+                                            label += context.parsed.y + '%';
+                                        } else {
+                                            label += new Intl.NumberFormat().format(context.parsed.y);
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#9CA3AF'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: {
+                                color: '#F3F4F6', // Gray-100
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: '#9CA3AF',
+                                callback: function (value) {
+                                    return new Intl.NumberFormat().format(value);
+                                }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false, // only want the grid lines for one axis to show up
+                            },
+                            ticks: {
+                                color: '#9CA3AF',
+                                callback: function (value) {
+                                    return value.toFixed(2); // Keep decimals for CTR
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+</body>
+
+</html>

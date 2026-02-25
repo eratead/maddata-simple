@@ -17,11 +17,54 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
                     },
                     colors: {
-                        primary: '#4F46E5',    // Indigo 600
-                        'primary-hover': '#4338CA', // Indigo 700
+                        primary: '#2563EB',
+                        primaryHover: '#1D4ED8',
+                        'primary-hover': '#1D4ED8', /* For test1 compatibility */
+                        primaryLight: '#EFF6FF',
+                        accent: '#F97316',
+                        accentHover: '#EA580C',
+                        surface: '#FFFFFF',
+                        background: '#F8FAFC',
+                        border: '#E2E8F0',
+                        borderHover: '#CBD5E1',
+                        textMain: '#0F172A',
+                        textMuted: '#475569',
+                        textLight: '#94A3B8',
+                        success: '#16A34A',
+                        successLight: '#DCFCE7',
+                        warning: '#EAB308',
+                        warningLight: '#FEF9C3',
+                        danger: '#DC2626',
+                        dangerLight: '#FEE2E2',
+                    },
+                    boxShadow: {
+                        'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05)',
+                        'elevated': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
+                        'focus': '0 0 0 3px rgba(37, 99, 235, 0.2)',
+                        'sidebar': '4px 0 24px -4px rgba(0, 0, 0, 0.08)',
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0' },
+                            '100%': { opacity: '1' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(8px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(-100%)' },
+                            '100%': { transform: 'translateX(0)' },
+                        }
                     }
                 }
             }
@@ -42,6 +85,127 @@
         .accordion.open .accordion-content {
             max-height: 1000px;
             /* Arbitrary large number for animation */
+        }
+
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        /* Accordion transition */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+            opacity: 0;
+        }
+
+        .accordion.open .accordion-content {
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        /* Sidebar nav active indicator */
+        .nav-active {
+            position: relative;
+        }
+
+        .nav-active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: #2563EB;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Input focus ring animation */
+        .input-focus-ring {
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .input-focus-ring:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Smooth hover lift */
+        .hover-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Respect reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+
+            .accordion-content {
+                transition: none;
+            }
+
+            .hover-lift:hover {
+                transform: none;
+            }
+        }
+
+        /* Status badge pulse */
+        .status-dot {
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
     </style>
 </head>
@@ -72,55 +236,119 @@
         <div class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 md:hidden opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-sm"
             id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-        <!-- Sidebar -->
-        <aside
-            class="w-64 bg-gray-900 text-white flex-shrink-0 z-50 flex flex-col fixed md:relative inset-y-0 md:min-h-screen transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none"
-            id="sidebar">
-            <a href="#"
-                class="p-6 border-b border-white/5 flex items-center justify-center hover:bg-white/5 transition-colors h-[88px]">
-                <div class="bg-white rounded-md p-1.5 flex items-center justify-center w-full h-full max-w-[160px]">
-                    <img src="/images/logo.png" alt="MadData Logo" class="h-full w-full object-contain">
+        <!-- Sidebar / Aside -->
+        <aside id="sidebar"
+            class="fixed lg:sticky top-0 left-0 h-screen w-72 lg:w-[220px] xl:w-64 bg-surface border-r border-border flex flex-col z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-sidebar lg:shadow-none shrink-0">
+
+            <!-- Mobile Close -->
+            <button
+                class="lg:hidden absolute top-4 right-4 p-2 text-textMuted hover:text-textMain focus:outline-none focus:ring-2 focus:ring-primary/30 rounded-xl transition-colors cursor-pointer"
+                onclick="toggleMobileMenu()" aria-label="Close navigation menu">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <!-- Logo -->
+            <div class="px-6 py-6 flex items-center border-b border-border/50">
+                <img src="logo.png" alt="MadData Logo" class="h-8 w-auto object-contain">
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 py-4 px-3 space-y-1 overflow-visible" aria-label="Main navigation">
+                <!-- Campaigns (Active) -->
+                <a href="demo-edit-campaign.html" id="nav-campaigns"
+                    class="nav-active flex items-center gap-3 px-4 py-3 rounded-xl bg-primaryLight text-primary font-semibold text-sm transition-all duration-200 cursor-pointer group">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                    </svg>
+                    <span>Campaigns</span>
+                </a>
+
+                <!-- Report -->
+                <a href="demo-report.html" id="nav-report"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain font-medium text-sm transition-all duration-200 cursor-pointer group">
+                    <svg class="w-5 h-5 flex-shrink-0 text-textLight group-hover:text-textMuted transition-colors"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                        </path>
+                    </svg>
+                    <span>Report</span>
+                </a>
+
+                <!-- Manage -->
+                <div class="relative group">
+                    <a href="#" id="nav-manage"
+                        class="flex items-center gap-3 px-4 py-3 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain font-medium text-sm transition-all duration-200 cursor-pointer group">
+                        <svg class="w-5 h-5 flex-shrink-0 text-textLight group-hover:text-textMuted transition-colors"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>Manage</span>
+                    </a>
+
+                    <!-- Submenu -->
+                    <div
+                        class="absolute left-full top-0 ml-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 hidden group-hover:flex flex-col z-[100]">
+                        <a href="#"
+                            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Clients</a>
+                        <a href="#"
+                            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Users</a>
+                        <a href="#"
+                            class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Roles</a>
+                        <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Activity
+                            Logs</a>
+                        <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Campaign
+                            Changes</a>
+                    </div>
+
                 </div>
-            </a>
-            <nav class="py-6 flex flex-col gap-1">
-                <a href="#"
-                    class="px-6 py-3 text-gray-400 hover:text-white hover:bg-white/5 flex items-center gap-3 font-medium text-sm transition-colors border-l-4 border-transparent hover:border-primary">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
-                        </path>
-                    </svg>
-                    Dashboard
-                </a>
-                <a href="#"
-                    class="px-6 py-3 text-white bg-white/5 flex items-center gap-3 font-medium text-sm border-l-4 border-primary transition-colors">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
-                    </svg>
-                    Campaigns
-                </a>
-                <a href="#"
-                    class="px-6 py-3 text-gray-400 hover:text-white hover:bg-white/5 flex items-center gap-3 font-medium text-sm transition-colors border-l-4 border-transparent hover:border-primary">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                        </path>
-                    </svg>
-                    Clients
-                </a>
-                <a href="#"
-                    class="px-6 py-3 text-gray-400 hover:text-white hover:bg-white/5 flex items-center gap-3 font-medium text-sm transition-colors border-l-4 border-transparent hover:border-primary">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
-                        </path>
-                    </svg>
-                    Users
-                </a>
+
+                <!-- Divider -->
+                <div class="my-3 border-t border-border/60"></div>
+
+
+
+
             </nav>
+
+            <!-- User Profile -->
+            <div class="border-t border-border/60 px-3 py-3 relative group">
+                <a href="#" id="nav-user"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain transition-all duration-200 cursor-pointer group">
+                    <div
+                        class="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                        <span class="text-sm font-bold text-primary">M</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-sm font-semibold text-textMain truncate">Michael</span>
+                        <span class="text-xs text-textLight truncate">Admin</span>
+                    </div>
+                    <svg class="w-4 h-4 ml-auto text-textLight flex-shrink-0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                    </svg>
+                </a>
+
+                <!-- Submenu -->
+                <div
+                    class="absolute left-full bottom-0 ml-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 hidden group-hover:flex flex-col z-[100]">
+                    <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">My
+                        Account</a>
+                    <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">API</a>
+                    <a href="#" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">Log Out</a>
+                </div>
+
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -231,7 +459,20 @@
                         <div class="accordion mb-3 bg-white rounded-md border border-[#F18561] overflow-hidden">
                             <div class="accordion-header p-4 px-5 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors select-none"
                                 onclick="toggleAccordion(this)">
-                                <span class="text-base font-semibold text-gray-900">Required Creative Sizes</span>
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-base font-semibold font-bold text-gray-900 transition-colors text-left">Required
+                                        Creative Sizes</span>
+                                </div>
                                 <svg class="accordion-icon text-gray-500 transition-transform duration-300" width="20"
                                     height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -288,7 +529,23 @@
                         <div class="accordion open mb-3 bg-white rounded-md border border-[#F18561] overflow-hidden">
                             <div class="accordion-header p-4 px-5 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors select-none"
                                 onclick="toggleAccordion(this)">
-                                <span class="text-base font-semibold text-gray-900">Creatives (2)</span>
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-base font-semibold font-bold text-gray-900 transition-colors text-left">
+                                        Creatives
+                                        <span
+                                            class="ml-1.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">2</span>
+                                    </span>
+                                </div>
                                 <svg class="accordion-icon text-gray-500 transition-transform duration-300" width="20"
                                     height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -301,41 +558,96 @@
                                         <div
                                             class="flex flex-col md:flex-row md:items-center gap-3 text-sm font-medium text-gray-900">
                                             <span>Creative optimization:</span>
-                                            <div class="flex flex-wrap gap-2">
-                                                <div class="px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none bg-white border border-gray-200 text-gray-500 hover:border-primary hover:text-primary hover:bg-indigo-50 creative-pill"
-                                                    onclick="toggleOptimization(this)">CTR</div>
-                                                <div class="px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none bg-blue-500 text-white border border-blue-500 shadow-sm creative-pill"
-                                                    onclick="toggleOptimization(this)">Equal Weights</div>
+
+                                            <div class="relative bg-gray-100/80 p-1 rounded-xl flex items-center shadow-inner overflow-hidden cursor-pointer"
+                                                onclick="toggleOptimizationSwitch(this)" style="min-width: 200px;">
+                                                <!-- The sliding background -->
+                                                <div id="optimization-slider"
+                                                    class="absolute left-1 top-1 bottom-1 w-[calc(50%-4px)] bg-[#2563EB] rounded-lg transition-transform duration-300 ease-in-out">
+                                                </div>
+
+                                                <!-- Option 1: CTR -->
+                                                <div class="opt-btn flex-1 text-center py-2 text-sm font-semibold text-gray-600 transition-colors duration-300 relative z-10"
+                                                    data-val="ctr">
+                                                    CTR
+                                                </div>
+
+                                                <!-- Option 2: Equal Weights -->
+                                                <div class="opt-btn flex-1 text-center py-2 text-sm font-semibold text-white transition-colors duration-300 relative z-10"
+                                                    data-val="equal">
+                                                    Equal Weights
+                                                </div>
                                             </div>
+
                                         </div>
                                         <button type="button"
                                             class="inline-flex items-center justify-center self-start md:self-auto px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium shadow-sm transition-colors">+
                                             ADD CREATIVE</button>
                                     </div>
 
-                                    <div class="flex flex-col gap-2">
+                                    <!-- Creatives List -->
+                                    <div class="space-y-3">
+                                        <!-- Creative 1 -->
                                         <div
-                                            class="flex justify-between items-center p-4 bg-gray-50 border border-gray-200 rounded-md">
-                                            <div class="flex flex-col gap-1">
-                                                <span class="font-semibold text-sm text-gray-900">Test creative 1 new
-                                                    name</span>
-                                                <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 text-[0.7rem] font-semibold rounded-full bg-green-100 text-green-800 w-fit">Active</span>
+                                            class="flex items-center justify-between p-4 rounded-xl border border-border bg-gray-50/60 hover:bg-gray-50 hover:border-borderHover transition-all duration-200 group">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                <div
+                                                    class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-50 border border-blue-200/50 flex items-center justify-center flex-shrink-0">
+                                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                                        </path>
+                                                    </svg>
+                                                </div>
+                                                <div class="flex flex-col min-w-0">
+                                                    <span class="text-sm font-bold text-textMain truncate">Test creative
+                                                        1 new name</span>
+                                                    <span
+                                                        class="inline-flex items-center gap-1 mt-0.5 text-xs font-semibold text-success">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                                                        Active
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <a href="#"
-                                                class="text-blue-500 text-sm font-medium hover:underline">Edit</a>
+                                            <button type="button"
+                                                class="text-sm font-semibold text-primary hover:text-primaryHover transition-colors focus:outline-none hover:underline underline-offset-2 cursor-pointer flex-shrink-0 opacity-70 group-hover:opacity-100">
+                                                Edit
+                                            </button>
                                         </div>
+
+                                        <!-- Creative 2 -->
                                         <div
-                                            class="flex justify-between items-center p-4 bg-gray-50 border border-gray-200 rounded-md">
-                                            <div class="flex flex-col gap-1">
-                                                <span class="font-semibold text-sm text-gray-900">test 111</span>
-                                                <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 text-[0.7rem] font-semibold rounded-full bg-green-100 text-green-800 w-fit">Active</span>
+                                            class="flex items-center justify-between p-4 rounded-xl border border-border bg-gray-50/60 hover:bg-gray-50 hover:border-borderHover transition-all duration-200 group">
+                                            <div class="flex items-center gap-3 min-w-0">
+                                                <div
+                                                    class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-50 border border-blue-200/50 flex items-center justify-center flex-shrink-0">
+                                                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                                        </path>
+                                                    </svg>
+                                                </div>
+                                                <div class="flex flex-col min-w-0">
+                                                    <span class="text-sm font-bold text-textMain truncate">test
+                                                        111</span>
+                                                    <span
+                                                        class="inline-flex items-center gap-1 mt-0.5 text-xs font-semibold text-success">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+                                                        Active
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <a href="#"
-                                                class="text-blue-500 text-sm font-medium hover:underline">Edit</a>
+                                            <button type="button"
+                                                class="text-sm font-semibold text-primary hover:text-primaryHover transition-colors focus:outline-none hover:underline underline-offset-2 cursor-pointer flex-shrink-0 opacity-70 group-hover:opacity-100">
+                                                Edit
+                                            </button>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -344,7 +656,19 @@
                         <div class="accordion mb-3 bg-white rounded-md border border-[#F18561] overflow-hidden">
                             <div class="accordion-header p-4 px-5 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors select-none"
                                 onclick="toggleAccordion(this)">
-                                <span class="text-base font-semibold text-gray-900">Audiences</span>
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-base font-semibold font-bold text-gray-900 transition-colors text-left">Audiences</span>
+                                </div>
                                 <svg class="accordion-icon text-gray-500 transition-transform duration-300" width="20"
                                     height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -354,7 +678,8 @@
                             <div
                                 class="accordion-content bg-white border-t border-transparent group-[.open]/accordion:border-gray-200 group-[.open]/accordion:p-6 p-0 group-[.open]/accordion:pb-6 opacity-100">
                                 <div class="p-6">
-                                    <p class="text-gray-500 text-sm">Audience configuration will be available here soon.
+                                    <p class="text-gray-500 text-sm">Audience configuration will be available here
+                                        soon.
                                     </p>
                                 </div>
                             </div>
@@ -364,7 +689,21 @@
                         <div class="accordion mb-3 bg-white rounded-md border border-[#F18561] overflow-hidden">
                             <div class="accordion-header p-4 px-5 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors select-none"
                                 onclick="toggleAccordion(this)">
-                                <span class="text-base font-semibold text-gray-900">Targeting</span>
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                                            </path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <span
+                                        class="text-base font-semibold font-bold text-gray-900 transition-colors text-left">Targeting</span>
+                                </div>
                                 <svg class="accordion-icon text-gray-500 transition-transform duration-300" width="20"
                                     height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -433,6 +772,28 @@
         }
 
         // Optimization toggle (Radio behavior)
+
+        // Advanced Switch toggle
+        // Advanced Switch toggle
+        function toggleOptimizationSwitch(container) {
+            const slider = container.querySelector('#optimization-slider');
+            const btns = container.querySelectorAll('.opt-btn');
+
+            if (slider.classList.contains('translate-x-full')) {
+                // Move to CTR
+                slider.classList.remove('translate-x-full');
+                btns[0].classList.replace('text-gray-600', 'text-white');
+                btns[0].classList.replace('text-gray-900', 'text-white');
+                btns[1].classList.replace('text-white', 'text-gray-600');
+            } else {
+                // Move to Equal Weights
+                slider.classList.add('translate-x-full');
+                btns[0].classList.replace('text-white', 'text-gray-600');
+                btns[1].classList.replace('text-gray-600', 'text-white');
+                btns[1].classList.replace('text-gray-900', 'text-white');
+            }
+        }
+
         function toggleOptimization(element) {
             const parent = element.parentElement;
             const pills = parent.querySelectorAll('.creative-pill');
