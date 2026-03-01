@@ -77,7 +77,32 @@ class CampaignController extends Controller
             $clientName = $client?->name;
         }
         $clients = $user->hasPermission('is_admin') ? Client::all() : $user->clients;
-        return view('campaigns.index', compact('campaigns', 'clientName', 'clients', 'pacingData'));
+
+        // Calculate Overview Summary Metrics for the top boxes
+        $totalClients = $campaigns->pluck('client_id')->unique()->count();
+        $activeCampaignsCount = $campaigns->where('status', 'active')->count();
+
+        $yesterday = Carbon::yesterday()->toDateString();
+        // Get yesterday's data for the visible campaigns
+        $yesterdayData = CampaignData::whereIn('campaign_id', $campaignIds)
+            ->where('report_date', $yesterday)
+            ->selectRaw('SUM(impressions) as total_impressions, SUM(clicks) as total_clicks')
+            ->first();
+
+        $lastDayImpressions = $yesterdayData->total_impressions ?? 0;
+        $lastDayClicks = $yesterdayData->total_clicks ?? 0;
+        $lastDayCtr = $lastDayImpressions > 0 ? ($lastDayClicks / $lastDayImpressions) * 100 : 0;
+
+        return view('campaigns.index', compact(
+            'campaigns', 
+            'clientName', 
+            'clients', 
+            'pacingData',
+            'totalClients',
+            'activeCampaignsCount',
+            'lastDayImpressions',
+            'lastDayCtr'
+        ));
     }
 
     public function create()
@@ -100,6 +125,7 @@ class CampaignController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'required_sizes' => 'nullable|string',
             'creative_optimization' => 'boolean',
+            'status' => 'required|in:active,paused',
         ]);
 
         if (!Auth::user()->hasPermission('can_view_budget')) {
@@ -306,6 +332,7 @@ class CampaignController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'required_sizes' => 'nullable|string',
             'creative_optimization' => 'boolean',
+            'status' => 'required|in:active,paused',
         ]);
 
         if (!Auth::user()->can('editBudget', Campaign::class)) {

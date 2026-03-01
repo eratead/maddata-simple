@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'check-token-expiry' => \App\Http\Middleware\CheckTokenExpiry::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'campaign_manager' => \App\Http\Middleware\EnsureUserIsCampaignManager::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

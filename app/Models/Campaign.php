@@ -18,6 +18,7 @@ class Campaign extends Model
         'end_date',
         'required_sizes',
         'creative_optimization',
+        'status',
     ];
 
     protected $casts = [

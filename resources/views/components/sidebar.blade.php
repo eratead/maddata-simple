@@ -1,5 +1,5 @@
 <!-- Mobile Header -->
-<div class="md:hidden flex items-center p-4 bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+<div class="lg:hidden flex shrink-0 w-full items-center p-4 bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
     <button x-data @click="$dispatch('open-sidebar')"
         class="text-gray-500 focus:outline-none flex items-center justify-center p-1 rounded-md hover:bg-gray-100">
         <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,8 +30,8 @@
 
     <!-- Sidebar / Aside -->
     <aside id="sidebar"
-        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-        class="fixed lg:sticky top-0 left-0 h-screen w-72 lg:w-[220px] xl:w-64 bg-surface border-r border-border flex flex-col z-40 transform lg:translate-x-0 transition-transform duration-300 ease-in-out shadow-sidebar lg:shadow-none shrink-0 overflow-y-auto hide-scrollbar">
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+        class="fixed lg:sticky top-0 left-0 h-screen w-[280px] lg:w-[220px] xl:w-64 bg-surface border-r border-border flex flex-col z-50 transform transition-transform duration-300 ease-in-out shadow-sidebar lg:shadow-none shrink-0 overflow-y-auto hide-scrollbar">
 
         <!-- Mobile Close -->
         <button @click="sidebarOpen = false"
@@ -54,8 +54,8 @@
 
             <!-- Campaigns -->
             <a href="{{ route('campaigns.index') }}"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer group {{ request()->routeIs('campaigns.index') ? 'nav-active bg-primaryLight text-primary font-semibold' : 'text-textMuted hover:bg-gray-50 hover:text-textMain' }}">
-                <svg class="w-5 h-5 flex-shrink-0 {{ request()->routeIs('campaigns.index') ? '' : 'text-textLight group-hover:text-textMuted transition-colors' }}"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 cursor-pointer group {{ request()->routeIs('campaigns.*') ? 'nav-active bg-primaryLight text-primary font-semibold' : 'text-textMuted hover:bg-gray-50 hover:text-textMain' }}">
+                <svg class="w-5 h-5 flex-shrink-0 {{ request()->routeIs('campaigns.*') ? '' : 'text-textLight group-hover:text-textMuted transition-colors' }}"
                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
@@ -168,8 +168,8 @@
                 <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">My Account</a>
                 
                 @auth
-                    @if (\Illuminate\Support\Facades\Route::has('tokens.index'))
-                        <a href="{{ route('tokens.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">API</a>
+                    @if (\Illuminate\Support\Facades\Route::has('tokens.index') && (Auth::user()->hasPermission('is_admin') || optional(Auth::user()->userRole)->name === 'Campaign Manager'))
+                        <a href="{{ route('tokens.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary">API Settings</a>
                     @endif
                 @endauth
                 

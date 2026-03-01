@@ -19,11 +19,11 @@
 </head>
 
 <body class="bg-gray-100 text-gray-900 font-sans antialiased">
-        <div id="app" class="flex min-h-screen relative">
+        <div id="app" class="flex flex-col lg:flex-row min-h-screen relative">
                 @include('components.sidebar')
 
                 <!-- Main Content -->
-                <main class="flex-grow w-full md:w-[calc(100%-250px)] p-3 md:p-8 bg-gray-50/50 min-h-screen relative">
+                <main class="flex-1 w-full min-w-0 p-3 md:p-8 bg-gray-50 min-h-screen relative">
                         {{ $slot }}
                 </main>
         </div> {{-- end #app --}}

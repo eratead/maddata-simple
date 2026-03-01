@@ -1,12 +1,14 @@
 <x-app-layout>
-        <main class="w-full">
+    <main class="flex-1 w-full min-w-0 p-2 sm:p-4 md:p-8 bg-gray-50 min-h-screen">
             <div class="max-w-7xl mx-auto space-y-4 md:space-y-6">
 
                 <!-- Page Header -->
-                <header class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <header class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4 sm:mb-8">
                     <div>
-                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2">
-                            Dashboard – {{ $campaign->name }} ({{ $campaign->client->name }})
+                        <!-- BREADCRUMBS BLOCK (Empty Fixed Spacer) -->
+                        <div class="h-6 mb-2"></div>
+                        <h1 class="text-2xl font-bold tracking-tight text-gray-900 flex items-center gap-2 leading-tight">
+                            Dashboard – {{ $campaign->name }} <span class="text-gray-500 font-medium text-lg">({{ $campaign->client->name }})</span>
                         </h1>
                     </div>
                 </header>
@@ -15,7 +17,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
                     <!-- Left Column: Summary -->
-                    <div class="lg:col-span-4 lg:col-start-1 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 flex flex-col h-fit self-start hover:border-gray-200 hover:shadow-md transition-all group">
+                    <div class="lg:col-span-4 lg:col-start-1 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md: p-4 sm:p-6  flex flex-col h-fit self-start hover:border-gray-200 hover:shadow-md transition-all group">
                         <h2 class="text-lg font-bold text-gray-900 mb-3 md:mb-5">Summary</h2>
 
                         <div class="grid grid-cols-2 gap-3 flex-grow">
@@ -226,7 +228,7 @@
                     </div>
 
                     <!-- Right Column: Tabs & Table -->
-                    <div class="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6 flex flex-col h-full w-full overflow-hidden hover:border-gray-200 hover:shadow-md transition-all group"
+                    <div class="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md: p-4 sm:p-6  flex flex-col h-full w-full overflow-hidden hover:border-gray-200 hover:shadow-md transition-all group"
                          x-data="{
                              activeTab: localStorage.getItem('dashboardActiveTab') || 'date'
                          }" x-init="$watch('activeTab', value => localStorage.setItem('dashboardActiveTab', value))">
@@ -357,7 +359,7 @@
                         </div>
 
                         <!-- Bottom Section: Chart -->
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 w-full lg:col-span-12">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all  p-4 sm:p-6  w-full lg:col-span-12 group">
                                 <div class="flex flex-col items-center mb-6">
                                         <span class="text-xs font-bold text-gray-500 mb-2 uppercase">Chart</span>
                                         <div class="flex items-center gap-6">

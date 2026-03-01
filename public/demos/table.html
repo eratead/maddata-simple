@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clients – Data Table Demo</title>
+    <meta name="description"
+        content="Modern data table with search, filtering, sorting and pagination for a SaaS admin dashboard.">
+
+    <!-- Fonts: Fira Sans + Fira Code (recommended by design system) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fira Sans', 'system-ui', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        primary: '#2563EB',
+                        primaryHover: '#1D4ED8',
+                        primaryLight: '#EFF6FF',
+                        accent: '#F97316',
+                        surface: '#FFFFFF',
+                        background: '#F8FAFC',
+                        border: '#E2E8F0',
+                        textMain: '#1E293B',
+                        textMuted: '#475569',
+                        textLight: '#94A3B8',
+                        success: '#16A34A',
+                        successLight: '#DCFCE7',
+                        warning: '#D97706',
+                        warningLight: '#FEF3C7',
+                        danger: '#DC2626',
+                        dangerLight: '#FEE2E2',
+                    },
+                    boxShadow: {
+                        card: '0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -2px rgba(0,0,0,.05)',
+                        elevated: '0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.05)',
+                        focus: '0 0 0 3px rgba(37,99,235,.2)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Fira Sans', system-ui, sans-serif;
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* ── Sort icon states ── */
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th.sortable:hover {
+            background: #F1F5F9;
+        }
+
+        th.sort-asc .sort-icon-asc {
+            color: #2563EB;
+        }
+
+        th.sort-desc .sort-icon-desc {
+            color: #2563EB;
+        }
+
+        th.sort-asc .sort-icon-desc,
+        th.sort-desc .sort-icon-asc {
+            color: #CBD5E1;
+        }
+
+        .sort-icon-asc,
+        .sort-icon-desc {
+            color: #CBD5E1;
+            transition: color .15s;
+        }
+
+        /* ── Row hover ── */
+        tbody tr {
+            transition: background .15s ease;
+        }
+
+        tbody tr:hover {
+            background: #F8FAFC;
+        }
+
+        /* ── Status badges ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .02em;
+        }
+
+        .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        /* ── Filter chip / active ── */
+        .filter-chip {
+            padding: 4px 12px;
+            border-radius: 9999px;
+            border: 1.5px solid #E2E8F0;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            background: #fff;
+            color: #475569;
+        }
+
+        .filter-chip:hover {
+            border-color: #2563EB;
+            color: #2563EB;
+        }
+
+        .filter-chip.active {
+            background: #2563EB;
+            color: #fff;
+            border-color: #2563EB;
+        }
+
+        /* ── Pagination buttons ── */
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1.5px solid #E2E8F0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            background: #fff;
+            color: #475569;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: #2563EB;
+            color: #2563EB;
+        }
+
+        .page-btn.active {
+            background: #2563EB;
+            color: #fff;
+            border-color: #2563EB;
+        }
+
+        .page-btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        /* ── Search input focus ── */
+        #search-input:focus {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+        }
+
+        /* ── No results ── */
+        #no-results {
+            display: none;
+        }
+
+        /* ── Reduced motion ── */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                transition-duration: .01ms !important;
+                animation-duration: .01ms !important;
+            }
+        }
+
+        /* ── Skeleton shimmer ── */
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body class="bg-background text-textMain antialiased min-h-screen">
+
+    <!-- ═══════════════════════════════════════════════════════
+     LAYOUT WRAPPER
+═══════════════════════════════════════════════════════ -->
+    <div class="flex min-h-screen">
+
+        <!-- ── Sidebar ── -->
+        <aside
+            class="hidden lg:flex flex-col w-56 xl:w-64 bg-surface border-r border-border shrink-0 sticky top-0 h-screen">
+            <!-- Logo -->
+            <div class="px-6 py-5 border-b border-border/60">
+                <img src="logo.png" alt="MadData Logo" class="h-8 w-auto object-contain">
+            </div>
+
+            <!-- Nav -->
+            <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto" aria-label="Main navigation">
+                <a href="demo-edit-campaign.html"
+                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain font-medium text-sm transition-all duration-200 cursor-pointer group">
+                    <svg class="w-5 h-5 flex-shrink-0 text-textLight group-hover:text-textMuted" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                    </svg>
+                    Campaigns
+                </a>
+                <a href="demo-report.html"
+                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-textMuted hover:bg-gray-50 hover:text-textMain font-medium text-sm transition-all duration-200 cursor-pointer group">
+                    <svg class="w-5 h-5 flex-shrink-0 text-textLight group-hover:text-textMuted" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Report
+                </a>
+
+                <!-- Manage → active -->
+                <div>
+                    <button
+                        class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl bg-primaryLight text-primary font-semibold text-sm transition-all duration-200 cursor-pointer"
+                        aria-current="page">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Manage
+                    </button>
+                    <!-- Sub-nav -->
+                    <div class="ml-7 mt-1 space-y-0.5">
+                        <a href="table.html"
+                            class="block px-3 py-1.5 rounded-lg text-sm font-semibold text-primary bg-primaryLight/60 cursor-pointer">Clients</a>
+                        <a href="#"
+                            class="block px-3 py-1.5 rounded-lg text-sm text-textMuted hover:text-textMain hover:bg-gray-50 cursor-pointer">Users</a>
+                        <a href="#"
+                            class="block px-3 py-1.5 rounded-lg text-sm text-textMuted hover:text-textMain hover:bg-gray-50 cursor-pointer">Roles</a>
+                        <a href="#"
+                            class="block px-3 py-1.5 rounded-lg text-sm text-textMuted hover:text-textMain hover:bg-gray-50 cursor-pointer">Activity
+                            Logs</a>
+                        <a href="#"
+                            class="block px-3 py-1.5 rounded-lg text-sm text-textMuted hover:text-textMain hover:bg-gray-50 cursor-pointer">Campaign
+                            Changes</a>
+                    </div>
+                </div>
+
+                <div class="my-2 border-t border-border/60"></div>
+            </nav>
+
+            <!-- User -->
+            <div class="border-t border-border/60 px-3 py-3">
+                <div
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 cursor-pointer group">
+                    <div
+                        class="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                        <span class="text-sm font-bold text-primary">M</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-sm font-semibold text-textMain truncate">Michael</span>
+                        <span class="text-xs text-textLight truncate">Admin</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ── Main ── -->
+        <main class="flex-1 p-4 md:p-8 min-h-screen">
+            <div class="max-w-7xl mx-auto space-y-6">
+
+                <!-- Page Header -->
+                <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <!-- Breadcrumb -->
+                        <nav class="flex items-center gap-1.5 text-xs text-textLight mb-2" aria-label="Breadcrumb">
+                            <a href="#" class="hover:text-primary transition-colors cursor-pointer">Manage</a>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                            <span class="text-textMain font-medium">Clients</span>
+                        </nav>
+                        <h1 class="text-2xl font-bold tracking-tight text-textMain">Clients</h1>
+                        <p class="text-sm text-textMuted mt-0.5">Manage all client accounts and their details.</p>
+                    </div>
+                    <button id="new-client-btn"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primaryHover text-white rounded-xl text-sm font-semibold shadow-sm transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/40 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Client
+                    </button>
+                </header>
+
+                <!-- ── Stats Strip ── -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div
+                        class="bg-surface border border-border rounded-xl p-4 shadow-card hover:shadow-elevated hover:-translate-y-px transition-all duration-200">
+                        <p class="text-[11px] font-semibold text-textLight uppercase tracking-wider">Total Clients</p>
+                        <p class="text-2xl font-black text-textMain mt-1" id="stat-total">24</p>
+                    </div>
+                    <div
+                        class="bg-surface border border-border rounded-xl p-4 shadow-card hover:shadow-elevated hover:-translate-y-px transition-all duration-200">
+                        <p class="text-[11px] font-semibold text-success uppercase tracking-wider">Active</p>
+                        <p class="text-2xl font-black text-success mt-1" id="stat-active">18</p>
+                    </div>
+                    <div
+                        class="bg-surface border border-border rounded-xl p-4 shadow-card hover:shadow-elevated hover:-translate-y-px transition-all duration-200">
+                        <p class="text-[11px] font-semibold text-warning uppercase tracking-wider">Trial</p>
+                        <p class="text-2xl font-black text-warning mt-1" id="stat-trial">4</p>
+                    </div>
+                    <div
+                        class="bg-surface border border-border rounded-xl p-4 shadow-card hover:shadow-elevated hover:-translate-y-px transition-all duration-200">
+                        <p class="text-[11px] font-semibold text-danger uppercase tracking-wider">Inactive</p>
+                        <p class="text-2xl font-black text-danger mt-1" id="stat-inactive">2</p>
+                    </div>
+                </div>
+
+                <!-- ── Table Card ── -->
+                <div class="bg-surface border border-border rounded-2xl shadow-card overflow-hidden">
+
+                    <!-- Toolbar -->
+                    <div
+                        class="px-4 md:px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center gap-3">
+
+                        <!-- Search -->
+                        <div class="relative flex-1 max-w-sm">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-textLight pointer-events-none"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+                            </svg>
+                            <input id="search-input" type="search" placeholder="Search clients, agencies…"
+                                autocomplete="off"
+                                class="w-full pl-9 pr-4 py-2 text-sm border border-border rounded-xl bg-background text-textMain placeholder-textLight focus:outline-none focus:border-primary transition-colors duration-200"
+                                aria-label="Search table">
+                        </div>
+
+                        <!-- Filter chips -->
+                        <div class="flex items-center gap-2 flex-wrap" role="group" aria-label="Filter by status">
+                            <span class="text-xs text-textLight font-medium mr-1">Status:</span>
+                            <button class="filter-chip active" data-filter="all" id="filter-all">All</button>
+                            <button class="filter-chip" data-filter="active" id="filter-active">Active</button>
+                            <button class="filter-chip" data-filter="trial" id="filter-trial">Trial</button>
+                            <button class="filter-chip" data-filter="inactive" id="filter-inactive">Inactive</button>
+                        </div>
+
+                        <!-- Entries per page -->
+                        <div class="flex items-center gap-2 shrink-0 ml-auto">
+                            <label for="per-page-select" class="text-xs text-textMuted whitespace-nowrap">Show</label>
+                            <select id="per-page-select"
+                                class="border border-border rounded-lg px-2 py-1.5 text-xs text-textMain bg-background focus:outline-none focus:border-primary cursor-pointer transition-colors duration-200">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                            </select>
+                            <span class="text-xs text-textMuted whitespace-nowrap">entries</span>
+                        </div>
+                    </div>
+
+                    <!-- Responsive table wrapper -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left" id="data-table" aria-label="Clients data table">
+                            <thead class="bg-gray-50 border-b border-border">
+                                <tr>
+                                    <!-- Checkbox -->
+                                    <th class="px-4 py-3 w-10">
+                                        <input type="checkbox" id="select-all"
+                                            class="w-4 h-4 rounded border-border text-primary cursor-pointer focus:ring-primary/30"
+                                            aria-label="Select all rows">
+                                    </th>
+                                    <!-- Sortable headers -->
+                                    <th class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider sortable"
+                                        data-col="id" aria-sort="none">
+                                        <div class="flex items-center gap-1">
+                                            ID
+                                            <span class="flex flex-col gap-px ml-auto" aria-hidden="true">
+                                                <svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 0L9.33 6H.67z" />
+                                                </svg>
+                                                <svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 6L.67 0H9.33z" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider sortable"
+                                        data-col="name" aria-sort="none">
+                                        <div class="flex items-center gap-1">
+                                            Client Name
+                                            <span class="flex flex-col gap-px ml-auto" aria-hidden="true">
+                                                <svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 0L9.33 6H.67z" />
+                                                </svg>
+                                                <svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 6L.67 0H9.33z" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider sortable"
+                                        data-col="agency" aria-sort="none">
+                                        <div class="flex items-center gap-1">
+                                            Agency
+                                            <span class="flex flex-col gap-px ml-auto" aria-hidden="true">
+                                                <svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 0L9.33 6H.67z" />
+                                                </svg>
+                                                <svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 6L.67 0H9.33z" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider sortable"
+                                        data-col="campaigns" aria-sort="none">
+                                        <div class="flex items-center gap-1">
+                                            Campaigns
+                                            <span class="flex flex-col gap-px ml-auto" aria-hidden="true">
+                                                <svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 0L9.33 6H.67z" />
+                                                </svg>
+                                                <svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 6L.67 0H9.33z" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider sortable"
+                                        data-col="budget" aria-sort="none">
+                                        <div class="flex items-center gap-1">
+                                            Budget
+                                            <span class="flex flex-col gap-px ml-auto" aria-hidden="true">
+                                                <svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 0L9.33 6H.67z" />
+                                                </svg>
+                                                <svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 6L.67 0H9.33z" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider sortable"
+                                        data-col="status" aria-sort="none">
+                                        <div class="flex items-center gap-1">
+                                            Status
+                                            <span class="flex flex-col gap-px ml-auto" aria-hidden="true">
+                                                <svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 0L9.33 6H.67z" />
+                                                </svg>
+                                                <svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 6L.67 0H9.33z" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider sortable"
+                                        data-col="created" aria-sort="none">
+                                        <div class="flex items-center gap-1">
+                                            Created
+                                            <span class="flex flex-col gap-px ml-auto" aria-hidden="true">
+                                                <svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 0L9.33 6H.67z" />
+                                                </svg>
+                                                <svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6"
+                                                    fill="currentColor">
+                                                    <path d="M5 6L.67 0H9.33z" />
+                                                </svg>
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-[11px] font-bold text-textLight uppercase tracking-wider text-right">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- No Results -->
+                    <div id="no-results" class="flex flex-col items-center justify-center py-16 px-4 text-center">
+                        <svg class="w-12 h-12 text-textLight mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-base font-semibold text-textMain">No results found</p>
+                        <p class="text-sm text-textMuted mt-1">Try adjusting your search or filter.</p>
+                        <button onclick="clearSearch()"
+                            class="mt-4 px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-xl hover:bg-primaryLight transition-colors duration-200 cursor-pointer">
+                            Clear filters
+                        </button>
+                    </div>
+
+                    <!-- Footer -->
+                    <div
+                        class="px-4 md:px-6 py-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <span class="text-xs text-textMuted" id="entries-info">Showing 1 to 10 of 24 entries</span>
+
+                        <!-- Pagination -->
+                        <div class="flex items-center gap-1.5" id="pagination-container" role="navigation"
+                            aria-label="Table pagination">
+                            <button class="page-btn" id="btn-prev" onclick="changePage(-1)" aria-label="Previous page"
+                                disabled>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <div id="page-numbers" class="flex items-center gap-1"></div>
+                            <button class="page-btn" id="btn-next" onclick="changePage(1)" aria-label="Next page">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /max-w-7xl -->
+        </main>
+    </div><!-- /layout wrapper -->
+
+    <!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════ -->
+    <script>
+        // ── Dataset ──────────────────────────────────────────────────────────────────
+        const DATA = [
+            { id: 1, name: 'Acme Corp', agency: 'Alpha Agency', campaigns: 12, budget: 45000, status: 'active', created: '2024-01-15' },
+            { id: 2, name: 'BlueOcean Media', agency: 'Beta Group', campaigns: 7, budget: 18500, status: 'active', created: '2024-02-03' },
+            { id: 3, name: 'ClearPath Finance', agency: 'Gamma Solutions', campaigns: 3, budget: 7200, status: 'trial', created: '2024-03-18' },
+            { id: 4, name: 'DeltaTech Inc', agency: 'Alpha Agency', campaigns: 19, budget: 82000, status: 'active', created: '2023-11-22' },
+            { id: 5, name: 'EchoVoice Studios', agency: 'Delta Partners', campaigns: 0, budget: 0, status: 'inactive', created: '2023-09-10' },
+            { id: 6, name: 'FlowDigital', agency: 'Gamma Solutions', campaigns: 5, budget: 12300, status: 'active', created: '2024-01-29' },
+            { id: 7, name: 'GreenLeaf Organics', agency: 'Beta Group', campaigns: 2, budget: 4500, status: 'trial', created: '2024-04-08' },
+            { id: 8, name: 'HorizonRetail', agency: 'Alpha Agency', campaigns: 9, budget: 31000, status: 'active', created: '2024-02-14' },
+            { id: 9, name: 'IndigoSoft', agency: 'Epsilon Media', campaigns: 14, budget: 60000, status: 'active', created: '2023-12-05' },
+            { id: 10, name: 'JetStream Travel', agency: 'Beta Group', campaigns: 6, budget: 22500, status: 'active', created: '2024-03-01' },
+            { id: 11, name: 'KaleidoAds', agency: 'Gamma Solutions', campaigns: 1, budget: 2800, status: 'trial', created: '2024-04-20' },
+            { id: 12, name: 'Luminex Health', agency: 'Epsilon Media', campaigns: 11, budget: 48000, status: 'active', created: '2024-01-07' },
+            { id: 13, name: 'MaplePeak Realty', agency: 'Alpha Agency', campaigns: 4, budget: 16000, status: 'active', created: '2024-02-22' },
+            { id: 14, name: 'NovaSpark Tech', agency: 'Delta Partners', campaigns: 0, budget: 0, status: 'inactive', created: '2023-08-15' },
+            { id: 15, name: 'OceanBreeze Hotels', agency: 'Beta Group', campaigns: 8, budget: 27000, status: 'active', created: '2024-01-31' },
+            { id: 16, name: 'PeakPerform Sports', agency: 'Epsilon Media', campaigns: 16, budget: 95000, status: 'active', created: '2023-10-12' },
+            { id: 17, name: 'QuickServe Foods', agency: 'Gamma Solutions', campaigns: 3, budget: 9500, status: 'active', created: '2024-03-14' },
+            { id: 18, name: 'RedRock Mining', agency: 'Alpha Agency', campaigns: 7, budget: 35000, status: 'active', created: '2024-02-08' },
+            { id: 19, name: 'StellarBrand', agency: 'Delta Partners', campaigns: 2, budget: 5000, status: 'trial', created: '2024-04-02' },
+            { id: 20, name: 'TitanForge Mfg', agency: 'Beta Group', campaigns: 10, budget: 42000, status: 'active', created: '2024-01-18' },
+            { id: 21, name: 'UrbanPulse Events', agency: 'Epsilon Media', campaigns: 5, budget: 19000, status: 'active', created: '2024-03-27' },
+            { id: 22, name: 'VividColor Design', agency: 'Gamma Solutions', campaigns: 1, budget: 3200, status: 'trial', created: '2024-04-15' },
+            { id: 23, name: 'WaveCrest Media', agency: 'Alpha Agency', campaigns: 13, budget: 55000, status: 'active', created: '2024-02-19' },
+            { id: 24, name: 'ZenithCloud SaaS', agency: 'Beta Group', campaigns: 6, budget: 24000, status: 'active', created: '2024-03-06' },
+        ];
+
+        // ── State ─────────────────────────────────────────────────────────────────────
+        let state = {
+            query: '',
+            filter: 'all',
+            sortCol: 'id',
+            sortDir: 'asc',
+            page: 1,
+            perPage: 10,
+            selectedRows: new Set(),
+        };
+
+        // ── DOM refs ──────────────────────────────────────────────────────────────────
+        const searchInput = document.getElementById('search-input');
+        const perPageSelect = document.getElementById('per-page-select');
+        const tableBody = document.getElementById('table-body');
+        const noResults = document.getElementById('no-results');
+        const entriesInfo = document.getElementById('entries-info');
+        const pageNumbers = document.getElementById('page-numbers');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const selectAllCb = document.getElementById('select-all');
+        const filterChips = document.querySelectorAll('.filter-chip');
+        const sortableHeaders = document.querySelectorAll('th.sortable');
+
+        // ── Helpers ───────────────────────────────────────────────────────────────────
+        const fmtBudget = n => n === 0 ? '—' : '₪' + n.toLocaleString();
+        const fmtDate = d => { const [y, m, dd] = d.split('-'); return `${dd}/${m}/${y}`; };
+
+        const STATUS_CONFIG = {
+            active: { text: 'Active', bg: 'bg-successLight', text_color: 'text-success', dot: 'bg-success' },
+            trial: { text: 'Trial', bg: 'bg-warningLight', text_color: 'text-warning', dot: 'bg-warning' },
+            inactive: { text: 'Inactive', bg: 'bg-gray-100', text_color: 'text-textMuted', dot: 'bg-textLight' },
+        };
+
+        function statusBadge(status) {
+            const c = STATUS_CONFIG[status] || STATUS_CONFIG.inactive;
+            return `<span class="badge ${c.bg} ${c.text_color}">
+        <span class="badge-dot ${c.dot}"></span>${c.text}
+    </span>`;
+        }
+
+        // ── Derived data ──────────────────────────────────────────────────────────────
+        function getFiltered() {
+            const q = state.query.toLowerCase().trim();
+            return DATA.filter(row => {
+                const matchFilter = state.filter === 'all' || row.status === state.filter;
+                if (!matchFilter) return false;
+                if (!q) return true;
+                return (
+                    row.name.toLowerCase().includes(q) ||
+                    row.agency.toLowerCase().includes(q) ||
+                    String(row.id).includes(q) ||
+                    row.status.includes(q)
+                );
+            });
+        }
+
+        function getSorted(rows) {
+            const { sortCol, sortDir } = state;
+            return [...rows].sort((a, b) => {
+                let va = a[sortCol], vb = b[sortCol];
+                if (typeof va === 'string') va = va.toLowerCase();
+                if (typeof vb === 'string') vb = vb.toLowerCase();
+                if (va < vb) return sortDir === 'asc' ? -1 : 1;
+                if (va > vb) return sortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function getPaged(rows) {
+            const start = (state.page - 1) * state.perPage;
+            return rows.slice(start, start + state.perPage);
+        }
+
+        // ── Render ────────────────────────────────────────────────────────────────────
+        function render() {
+            const filtered = getFiltered();
+            const sorted = getSorted(filtered);
+            const paged = getPaged(sorted);
+            const total = filtered.length;
+            const totalPages = Math.ceil(total / state.perPage);
+            const start = total === 0 ? 0 : (state.page - 1) * state.perPage + 1;
+            const end = Math.min(state.page * state.perPage, total);
+
+            // No results
+            noResults.style.display = total === 0 ? 'flex' : 'none';
+            tableBody.style.display = total === 0 ? 'none' : '';
+            // Hide footer items when no data
+            entriesInfo.textContent = total === 0
+                ? 'No entries to show'
+                : `Showing ${start} to ${end} of ${total} ${total === 1 ? 'entry' : 'entries'}`;
+
+            // Rows
+            tableBody.innerHTML = paged.map(row => {
+                const checked = state.selectedRows.has(row.id) ? 'checked' : '';
+                return `
+        <tr class="group transition-colors duration-150 ${checked ? 'bg-primaryLight/50' : ''}" data-id="${row.id}">
+            <td class="px-4 py-3">
+                <input type="checkbox" class="row-check w-4 h-4 rounded border-border text-primary cursor-pointer focus:ring-primary/30" data-id="${row.id}" ${checked} aria-label="Select row ${row.id}">
+            </td>
+            <td class="px-4 py-3 font-mono text-xs text-textLight">#${row.id}</td>
+            <td class="px-4 py-3 font-semibold text-textMain">${highlight(row.name)}</td>
+            <td class="px-4 py-3 text-textMuted text-sm">${highlight(row.agency)}</td>
+            <td class="px-4 py-3 text-center">
+                <span class="inline-block min-w-[28px] bg-background border border-border rounded-lg px-2 py-0.5 text-xs font-semibold text-textMain font-mono">${row.campaigns}</span>
+            </td>
+            <td class="px-4 py-3 font-mono text-sm text-textMain">${fmtBudget(row.budget)}</td>
+            <td class="px-4 py-3">${statusBadge(row.status)}</td>
+            <td class="px-4 py-3 text-sm text-textMuted tabular-nums">${fmtDate(row.created)}</td>
+            <td class="px-4 py-3 text-right">
+                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                    <button onclick="editRow(${row.id})" class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primaryHover transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-primaryLight" aria-label="Edit ${row.name}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6.293-6.293a1 1 0 011.414 0l1.586 1.586a1 1 0 010 1.414L12 13.5 9 15l.5-2.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 20h14"/></svg>
+                        Edit
+                    </button>
+                    <button onclick="deleteRow(${row.id})" class="inline-flex items-center gap-1 text-xs font-medium text-danger hover:text-red-700 transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-dangerLight" aria-label="Delete ${row.name}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M3 7h18"/></svg>
+                        Delete
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+            }).join('');
+
+            // Pagination
+            renderPagination(totalPages);
+            btnPrev.disabled = state.page <= 1;
+            btnNext.disabled = state.page >= totalPages;
+
+            // Sort indicators
+            sortableHeaders.forEach(th => {
+                th.classList.remove('sort-asc', 'sort-desc');
+                if (th.dataset.col === state.sortCol) {
+                    th.classList.add(state.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+                    th.setAttribute('aria-sort', state.sortDir === 'asc' ? 'ascending' : 'descending');
+                } else {
+                    th.setAttribute('aria-sort', 'none');
+                }
+            });
+
+            // Select-all state
+            const allPageIds = paged.map(r => r.id);
+            const allChecked = allPageIds.length > 0 && allPageIds.every(id => state.selectedRows.has(id));
+            selectAllCb.checked = allChecked;
+            selectAllCb.indeterminate = !allChecked && allPageIds.some(id => state.selectedRows.has(id));
+
+            // Row checkbox listeners
+            document.querySelectorAll('.row-check').forEach(cb => {
+                cb.addEventListener('change', e => {
+                    const id = Number(e.target.dataset.id);
+                    e.target.checked ? state.selectedRows.add(id) : state.selectedRows.delete(id);
+                    render();
+                });
+            });
+        }
+
+        // ── Highlight search query in text ───────────────────────────────────────────
+        function highlight(text) {
+            const q = state.query.trim();
+            if (!q) return text;
+            const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return text.replace(new RegExp(`(${escaped})`, 'gi'),
+                '<mark class="bg-yellow-100 text-yellow-800 rounded px-0.5">$1</mark>');
+        }
+
+        // ── Pagination renderer ───────────────────────────────────────────────────────
+        function renderPagination(totalPages) {
+            if (totalPages <= 1) { pageNumbers.innerHTML = ''; return; }
+
+            const pages = [];
+            const cur = state.page;
+
+            if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                if (cur > 3) pages.push('…');
+                for (let i = Math.max(2, cur - 1); i <= Math.min(totalPages - 1, cur + 1); i++) pages.push(i);
+                if (cur < totalPages - 2) pages.push('…');
+                pages.push(totalPages);
+            }
+
+            pageNumbers.innerHTML = pages.map(p =>
+                p === '…'
+                    ? `<span class="w-8 text-center text-textLight text-sm select-none">…</span>`
+                    : `<button class="page-btn ${p === cur ? 'active' : ''}" onclick="goToPage(${p})" aria-label="Page ${p}" ${p === cur ? 'aria-current="page"' : ''}>${p}</button>`
+            ).join('');
+        }
+
+        // ── Actions ───────────────────────────────────────────────────────────────────
+        function goToPage(p) { state.page = p; render(); }
+        function changePage(d) { state.page = Math.max(1, state.page + d); render(); }
+
+        function editRow(id) {
+            const row = DATA.find(r => r.id === id);
+            alert(`Edit: ${row?.name}\n(Wire to your edit page here)`);
+        }
+
+        function deleteRow(id) {
+            const row = DATA.find(r => r.id === id);
+            if (confirm(`Delete "${row?.name}"?`)) {
+                const idx = DATA.findIndex(r => r.id === id);
+                if (idx > -1) DATA.splice(idx, 1);
+                state.selectedRows.delete(id);
+                // Adjust page if needed
+                const total = getFiltered().length;
+                const maxPage = Math.max(1, Math.ceil(total / state.perPage));
+                if (state.page > maxPage) state.page = maxPage;
+                render();
+            }
+        }
+
+        function clearSearch() {
+            state.query = '';
+            state.filter = 'all';
+            state.page = 1;
+            searchInput.value = '';
+            filterChips.forEach(c => c.classList.toggle('active', c.dataset.filter === 'all'));
+            render();
+        }
+
+        // ── Event listeners ───────────────────────────────────────────────────────────
+
+        // Search — debounced
+        let searchTimer;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                state.query = searchInput.value;
+                state.page = 1;
+                render();
+            }, 200);
+        });
+
+        // Filter chips
+        filterChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                state.filter = chip.dataset.filter;
+                state.page = 1;
+                filterChips.forEach(c => c.classList.toggle('active', c === chip));
+                render();
+            });
+        });
+
+        // Per-page select
+        perPageSelect.addEventListener('change', () => {
+            state.perPage = Number(perPageSelect.value);
+            state.page = 1;
+            render();
+        });
+
+        // Sort headers
+        sortableHeaders.forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.col;
+                if (state.sortCol === col) {
+                    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.sortCol = col;
+                    state.sortDir = 'asc';
+                }
+                state.page = 1;
+                render();
+            });
+        });
+
+        // Select all
+        selectAllCb.addEventListener('change', () => {
+            const filtered = getFiltered();
+            const sorted = getSorted(filtered);
+            const paged = getPaged(sorted);
+            paged.forEach(row => {
+                selectAllCb.checked
+                    ? state.selectedRows.add(row.id)
+                    : state.selectedRows.delete(row.id);
+            });
+            render();
+        });
+
+        // New client button
+        document.getElementById('new-client-btn').addEventListener('click', () => {
+            alert('Open "New Client" form here.');
+        });
+
+        // ── Initial render ────────────────────────────────────────────────────────────
+        render();
+    </script>
+</body>
+
+</html>

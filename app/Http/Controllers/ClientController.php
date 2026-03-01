@@ -22,8 +22,8 @@ class ClientController extends Controller
 
         // If admin, show all clients; otherwise, only their own
         $clients = $user->hasPermission('is_admin')
-            ? Client::all()
-            : $user->clients;
+            ? Client::withCount(['campaigns' => fn($q) => $q->where('status', 'active')])->get()
+            : $user->clients()->withCount(['campaigns' => fn($q) => $q->where('status', 'active')])->get();
         return view('clients.index', compact('clients'));
     }
 
