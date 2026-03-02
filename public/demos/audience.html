@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audience Selector Modal - Enterprise SaaS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2563EB',
+                        primaryHover: '#1D4ED8',
+                        surface: '#FFFFFF',
+                        background: '#1E293B',
+                        border: '#E2E8F0',
+                        textMain: '#0F172A',
+                        textMuted: '#475569',
+                        textLight: '#94A3B8',
+                        groupBg: '#F8FAFC', // Added soft background for sub-categories
+                    },
+                    boxShadow: {
+                        modal: '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)',
+                        focus: '0 0 0 3px rgba(37, 99, 235, 0.15)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        *:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+            border-radius: 2px;
+        }
+
+        .enterprise-checkbox {
+            appearance: none;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid #CBD5E1;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .enterprise-checkbox:checked {
+            background-color: #2563EB;
+            border-color: #2563EB;
+        }
+
+        .enterprise-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 6px;
+            height: 11px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .enterprise-checkbox:hover:not(:checked) {
+            border-color: #2563EB;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="fixed inset-0 bg-background/40 backdrop-blur-[2px] z-40 flex items-center justify-center p-4 sm:p-6"
+        role="dialog" aria-modal="true">
+
+        <div
+            class="bg-surface rounded-2xl shadow-modal w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+
+            <div class="border-b border-border px-6 py-5 flex items-center gap-4 relative">
+                <svg class="w-6 h-6 text-textLight flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+                </svg>
+                <input type="search" placeholder="Search thousands of audiences..."
+                    class="w-full text-lg text-textMain placeholder-textLight border-none focus:outline-none focus:ring-0 bg-transparent"
+                    autofocus>
+            </div>
+
+            <div class="flex flex-1 overflow-hidden min-h-[500px] h-[70vh]">
+
+                <div
+                    class="w-64 border-r border-border bg-gray-50/50 flex flex-col py-4 custom-scrollbar overflow-y-auto flex-shrink-0">
+                    <div class="px-4 pb-2">
+                        <h3 class="text-xs font-bold text-textLight uppercase tracking-wider">Main Categories</h3>
+                    </div>
+
+                    <nav class="flex-1 px-2 space-y-1">
+                        <button
+                            class="w-full flex items-center gap-3 px-3 py-2.5 bg-blue-50 text-primary font-semibold rounded-lg text-left">
+                            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span class="text-sm">Demographics</span>
+                        </button>
+                        <button
+                            class="w-full flex items-center gap-3 px-3 py-2.5 text-textMuted hover:bg-gray-100 font-medium rounded-lg text-left transition-colors">
+                            <svg class="w-5 h-5 flex-shrink-0 text-textLight" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                            <span class="text-sm">In-Market</span>
+                        </button>
+                        <button
+                            class="w-full flex items-center gap-3 px-3 py-2.5 text-textMuted hover:bg-gray-100 font-medium rounded-lg text-left transition-colors">
+                            <svg class="w-5 h-5 flex-shrink-0 text-textLight" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span class="text-sm">Interests</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <div class="flex-1 flex flex-col bg-surface relative">
+
+                    <div
+                        class="px-6 py-3 border-b border-border bg-white flex justify-between items-center text-xs font-semibold text-textLight uppercase tracking-wider z-20 shadow-sm relative">
+                        <span>Audience Segment</span>
+                        <span>Est. Size</span>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-3 relative">
+
+                        <div class="mb-6">
+                            <div
+                                class="sticky top-0 z-10 bg-white/95 backdrop-blur-sm px-3 py-2 mb-2 border-b border-gray-100 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                                <h3 class="text-xs font-bold text-textMuted uppercase tracking-wider">Family &
+                                    Relationships</h3>
+                            </div>
+
+                            <label
+                                class="flex items-center justify-between p-3 md:px-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group mb-1">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" class="enterprise-checkbox">
+                                    <div>
+                                        <h4
+                                            class="text-sm font-semibold text-textMain group-hover:text-primary transition-colors">
+                                            Parents with Teens</h4>
+                                        <p class="text-xs text-textMuted mt-0.5">Users with teenage children (13-17
+                                            years old)</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-groupBg text-textMuted font-mono text-xs px-2.5 py-1 rounded-md border border-border">
+                                    610K Users
+                                </div>
+                            </label>
+
+                            <label
+                                class="flex items-center justify-between p-3 md:px-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group mb-1">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" class="enterprise-checkbox">
+                                    <div>
+                                        <h4
+                                            class="text-sm font-semibold text-textMain group-hover:text-primary transition-colors">
+                                            New Parents</h4>
+                                        <p class="text-xs text-textMuted mt-0.5">Expecting or have children under 2</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-groupBg text-textMuted font-mono text-xs px-2.5 py-1 rounded-md border border-border">
+                                    450K Users
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="mb-6">
+                            <div
+                                class="sticky top-0 z-10 bg-white/95 backdrop-blur-sm px-3 py-2 mb-2 border-b border-gray-100 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                                <h3 class="text-xs font-bold text-textMuted uppercase tracking-wider">Education & Career
+                                </h3>
+                            </div>
+
+                            <label
+                                class="flex items-center justify-between p-3 md:px-4 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition-colors cursor-pointer group mb-1">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" class="enterprise-checkbox" checked>
+                                    <div>
+                                        <h4
+                                            class="text-sm font-semibold text-textMain group-hover:text-primary transition-colors">
+                                            College Students</h4>
+                                        <p class="text-xs text-textMuted mt-0.5">Currently enrolled in undergrad/grad
+                                            programs</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-white text-textMuted font-mono text-xs px-2.5 py-1 rounded-md border border-border">
+                                    2.4M Users
+                                </div>
+                            </label>
+
+                            <label
+                                class="flex items-center justify-between p-3 md:px-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group mb-1">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" class="enterprise-checkbox">
+                                    <div>
+                                        <h4
+                                            class="text-sm font-semibold text-textMain group-hover:text-primary transition-colors">
+                                            High Income Earners</h4>
+                                        <p class="text-xs text-textMuted mt-0.5">Top 10% household income bracket</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-groupBg text-textMuted font-mono text-xs px-2.5 py-1 rounded-md border border-border">
+                                    1.2M Users
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="mb-6">
+                            <div
+                                class="sticky top-0 z-10 bg-white/95 backdrop-blur-sm px-3 py-2 mb-2 border-b border-gray-100 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                                <h3 class="text-xs font-bold text-textMuted uppercase tracking-wider">Home & Real Estate
+                                </h3>
+                            </div>
+
+                            <label
+                                class="flex items-center justify-between p-3 md:px-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group mb-1">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" class="enterprise-checkbox">
+                                    <div>
+                                        <h4
+                                            class="text-sm font-semibold text-textMain group-hover:text-primary transition-colors">
+                                            Homeowners</h4>
+                                        <p class="text-xs text-textMuted mt-0.5">Currently own residential property</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-groupBg text-textMuted font-mono text-xs px-2.5 py-1 rounded-md border border-border">
+                                    8.1M Users
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="mb-6">
+                            <div
+                                class="sticky top-0 z-10 bg-white/95 backdrop-blur-sm px-3 py-2 mb-2 border-b border-gray-100 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                                <h3 class="text-xs font-bold text-textMuted uppercase tracking-wider">Lifestyle &
+                                    Hobbies</h3>
+                            </div>
+
+                            <label
+                                class="flex items-center justify-between p-3 md:px-4 rounded-xl bg-blue-50/50 hover:bg-blue-50 transition-colors cursor-pointer group mb-1">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" class="enterprise-checkbox" checked>
+                                    <div>
+                                        <h4
+                                            class="text-sm font-semibold text-textMain group-hover:text-primary transition-colors">
+                                            Tech Enthusiasts</h4>
+                                        <p class="text-xs text-textMuted mt-0.5">Early adopters of new consumer
+                                            electronics</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-white text-textMuted font-mono text-xs px-2.5 py-1 rounded-md border border-border">
+                                    3.7M Users
+                                </div>
+                            </label>
+
+                            <label
+                                class="flex items-center justify-between p-3 md:px-4 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group mb-1">
+                                <div class="flex items-center gap-4">
+                                    <input type="checkbox" class="enterprise-checkbox">
+                                    <div>
+                                        <h4
+                                            class="text-sm font-semibold text-textMain group-hover:text-primary transition-colors">
+                                            Frequent Travelers</h4>
+                                        <p class="text-xs text-textMuted mt-0.5">Business or leisure travel 5+ times a
+                                            year</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="bg-groupBg text-textMuted font-mono text-xs px-2.5 py-1 rounded-md border border-border">
+                                    2.1M Users
+                                </div>
+                            </label>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-border bg-gray-50/50 px-6 py-4 flex items-center justify-between">
+                <div class="text-xs font-semibold text-textMuted">
+                    <span class="text-primary bg-blue-100 px-2 py-0.5 rounded-full mr-1">2</span> audiences selected
+                </div>
+                <div class="flex items-center gap-3">
+                    <button
+                        class="px-5 py-2.5 text-sm font-semibold text-textMain bg-white border border-border hover:border-gray-400 hover:bg-gray-50 rounded-xl transition-all shadow-sm">
+                        Cancel
+                    </button>
+                    <button
+                        class="px-5 py-2.5 text-sm font-bold text-white bg-primary hover:bg-primaryHover rounded-xl transition-all shadow-sm hover:shadow">
+                        Apply (2 Selected)
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>

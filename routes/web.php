@@ -37,6 +37,10 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('auth')
         ->name('campaigns.upload');
 
+    // Audiences
+    Route::get('/campaigns/{campaign}/audiences', [\App\Http\Controllers\CampaignController::class, 'audiencesJson'])->name('campaigns.audiences.json');
+    Route::post('/campaigns/{campaign}/audiences/sync', [\App\Http\Controllers\CampaignController::class, 'syncAudiences'])->name('campaigns.audiences.sync');
+
     Route::get('/dashboard/{campaign}', [\App\Http\Controllers\DashboardController::class, 'show'])
         ->middleware('auth')
         ->name('dashboard.campaign');
@@ -63,6 +67,13 @@ Route::middleware(['auth'])->group(function () {
     // Admin Routes
     Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(function () {
         Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+
+        // Audiences
+        Route::get('/audiences', [\App\Http\Controllers\Admin\AudienceController::class, 'index'])->name('audiences.index');
+        Route::post('/audiences', [\App\Http\Controllers\Admin\AudienceController::class, 'store'])->name('audiences.store');
+        Route::put('/audiences/{audience}', [\App\Http\Controllers\Admin\AudienceController::class, 'update'])->name('audiences.update');
+        Route::delete('/audiences/{audience}', [\App\Http\Controllers\Admin\AudienceController::class, 'destroy'])->name('audiences.destroy');
+        Route::post('/audiences/upload', [\App\Http\Controllers\Admin\AudienceController::class, 'upload'])->name('audiences.upload');
         Route::post('roles/reorder', [\App\Http\Controllers\Admin\RoleController::class, 'reorder'])->name('roles.reorder');
         Route::resource('roles', \App\Http\Controllers\Admin\RoleController::class);
 

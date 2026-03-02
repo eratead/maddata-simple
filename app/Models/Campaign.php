@@ -46,4 +46,9 @@ class Campaign extends Model
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    public function audiences()
+    {
+        return $this->belongsToMany(Audience::class, 'campaign_audience');
+    }
 }

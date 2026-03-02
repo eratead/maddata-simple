@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Audience;
 use App\Models\Campaign;
 
 use Illuminate\Http\Request;
@@ -312,10 +313,41 @@ class CampaignController extends Controller
     public function edit(Campaign $campaign)
     {
         $this->authorize('update', $campaign);
-        $campaign->load('creatives');
+        $campaign->load(['creatives', 'audiences']);
 
-        $clients = Client::all(); // Or limit by user access
-        return view('campaigns.edit', compact('campaign', 'clients'));
+        $clients = Client::all();
+        $connectedAudiences = $campaign->audiences;
+        return view('campaigns.edit', compact('campaign', 'clients', 'connectedAudiences'));
+    }
+
+    public function audiencesJson(Campaign $campaign)
+    {
+        $this->authorize('update', $campaign);
+
+        $audiences = Audience::where('is_active', true)
+            ->orderBy('main_category')
+            ->orderBy('sub_category')
+            ->orderBy('name')
+            ->get(['id', 'main_category', 'sub_category', 'name', 'estimated_users', 'icon']);
+
+        return response()->json($audiences);
+    }
+
+    public function syncAudiences(Request $request, Campaign $campaign)
+    {
+        $this->authorize('update', $campaign);
+
+        $request->validate([
+            'audience_ids' => 'array',
+            'audience_ids.*' => 'integer|exists:audiences,id',
+        ]);
+
+        $campaign->audiences()->sync($request->input('audience_ids', []));
+
+        $connected = $campaign->audiences()
+            ->get(['audiences.id', 'main_category', 'sub_category', 'name', 'estimated_users', 'icon']);
+
+        return response()->json(['connected' => $connected]);
     }
 
     public function update(Request $request, Campaign $campaign)

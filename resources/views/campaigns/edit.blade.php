@@ -299,6 +299,220 @@
                             </div>
                         </div>
 
+                        <!-- Accordion 3: Audiences -->
+                        <div class="mb-3 bg-white rounded-md border border-[#F18561] overflow-hidden"
+                             x-data="audienceManager({{ $campaign->id }}, {{ Js::from($connectedAudiences) }})"
+                             :class="{ 'open': activeAccordion === 'audiences' }">
+                            <div class="p-4 px-5 flex justify-between items-center cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors select-none"
+                                @click="activeAccordion = (activeAccordion === 'audiences' ? null : 'audiences')">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                        </svg>
+                                    </div>
+                                    <span class="text-base font-bold text-gray-900 transition-colors text-left">
+                                        Audiences
+                                        <span class="ml-1.5 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold" x-text="connected.length"></span>
+                                    </span>
+                                </div>
+                                <svg class="text-gray-500 transition-transform duration-300 transform"
+                                     :class="{ 'rotate-180': activeAccordion === 'audiences' }"
+                                     width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+
+                            <!-- Accordion Body -->
+                            <div x-show="activeAccordion === 'audiences'" x-collapse>
+                                <div class="p-4 sm:p-6 border-t border-gray-200">
+                                    <div class="flex justify-end mb-4">
+                                        <button type="button" @click.stop="openModal()"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium shadow-sm transition-colors">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                            </svg>
+                                            Add Audiences
+                                        </button>
+                                    </div>
+
+                                    <!-- Connected pills -->
+                                    <div x-show="connected.length > 0" class="flex flex-wrap gap-2">
+                                        <template x-for="audience in connected" :key="audience.id">
+                                            <div class="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 bg-blue-50 border border-blue-200 rounded-full text-sm font-medium text-blue-800">
+                                                <span class="text-xs text-blue-400 font-normal" x-text="audience.sub_category + ' ·'"></span>
+                                                <span x-text="audience.name"></span>
+                                                <button type="button" @click="removeAudience(audience.id)"
+                                                    class="ml-0.5 w-5 h-5 rounded-full flex items-center justify-center hover:bg-blue-200 text-blue-400 hover:text-blue-700 transition-colors flex-shrink-0">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div x-show="connected.length === 0" class="text-sm text-gray-400 italic">No audiences connected yet.</div>
+                                </div>
+                            </div>
+
+                            <!-- Audience Selector Modal -->
+                            <template x-teleport="body">
+                                <div x-show="showModal" x-cloak
+                                    class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+                                    style="background: rgba(30,41,59,0.45); backdrop-filter: blur(2px)">
+                                    <div @click.away="showModal = false"
+                                        class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden"
+                                        style="max-height: 90vh">
+
+                                        <!-- Modal Search Header -->
+                                        <div class="border-b border-gray-100 px-5 py-4 flex items-center gap-3">
+                                            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                                            </svg>
+                                            <input type="search" x-model="search" placeholder="Search audiences, categories..."
+                                                class="flex-1 text-base text-gray-900 placeholder-gray-400 border-none focus:outline-none focus:ring-0 bg-transparent"
+                                                autofocus>
+                                            <label class="inline-flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none flex-shrink-0">
+                                                <input type="checkbox" x-model="filterConnected" class="rounded border-gray-300 text-primary focus:ring-primary">
+                                                Connected only
+                                            </label>
+                                        </div>
+
+                                        <!-- Modal Body -->
+                                        <div class="flex flex-1 overflow-hidden" style="min-height: 480px; height: 65vh">
+
+                                            <!-- Left: Categories -->
+                                            <div class="w-60 border-r border-gray-100 bg-gray-50/60 flex flex-col flex-shrink-0 overflow-y-auto"
+                                                style="-webkit-overflow-scrolling: touch">
+                                                <div class="px-4 pt-4 pb-2">
+                                                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Categories</h3>
+                                                </div>
+                                                <nav class="flex-1 px-2 pb-4 space-y-0.5">
+                                                    <!-- All -->
+                                                    <button type="button"
+                                                        class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-sm transition-colors"
+                                                        :class="activeCategory === null ? 'bg-blue-50 text-primary font-semibold' : 'text-gray-600 hover:bg-gray-100 font-medium'"
+                                                        @click="activeCategory = null">
+                                                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                                        </svg>
+                                                        All Categories
+                                                    </button>
+                                                    <template x-for="cat in mainCategories" :key="cat.name">
+                                                        <button type="button"
+                                                            class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-sm transition-colors"
+                                                            :class="activeCategory === cat.name ? 'bg-blue-50 text-primary font-semibold' : 'text-gray-600 hover:bg-gray-100 font-medium'"
+                                                            @click="activeCategory = cat.name">
+                                                            <!-- Custom icon if set -->
+                                                            <template x-if="cat.icon">
+                                                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="cat.icon"/>
+                                                                </svg>
+                                                            </template>
+                                                            <template x-if="!cat.icon">
+                                                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z"/>
+                                                                </svg>
+                                                            </template>
+                                                            <span class="flex-1 truncate" x-text="cat.name"></span>
+                                                            <!-- Connected badge -->
+                                                            <span x-show="categoryHasSelected(cat.name)"
+                                                                class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                                        </button>
+                                                    </template>
+                                                </nav>
+
+                                                <!-- Loading state -->
+                                                <div x-show="loading" class="flex items-center justify-center py-8 text-gray-400 text-sm gap-2">
+                                                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                    </svg>
+                                                    Loading...
+                                                </div>
+                                            </div>
+
+                                            <!-- Right: Audiences -->
+                                            <div class="flex-1 flex flex-col bg-white min-w-0">
+                                                <!-- Column headers -->
+                                                <div class="px-5 py-2.5 border-b border-gray-100 bg-white flex justify-between items-center text-xs font-semibold text-gray-400 uppercase tracking-wider flex-shrink-0">
+                                                    <span>Audience Segment</span>
+                                                    <span>Est. Size</span>
+                                                </div>
+
+                                                <!-- Audience list -->
+                                                <div class="flex-1 overflow-y-auto p-3" style="-webkit-overflow-scrolling: touch">
+
+                                                    <!-- Empty state -->
+                                                    <div x-show="!loading && filteredAudiences.length === 0"
+                                                        class="flex flex-col items-center justify-center h-full text-gray-400 gap-2 py-12">
+                                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                        </svg>
+                                                        <span class="text-sm">No audiences found</span>
+                                                    </div>
+
+                                                    <!-- Groups -->
+                                                    <template x-for="(audiences, subCategory) in groupedBySub" :key="subCategory">
+                                                        <div class="mb-5">
+                                                            <!-- Sub-category header -->
+                                                            <div class="sticky top-0 z-10 bg-white/95 backdrop-blur-sm px-3 py-2 mb-1 border-b border-gray-100 flex items-center gap-2">
+                                                                <span class="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0"></span>
+                                                                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider" x-text="subCategory"></h3>
+                                                            </div>
+
+                                                            <!-- Audience rows -->
+                                                            <template x-for="audience in audiences" :key="audience.id">
+                                                                <label
+                                                                    class="flex items-center justify-between px-3 py-3 rounded-xl transition-colors cursor-pointer group mb-0.5"
+                                                                    :class="isSelected(audience.id) ? 'bg-blue-50/70 hover:bg-blue-50' : 'hover:bg-gray-50'">
+                                                                    <div class="flex items-center gap-3 min-w-0">
+                                                                        <input type="checkbox"
+                                                                            :checked="isSelected(audience.id)"
+                                                                            @change="toggle(audience.id)"
+                                                                            class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer flex-shrink-0">
+                                                                        <div class="min-w-0">
+                                                                            <p class="text-sm font-semibold text-gray-900 group-hover:text-primary transition-colors truncate" x-text="audience.name"></p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="text-xs font-mono px-2.5 py-1 rounded-md border flex-shrink-0 ml-3"
+                                                                        :class="isSelected(audience.id) ? 'bg-white border-gray-200 text-gray-500' : 'bg-gray-50 border-gray-200 text-gray-400'"
+                                                                        x-text="formatUsers(audience.estimated_users)">
+                                                                    </div>
+                                                                </label>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Modal Footer -->
+                                        <div class="border-t border-gray-100 bg-gray-50/60 px-6 py-4 flex items-center justify-between flex-shrink-0">
+                                            <div class="text-sm text-gray-500">
+                                                <span class="font-bold text-primary bg-blue-100 px-2 py-0.5 rounded-full mr-1.5" x-text="selectedCount"></span>
+                                                audiences selected
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <button type="button" @click="showModal = false"
+                                                    class="px-5 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl transition-all shadow-sm">
+                                                    Cancel
+                                                </button>
+                                                <button type="button" @click="applySync()"
+                                                    class="px-5 py-2 text-sm font-bold text-white bg-primary hover:bg-primary-hover rounded-xl transition-all shadow-sm"
+                                                    :disabled="syncing"
+                                                    :class="{ 'opacity-60 cursor-wait': syncing }">
+                                                    <span x-show="!syncing" x-text="`Apply (${selectedCount} selected)`"></span>
+                                                    <span x-show="syncing">Saving...</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
                     </div>
                     <!-- Footer Actions -->
                     <div class="flex items-center justify-end gap-3 mt-4 mb-8 pt-6 border-t border-gray-100">
@@ -310,4 +524,132 @@
                 </form>
             </div>
         </main>
+
+<script>
+function audienceManager(campaignId, initialConnected) {
+    return {
+        campaignId: campaignId,
+        connected: initialConnected,
+        showModal: false,
+        allAudiences: [],
+        loading: false,
+        syncing: false,
+        search: '',
+        filterConnected: false,
+        activeCategory: null,
+        selectedIds: [],
+
+        get mainCategories() {
+            const seen = new Map();
+            this.allAudiences.forEach(a => {
+                if (!seen.has(a.main_category)) {
+                    seen.set(a.main_category, { name: a.main_category, icon: a.icon });
+                }
+            });
+            return Array.from(seen.values());
+        },
+
+        categoryHasSelected(cat) {
+            return this.allAudiences.some(a => a.main_category === cat && this.selectedIds.includes(a.id));
+        },
+
+        get filteredAudiences() {
+            return this.allAudiences.filter(a => {
+                if (this.activeCategory && a.main_category !== this.activeCategory) return false;
+                if (this.filterConnected && !this.selectedIds.includes(a.id)) return false;
+                if (this.search) {
+                    const q = this.search.toLowerCase();
+                    return a.name.toLowerCase().includes(q)
+                        || a.main_category.toLowerCase().includes(q)
+                        || a.sub_category.toLowerCase().includes(q);
+                }
+                return true;
+            });
+        },
+
+        get groupedBySub() {
+            const groups = {};
+            this.filteredAudiences.forEach(a => {
+                if (!groups[a.sub_category]) groups[a.sub_category] = [];
+                groups[a.sub_category].push(a);
+            });
+            return groups;
+        },
+
+        get selectedCount() {
+            return this.selectedIds.length;
+        },
+
+        isSelected(id) {
+            return this.selectedIds.includes(id);
+        },
+
+        toggle(id) {
+            const idx = this.selectedIds.indexOf(id);
+            if (idx > -1) {
+                this.selectedIds.splice(idx, 1);
+            } else {
+                this.selectedIds.push(id);
+            }
+        },
+
+        async openModal() {
+            this.selectedIds = this.connected.map(a => a.id);
+            this.showModal = true;
+            if (this.allAudiences.length === 0) {
+                this.loading = true;
+                try {
+                    const res = await fetch(`/campaigns/${this.campaignId}/audiences`);
+                    this.allAudiences = await res.json();
+                    if (this.mainCategories.length > 0) {
+                        this.activeCategory = this.mainCategories[0].name;
+                    }
+                } finally {
+                    this.loading = false;
+                }
+            }
+        },
+
+        async applySync() {
+            this.syncing = true;
+            try {
+                const res = await fetch(`/campaigns/${this.campaignId}/audiences/sync`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ audience_ids: this.selectedIds }),
+                });
+                const data = await res.json();
+                this.connected = data.connected;
+                this.showModal = false;
+            } finally {
+                this.syncing = false;
+            }
+        },
+
+        async removeAudience(id) {
+            this.selectedIds = this.connected.map(a => a.id).filter(i => i !== id);
+            const res = await fetch(`/campaigns/${this.campaignId}/audiences/sync`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ audience_ids: this.selectedIds }),
+            });
+            const data = await res.json();
+            this.connected = data.connected;
+        },
+
+        formatUsers(n) {
+            if (!n) return '—';
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M Users';
+            if (n >= 1000) return Math.round(n / 1000) + 'K Users';
+            return n + ' Users';
+        },
+    };
+}
+</script>
 </x-app-layout>

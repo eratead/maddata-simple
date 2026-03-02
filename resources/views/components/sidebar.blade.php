@@ -79,7 +79,7 @@
             <!-- Manage Clients/Users Dropdown -->
             @if (Auth::user() && Auth::user()->hasPermission('is_admin'))
                 @php
-                    $isManageActive = request()->is('clients*') || request()->is('users*') || request()->is('admin/roles*') || request()->is('admin/activity-logs*') || request()->is('admin/campaign-changes*');
+                    $isManageActive = request()->is('clients*') || request()->is('users*') || request()->is('admin/roles*') || request()->is('admin/activity-logs*') || request()->is('admin/campaign-changes*') || request()->is('admin/audiences*');
                 @endphp
                 <div x-data="{ open: {{ $isManageActive ? 'true' : 'false' }} }" class="relative">
                     <button @click="open = !open" type="button"
@@ -126,6 +126,9 @@
                                 
                                 <a href="{{ route('admin.campaign_changes.index') }}"
                                     class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->is('admin/campaign-changes*') ? 'text-primary font-medium bg-primaryLight/50' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">Campaign Changes</a>
+
+                                <a href="{{ route('admin.audiences.index') }}"
+                                    class="block px-4 py-2 text-sm rounded-md transition-colors {{ request()->is('admin/audiences*') ? 'text-primary font-medium bg-primaryLight/50' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">Audiences</a>
                             @endif
                         @endauth
                     </div>
