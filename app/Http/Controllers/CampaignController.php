@@ -12,6 +12,7 @@ use App\Models\Client;
 use App\Models\PlacementData;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Carbon;
+use App\Services\ActivityLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 
@@ -342,7 +343,27 @@ class CampaignController extends Controller
             'audience_ids.*' => 'integer|exists:audiences,id',
         ]);
 
-        $campaign->audiences()->sync($request->input('audience_ids', []));
+        $before = $campaign->audiences()->pluck('audiences.id')->all();
+        $after  = $request->input('audience_ids', []);
+
+        $campaign->audiences()->sync($after);
+
+        $added   = array_diff($after, $before);
+        $removed = array_diff($before, $after);
+
+        if (!empty($added) || !empty($removed)) {
+            $logger = app(ActivityLogger::class);
+
+            if (!empty($added)) {
+                $names = Audience::whereIn('id', $added)->pluck('name')->join(', ');
+                $logger->log('updated', $campaign, "Connected audiences to \"{$campaign->name}\": {$names}");
+            }
+
+            if (!empty($removed)) {
+                $names = Audience::whereIn('id', $removed)->pluck('name')->join(', ');
+                $logger->log('updated', $campaign, "Disconnected audiences from \"{$campaign->name}\": {$names}");
+            }
+        }
 
         $connected = $campaign->audiences()
             ->get(['audiences.id', 'main_category', 'sub_category', 'name', 'estimated_users', 'icon']);
