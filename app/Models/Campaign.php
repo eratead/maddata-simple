@@ -19,12 +19,14 @@ class Campaign extends Model
         'required_sizes',
         'creative_optimization',
         'status',
+        'targeting_rules',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
         'creative_optimization' => 'boolean',
+        'targeting_rules' => 'array',
     ];
 
     public function client()
@@ -50,5 +52,10 @@ class Campaign extends Model
     public function audiences()
     {
         return $this->belongsToMany(Audience::class, 'campaign_audience');
+    }
+
+    public function locations()
+    {
+        return $this->hasMany(CampaignLocation::class);
     }
 }

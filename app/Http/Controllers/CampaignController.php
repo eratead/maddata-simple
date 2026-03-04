@@ -314,7 +314,7 @@ class CampaignController extends Controller
     public function edit(Campaign $campaign)
     {
         $this->authorize('update', $campaign);
-        $campaign->load(['creatives', 'audiences']);
+        $campaign->load(['creatives', 'audiences', 'locations']);
 
         $clients = Client::all();
         $connectedAudiences = $campaign->audiences;
@@ -386,6 +386,30 @@ class CampaignController extends Controller
             'required_sizes' => 'nullable|string',
             'creative_optimization' => 'boolean',
             'status' => 'required|in:active,paused',
+            'targeting_rules' => 'nullable|array',
+            'targeting_rules.genders' => 'nullable|array',
+            'targeting_rules.genders.*' => 'nullable|string|in:male,female,unknown',
+            'targeting_rules.ages' => 'nullable|array',
+            'targeting_rules.ages.*' => 'nullable|string|in:18-24,25-34,35-44,45-54,55-64,65+,Unknown',
+            'targeting_rules.device_types' => 'nullable|array',
+            'targeting_rules.device_types.*' => 'nullable|string|in:Mobile,Tablet,Desktop,CTV',
+            'targeting_rules.os' => 'nullable|array',
+            'targeting_rules.os.*' => 'nullable|string|in:iOS,Android,Windows,macOS',
+            'targeting_rules.connection_types' => 'nullable|array',
+            'targeting_rules.connection_types.*' => 'nullable|string|in:WiFi,Cellular',
+            'targeting_rules.environments' => 'nullable|array',
+            'targeting_rules.environments.*' => 'nullable|string|in:In-App,Mobile Web',
+            'targeting_rules.allowlist' => 'nullable|string',
+            'targeting_rules.blocklist' => 'nullable|string',
+            'targeting_rules.days' => 'nullable|array',
+            'targeting_rules.days.*' => 'nullable|string|in:Sun,Mon,Tue,Wed,Thu,Fri,Sat',
+            'targeting_rules.time_start' => 'nullable|date_format:H:i',
+            'targeting_rules.time_end' => 'nullable|date_format:H:i',
+            'locations' => 'nullable|array',
+            'locations.*.name' => 'nullable|string|max:255',
+            'locations.*.lat' => 'required_with:locations.*|numeric|between:-90,90',
+            'locations.*.lng' => 'required_with:locations.*|numeric|between:-180,180',
+            'locations.*.radius_meters' => 'nullable|integer|min:100',
         ]);
 
         if (!Auth::user()->can('editBudget', Campaign::class)) {
@@ -395,7 +419,20 @@ class CampaignController extends Controller
             unset($validated['expected_impressions']);
         }
 
+        $locationData = $validated['locations'] ?? [];
+        unset($validated['locations']);
+
         $campaign->update($validated);
+
+        $campaign->locations()->delete();
+        foreach ($locationData as $loc) {
+            $campaign->locations()->create([
+                'name'          => $loc['name'] ?? null,
+                'lat'           => $loc['lat'],
+                'lng'           => $loc['lng'],
+                'radius_meters' => $loc['radius_meters'] ?? 1000,
+            ]);
+        }
 
         $campaign->refresh();
         if (empty($campaign->start_date)) {
