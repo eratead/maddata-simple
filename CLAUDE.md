@@ -92,3 +92,24 @@ PestPHP v3 with Laravel plugin. Tests use SQLite in-memory (configured in `phpun
 - **Environment**: This is a local development environment (Laravel Herd / Mac). Do NOT attempt to connect to production via SFTP or SSH.
 - **Database**: Local MySQL for development. Migrations (`php artisan migrate`) should be run locally.
 - **Deployment**: Code is deployed via Git. We push to a `staging` branch for review before pushing to `main` (production).
+
+## Staging Server
+- **Host**: 207.154.253.28
+- **User**: root
+- **SSH key**: `~/.ssh/id_rsa` (has passphrase — run `ssh-add ~/.ssh/id_rsa` if not loaded)
+- **Project path**: `/var/www/dev/maddata-simple`
+- **DB**: `maddata_simple`, user `webusr` (password stored in memory, NOT here)
+
+### Staging deploy sequence
+```bash
+# 1. Push code
+git push origin main:staging
+
+# 2. SSH and update
+ssh -i ~/.ssh/id_rsa root@207.154.253.28 "cd /var/www/dev/maddata-simple && git fetch && git checkout staging && git pull && composer install --no-dev --optimize-autoloader && php artisan migrate --force && php artisan config:clear && php artisan cache:clear && php artisan view:clear && php artisan route:clear"
+
+# 3. Dump local DB and import to staging
+mysqldump -u root maddata_simple > /tmp/staging_dump.sql
+scp -i ~/.ssh/id_rsa /tmp/staging_dump.sql root@207.154.253.28:/tmp/
+ssh -i ~/.ssh/id_rsa root@207.154.253.28 "mysql -u webusr -p'PASS' maddata_simple < /tmp/staging_dump.sql"
+```
