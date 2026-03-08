@@ -43,6 +43,7 @@ class CampaignControllerTest extends TestCase
             'name' => 'Test Campaign',
             'client_id' => $client->id,
             'expected_impressions' => 10000,
+            'status' => 'active',
         ]);
 
         $response->assertRedirect(route('campaigns.index'));
@@ -59,6 +60,7 @@ class CampaignControllerTest extends TestCase
             'name' => 'Updated Campaign',
             'client_id' => $campaign->client_id,
             'expected_impressions' => $campaign->expected_impressions,
+            'status' => 'active',
         ]);
 
         $response->assertRedirect(route('campaigns.index'));
@@ -123,6 +125,7 @@ class CampaignControllerTest extends TestCase
             'name' => 'Updated by User',
             'client_id' => $campaign->client_id,
             'expected_impressions' => $campaign->expected_impressions,
+            'status' => 'active',
         ]);
 
         $response->assertRedirect(route('campaigns.index'));

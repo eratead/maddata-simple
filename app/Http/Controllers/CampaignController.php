@@ -329,7 +329,7 @@ class CampaignController extends Controller
             ->orderBy('main_category')
             ->orderBy('sub_category')
             ->orderBy('name')
-            ->get(['id', 'main_category', 'sub_category', 'name', 'estimated_users', 'icon']);
+            ->get(['id', 'main_category', 'sub_category', 'name', 'estimated_users', 'icon', 'provider']);
 
         return response()->json($audiences);
     }
@@ -390,7 +390,14 @@ class CampaignController extends Controller
             'targeting_rules.genders' => 'nullable|array',
             'targeting_rules.genders.*' => 'nullable|string|in:male,female,unknown',
             'targeting_rules.ages' => 'nullable|array',
-            'targeting_rules.ages.*' => 'nullable|string|in:18-24,25-34,35-44,45-54,55-64,65+,Unknown',
+            'targeting_rules.ages.*' => 'nullable|string|in:13-17,18-24,25-34,35-44,45-54,55-64,65+',
+            'targeting_rules.incomes' => 'nullable|array',
+            'targeting_rules.incomes.*' => 'nullable|string',
+            'targeting_rules.countries' => 'nullable|array',
+            'targeting_rules.countries.*' => 'nullable|string|max:100',
+            'targeting_rules.regions' => 'nullable|array',
+            'targeting_rules.regions.*' => 'nullable|string|max:100',
+            'targeting_rules.cities' => 'nullable|string',
             'targeting_rules.device_types' => 'nullable|array',
             'targeting_rules.device_types.*' => 'nullable|string|in:Mobile,Tablet,Desktop,CTV',
             'targeting_rules.os' => 'nullable|array',
@@ -422,6 +429,10 @@ class CampaignController extends Controller
         $locationData = $validated['locations'] ?? [];
         unset($validated['locations']);
 
+        $oldLocations = $campaign->locations
+            ->map(fn($l) => ['name' => $l->name, 'lat' => (string) $l->lat, 'lng' => (string) $l->lng, 'radius_meters' => (int) $l->radius_meters])
+            ->toArray();
+
         $campaign->update($validated);
 
         $campaign->locations()->delete();
@@ -431,6 +442,27 @@ class CampaignController extends Controller
                 'lat'           => $loc['lat'],
                 'lng'           => $loc['lng'],
                 'radius_meters' => $loc['radius_meters'] ?? 1000,
+            ]);
+        }
+
+        $newLocations = array_map(fn($l) => [
+            'name'          => $l['name'] ?? null,
+            'lat'           => (string) $l['lat'],
+            'lng'           => (string) $l['lng'],
+            'radius_meters' => (int) ($l['radius_meters'] ?? 1000),
+        ], $locationData);
+
+        if (json_encode($oldLocations) !== json_encode($newLocations)) {
+            $added   = count($newLocations) - count($oldLocations);
+            $total   = count($newLocations);
+            if ($total === 0) {
+                $desc = 'Cleared all proximity locations from "' . $campaign->name . '"';
+            } else {
+                $names = implode(', ', array_filter(array_column($newLocations, 'name')));
+                $desc  = 'Updated proximity locations on "' . $campaign->name . '" (' . $total . ' total' . ($names ? ': ' . $names : '') . ')';
+            }
+            app(\App\Services\ActivityLogger::class)->log('updated', $campaign, $desc, [
+                'locations' => ['old' => $oldLocations, 'new' => $newLocations],
             ]);
         }
 

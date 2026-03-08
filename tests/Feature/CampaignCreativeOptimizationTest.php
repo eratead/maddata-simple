@@ -28,6 +28,7 @@ class CampaignCreativeOptimizationTest extends TestCase
             'name' => $campaign->name,
             'client_id' => $campaign->client_id,
             'creative_optimization' => true,
+            'status' => 'active',
         ]);
 
         // Assert DB
@@ -59,6 +60,7 @@ class CampaignCreativeOptimizationTest extends TestCase
             'name' => $campaign->name,
             'client_id' => $campaign->client_id,
             'creative_optimization' => false,
+            'status' => 'active',
         ]);
 
         // Assert DB
@@ -93,6 +95,7 @@ class CampaignCreativeOptimizationTest extends TestCase
             'name' => 'New Name',
             'client_id' => $campaign->client_id,
             'creative_optimization' => true,
+            'status' => 'active',
         ]);
 
         // Assert DB

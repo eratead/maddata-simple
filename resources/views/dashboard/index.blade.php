@@ -228,135 +228,154 @@
                     </div>
 
                     <!-- Right Column: Tabs & Table -->
-                    <div class="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md: p-4 sm:p-6  flex flex-col h-full w-full overflow-hidden hover:border-gray-200 hover:shadow-md transition-all group"
+                    <script>
+                        window.__dashDateRows = @json($dashDateRows);
+                        window.__dashPlacementRows = @json($dashPlacementRows);
+                    </script>
+                    <div class="lg:col-span-8 bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-4 sm:p-6 flex flex-col h-full w-full overflow-hidden hover:border-gray-200 hover:shadow-md transition-all group"
                          x-data="{
-                             activeTab: localStorage.getItem('dashboardActiveTab') || 'date'
-                         }" x-init="$watch('activeTab', value => localStorage.setItem('dashboardActiveTab', value))">
-                        
+                             activeTab:      localStorage.getItem('dashboardActiveTab') || 'date',
+                             perPage:        parseInt(localStorage.getItem('dashboardPerPage') || '25'),
+                             datePage:       1,
+                             placementPage:  1,
+                             isVideo:        {{ $campaign->is_video ? 'true' : 'false' }},
+                             dateRows:       window.__dashDateRows,
+                             placementRows:  window.__dashPlacementRows,
+                             nf(n)          { return Number(n || 0).toLocaleString(); },
+                             pct(num, den)  { return den > 0 ? ((num / den) * 100).toFixed(2) + '%' : '—'; },
+                             get pagedDateRows()       { return this.perPage === 0 ? this.dateRows       : this.dateRows.slice((this.datePage - 1) * this.perPage, this.datePage * this.perPage); },
+                             get dateTotalPages()      { return this.perPage === 0 ? 1 : Math.max(1, Math.ceil(this.dateRows.length / this.perPage)); },
+                             get pagedPlacementRows()  { return this.perPage === 0 ? this.placementRows  : this.placementRows.slice((this.placementPage - 1) * this.perPage, this.placementPage * this.perPage); },
+                             get placementTotalPages() { return this.perPage === 0 ? 1 : Math.max(1, Math.ceil(this.placementRows.length / this.perPage)); },
+                             setPerPage(v)  { this.perPage = parseInt(v); this.datePage = 1; this.placementPage = 1; localStorage.setItem('dashboardPerPage', v); }
+                         }"
+                         x-init="$watch('activeTab', v => localStorage.setItem('dashboardActiveTab', v))">
+
                         <x-dates-filter action="{{ route('dashboard.campaign', $campaign->id) }}"
                                         :first-report-date="$firstReportDate" />
 
-                        <div class="border-b border-gray-200 mb-4 md:mb-5 flex gap-4 md:gap-6 overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                        <nav class="-mb-px flex space-x-4">
-                                                <button @click.prevent="activeTab = 'date'"
-                                                        :class="activeTab === 'date' ? 'text-primary border-primary' : 'text-gray-500 hover:text-gray-700'"
-                                                        class="text-xs md:text-sm font-medium pb-2 relative transition-colors focus:outline-none shrink-0 border-b-2"
-                                                        style="border-bottom-color: transparent;"
-                                                        x-bind:style="activeTab === 'date' ? 'border-bottom-color: currentColor;' : ''"
-                                                >
-                                                        By Date
-                                                </button>
-                                                <button @click.prevent="activeTab = 'placement'"
-                                                        :class="activeTab === 'placement' ? 'text-primary border-primary' : 'text-gray-500 hover:text-gray-700'"
-                                                        class="text-xs md:text-sm font-medium pb-2 relative transition-colors focus:outline-none shrink-0 border-b-2"
-                                                        style="border-bottom-color: transparent;"
-                                                        x-bind:style="activeTab === 'placement' ? 'border-bottom-color: currentColor;' : ''"
-                                                >
-                                                        By Placement
-                                                </button>
-                                        </nav>
-                                </div>
-
-                                <!-- Date Table -->
-                                <div x-show="activeTab === 'date'" class="overflow-x-auto">
-                                        <table class="w-full text-xs md:text-sm text-left border-collapse">
-                                                <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] md:text-[11px] font-bold border-y border-gray-200 tracking-wide">
-                                                        <tr>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Date</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Impressions</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Clicks</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">CTR</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Viewability</th>
-                                                                @if ($campaign->is_video)
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">25%</th>
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">50%</th>
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">75%</th>
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">100%</th>
-                                                                @endif
-                                                        </tr>
-                                                </thead>
-                                                <tbody class="text-gray-700 divide-y divide-gray-100 bg-white">
-                                                        @foreach ($campaignData as $row)
-                                                                <tr class="hover:bg-gray-50/50">
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 whitespace-nowrap">{{ \Carbon\Carbon::parse($row->report_date)->format('Y-m-d') }}</td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->impressions) }}</td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->clicks) }}</td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">
-                                                                                @if ($row->impressions > 0)
-                                                                                        {{ number_format(($row->clicks / $row->impressions) * 100, 2) }}%
-                                                                                @else
-                                                                                        —
-                                                                                @endif
-                                                                        </td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">
-                                                                                @if ($row->impressions > 0)
-                                                                                        {{ number_format(($row->visible / $row->impressions) * 100, 2) }}%
-                                                                                @else
-                                                                                        —
-                                                                                @endif
-                                                                        </td>
-                                                                        @if ($campaign->is_video)
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_25) }}</td>
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_50) }}</td>
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_75) }}</td>
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_100) }}</td>
-                                                                        @endif
-                                                                </tr>
-                                                        @endforeach
-                                                </tbody>
-                                        </table>
-                                </div>
-
-                                <!-- Placement Table -->
-                                <div x-show="activeTab === 'placement'" class="overflow-x-auto" style="display: none;">
-                                        <table id="placementTable" class="w-full text-xs md:text-sm text-left border-collapse">
-                                                <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] md:text-[11px] font-bold border-y border-gray-200 tracking-wide">
-                                                        <tr>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Placement</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Impressions</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Clicks</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">CTR</th>
-                                                                <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Viewability</th>
-                                                                @if ($campaign->is_video)
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">25%</th>
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">50%</th>
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">75%</th>
-                                                                        <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">100%</th>
-                                                                @endif
-                                                        </tr>
-                                                </thead>
-                                                <tbody class="text-gray-700 divide-y divide-gray-100 bg-white">
-                                                        @foreach ($placementData as $row)
-                                                                <tr class="hover:bg-gray-50/50">
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none">{{ $row->name }}</td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->impressions) }}</td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->clicks) }}</td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">
-                                                                                @if ($row->impressions > 0)
-                                                                                        {{ number_format(($row->clicks / $row->impressions) * 100, 2) }}%
-                                                                                @else
-                                                                                        —
-                                                                                @endif
-                                                                        </td>
-                                                                        <td class="px-2 py-2 md:px-4 md:py-3">
-                                                                                @if ($row->impressions > 0)
-                                                                                        {{ number_format(($row->visible / $row->impressions) * 100, 2) }}%
-                                                                                @else
-                                                                                        —
-                                                                                @endif
-                                                                        </td>
-                                                                        @if ($campaign->is_video)
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_25) }}</td>
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_50) }}</td>
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_75) }}</td>
-                                                                                <td class="px-2 py-2 md:px-4 md:py-3">{{ number_format($row->video_100) }}</td>
-                                                                        @endif
-                                                                </tr>
-                                                        @endforeach
-                                                </tbody>
-                                        </table>
-                                </div>
+                        <!-- Tabs + per-page selector -->
+                        <div class="border-b border-gray-200 mb-4 md:mb-5 flex items-center justify-between gap-4 overflow-x-auto whitespace-nowrap [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                            <nav class="-mb-px flex space-x-4">
+                                <button @click.prevent="activeTab = 'date'"
+                                        :class="activeTab === 'date' ? 'text-primary border-primary' : 'text-gray-500 hover:text-gray-700'"
+                                        class="text-xs md:text-sm font-medium pb-2 transition-colors focus:outline-none shrink-0 border-b-2"
+                                        x-bind:style="activeTab === 'date' ? 'border-bottom-color: currentColor;' : 'border-bottom-color: transparent;'">
+                                    By Date
+                                </button>
+                                <button @click.prevent="activeTab = 'placement'"
+                                        :class="activeTab === 'placement' ? 'text-primary border-primary' : 'text-gray-500 hover:text-gray-700'"
+                                        class="text-xs md:text-sm font-medium pb-2 transition-colors focus:outline-none shrink-0 border-b-2"
+                                        x-bind:style="activeTab === 'placement' ? 'border-bottom-color: currentColor;' : 'border-bottom-color: transparent;'">
+                                    By Placement
+                                </button>
+                            </nav>
+                            <div class="flex items-center gap-2 pb-2 shrink-0">
+                                <span class="text-xs text-gray-400">Rows:</span>
+                                <select @change="setPerPage($event.target.value)"
+                                        class="text-xs border border-gray-200 rounded-md px-2 py-1 text-gray-600 bg-white focus:outline-none focus:ring-1 focus:ring-primary/30 cursor-pointer">
+                                    <option value="10"  :selected="perPage === 10">10</option>
+                                    <option value="25"  :selected="perPage === 25">25</option>
+                                    <option value="50"  :selected="perPage === 50">50</option>
+                                    <option value="0"   :selected="perPage === 0">All</option>
+                                </select>
+                            </div>
                         </div>
+
+                        <!-- Date Table -->
+                        <div x-show="activeTab === 'date'" class="flex flex-col">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-xs md:text-sm text-left border-collapse">
+                                    <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] md:text-[11px] font-bold border-y border-gray-200 tracking-wide">
+                                        <tr>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Date</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Impressions</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Clicks</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">CTR</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Viewability</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">25%</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">50%</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">75%</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">100%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-700 divide-y divide-gray-100 bg-white">
+                                        <template x-for="row in pagedDateRows" :key="row.date">
+                                            <tr class="hover:bg-gray-50/50">
+                                                <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 whitespace-nowrap" x-text="row.date"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.impr)"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.clicks)"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="pct(row.clicks, row.impr)"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="pct(row.visible, row.impr)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v25)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v50)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v75)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v100)"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Date Pagination -->
+                            <div class="flex items-center justify-between px-2 py-3 border-t border-gray-100 text-xs text-gray-500" x-show="perPage > 0">
+                                <span x-text="'Showing ' + Math.min(datePage * perPage, dateRows.length) + ' of ' + dateRows.length + ' rows'"></span>
+                                <div class="flex items-center gap-1">
+                                    <button @click="datePage = Math.max(1, datePage - 1)" :disabled="datePage <= 1"
+                                            class="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">‹</button>
+                                    <span class="px-3 py-1 text-gray-600" x-text="datePage + ' / ' + dateTotalPages"></span>
+                                    <button @click="datePage = Math.min(dateTotalPages, datePage + 1)" :disabled="datePage >= dateTotalPages"
+                                            class="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">›</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Placement Table -->
+                        <div x-show="activeTab === 'placement'" class="flex flex-col" style="display: none;">
+                            <div class="overflow-x-auto">
+                                <table id="placementTable" class="w-full text-xs md:text-sm text-left border-collapse">
+                                    <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] md:text-[11px] font-bold border-y border-gray-200 tracking-wide">
+                                        <tr>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Placement</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Impressions</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Clicks</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">CTR</th>
+                                            <th class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">Viewability</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">25%</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">50%</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">75%</th>
+                                            <th x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3 font-semibold text-gray-700">100%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-700 divide-y divide-gray-100 bg-white">
+                                        <template x-for="row in pagedPlacementRows" :key="row.name">
+                                            <tr class="hover:bg-gray-50/50">
+                                                <td class="px-2 py-2 md:px-4 md:py-3 border-r border-gray-50 truncate max-w-[120px] md:max-w-none" x-text="row.name"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.impr)"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.clicks)"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="pct(row.clicks, row.impr)"></td>
+                                                <td class="px-2 py-2 md:px-4 md:py-3" x-text="pct(row.visible, row.impr)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v25)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v50)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v75)"></td>
+                                                <td x-show="isVideo" class="px-2 py-2 md:px-4 md:py-3" x-text="nf(row.v100)"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- Placement Pagination -->
+                            <div class="flex items-center justify-between px-2 py-3 border-t border-gray-100 text-xs text-gray-500" x-show="perPage > 0">
+                                <span x-text="'Showing ' + Math.min(placementPage * perPage, placementRows.length) + ' of ' + placementRows.length + ' rows'"></span>
+                                <div class="flex items-center gap-1">
+                                    <button @click="placementPage = Math.max(1, placementPage - 1)" :disabled="placementPage <= 1"
+                                            class="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">‹</button>
+                                    <span class="px-3 py-1 text-gray-600" x-text="placementPage + ' / ' + placementTotalPages"></span>
+                                    <button @click="placementPage = Math.min(placementTotalPages, placementPage + 1)" :disabled="placementPage >= placementTotalPages"
+                                            class="px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">›</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                         <!-- Bottom Section: Chart -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-gray-200 hover:shadow-md transition-all  p-4 sm:p-6  w-full lg:col-span-12 group">

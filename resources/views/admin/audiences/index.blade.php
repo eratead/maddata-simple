@@ -159,7 +159,7 @@
                                             @endif
                                         </td>
                                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                                            <div class="flex items-center justify-end gap-3 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                                            <div class="flex items-center justify-end gap-3">
                                                 <button type="button"
                                                     onclick="audienceModal.openEdit({{ $audience->id }}, {{ json_encode($audience->main_category) }}, {{ json_encode($audience->sub_category) }}, {{ json_encode($audience->name) }}, {{ json_encode($audience->estimated_users) }}, {{ json_encode($audience->provider) }}, {{ $audience->is_active ? 'true' : 'false' }})"
                                                     class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary-hover transition-colors px-2 py-1 rounded-lg hover:bg-primary/5">

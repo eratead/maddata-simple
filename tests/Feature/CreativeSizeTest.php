@@ -21,6 +21,7 @@ class CreativeSizeTest extends TestCase
             'name' => 'Test Campaign',
             'client_id' => $client->id,
             'required_sizes' => '1920x1080,300x250',
+            'status' => 'active',
         ]);
 
         $response->assertRedirect(route('campaigns.index'));
@@ -44,6 +45,7 @@ class CreativeSizeTest extends TestCase
             'name' => 'Updated Campaign',
             'client_id' => $client->id,
             'required_sizes' => '1920x1080,300x250',
+            'status' => 'active',
         ]);
 
         $response->assertRedirect(route('campaigns.index'));
@@ -63,6 +65,7 @@ class CreativeSizeTest extends TestCase
             'name' => 'Test Campaign Null Sizes',
             'client_id' => $client->id,
             'required_sizes' => null,
+            'status' => 'active',
         ]);
 
         $response->assertRedirect(route('campaigns.index'));

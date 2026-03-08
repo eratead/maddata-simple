@@ -66,7 +66,7 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 border-l border-gray-50">
-                                        <div class="flex items-center justify-end gap-3 opacity-100 md:opacity-0 group-hover/row:opacity-100 transition-opacity">
+                                        <div class="flex items-center justify-end gap-3">
                                             <a href="{{ route('admin.roles.edit', $role->id) }}" class="text-sm font-medium text-primary hover:text-primary-hover transition-colors">Edit</a>
                                             <div class="h-4 w-px bg-gray-200"></div>
                                             @if($role->users_count == 0)

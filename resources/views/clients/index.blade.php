@@ -87,7 +87,7 @@
                                             @endif
                                         </td>
                                         <td class="px-4 py-4 text-right whitespace-nowrap">
-                                            <div class="flex items-center justify-end gap-3 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                                            <div class="flex items-center justify-end gap-3">
                                                 <a href="{{ route('clients.edit', $client->id) }}"
                                                     class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary-hover transition-colors px-2 py-1 rounded-lg hover:bg-primary/5">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6.293-6.293a1 1 0 011.414 0l1.586 1.586a1 1 0 010 1.414L12 13.5 9 15l.5-2.5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 20h14"/></svg>

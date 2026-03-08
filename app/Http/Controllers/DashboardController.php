@@ -70,6 +70,28 @@ class DashboardController extends Controller
             ->get();
 
         $firstReportDate = CampaignData::where('campaign_id', $campaign->id)->min('report_date');
+
+        $dashDateRows = $campaignData->map(fn($r) => [
+            'date'    => \Carbon\Carbon::parse($r->report_date)->format('Y-m-d'),
+            'impr'    => (int) $r->impressions,
+            'clicks'  => (int) $r->clicks,
+            'visible' => (int) $r->visible_impressions,
+            'v25'     => (int) $r->video_25,
+            'v50'     => (int) $r->video_50,
+            'v75'     => (int) $r->video_75,
+            'v100'    => (int) $r->video_100,
+        ]);
+
+        $dashPlacementRows = $placementData->map(fn($r) => [
+            'name'    => $r->name,
+            'impr'    => (int) $r->impressions,
+            'clicks'  => (int) $r->clicks,
+            'visible' => (int) $r->visible_impressions,
+            'v25'     => (int) $r->video_25,
+            'v50'     => (int) $r->video_50,
+            'v75'     => (int) $r->video_75,
+            'v100'    => (int) $r->video_100,
+        ]);
         if ($startDate || $endDate) {
             $allImpressions = \App\Models\CampaignData::where('campaign_id', $campaign->id)->whereBetween('report_date', [$startDate, $endDate])->sum('impressions');
         } else {
@@ -102,6 +124,8 @@ class DashboardController extends Controller
             'summary',
             'campaignData',
             'placementData',
+            'dashDateRows',
+            'dashPlacementRows',
             'chartLabels',
             'chartImpressions',
             'chartClicks',

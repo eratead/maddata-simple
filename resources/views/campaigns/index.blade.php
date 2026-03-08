@@ -213,7 +213,7 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 text-right whitespace-nowrap">
-                                            <div class="flex justify-end items-center gap-2 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-150">
+                                            <div class="flex justify-end items-center gap-2">
                                                 
                                                 @auth
                                                     @if (auth()->user()->hasPermission('is_admin') || (auth()->user()->hasPermission('can_upload_reports') && auth()->user()->clients->contains($campaign->client_id)))

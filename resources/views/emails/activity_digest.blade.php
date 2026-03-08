@@ -29,7 +29,7 @@
                 @php $campaignId = $logs->first()->campaign_id; @endphp
                 <div class="campaign-section">
                     <div class="campaign-title">
-                        Campaign: <a href="{{ route('campaigns.edit', $campaignId) }}">{{ $campaignName }}</a>
+                        Campaign: @if($campaignId)<a href="{{ route('campaigns.edit', $campaignId) }}">{{ $campaignName }}</a>@else{{ $campaignName }}@endif
                     </div>
                     <ul class="activity-list">
                         @foreach($logs as $log)

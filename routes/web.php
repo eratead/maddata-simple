@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 
 
 Route::middleware(['auth'])->group(function () {
+    Route::post('/ai/generate-locations', [App\Http\Controllers\AiLocationController::class, 'generate'])->name('ai.locations');
+    Route::post('/ai/campaign-assistant', [App\Http\Controllers\CampaignAssistantController::class, 'chat'])->name('ai.campaign-assistant');
     Route::get('/', fn() => redirect('/dashboard'));
     Route::get('/dashboard', function () {
         $lastId = session('last_campaign_id');
@@ -91,9 +93,9 @@ Route::middleware(['auth'])->group(function () {
 /// API
 Route::prefix('api/reports')->middleware(['auth:sanctum', 'check-token-expiry'])->group(function () {
     Route::get('/summary/{campaign}', [ReportApiController::class, 'summary'])->name('reports.summary');
-    Route::get('/by-date/{campaign}', [ReportApiController::class, 'byDate']);
-    Route::get('/by-placement/{campaign}', [ReportApiController::class, 'byPlacement']);
-    Route::get('/campaigns', [\App\Http\Controllers\ReportApiController::class, 'campaigns']);
+    Route::get('/by-date/{campaign}', [ReportApiController::class, 'byDate'])->name('reports.by-date');
+    Route::get('/by-placement/{campaign}', [ReportApiController::class, 'byPlacement'])->name('reports.by-placement');
+    Route::get('/campaigns', [\App\Http\Controllers\ReportApiController::class, 'campaigns'])->name('reports.campaigns');
 });
 
 
