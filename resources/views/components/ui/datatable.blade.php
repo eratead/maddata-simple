@@ -157,8 +157,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     tr: tr,
                     // textData is used for searching
                     textData: cells.map(td => td.innerText.trim().toLowerCase()),
-                    // rawData is used for sorting
-                    rawData: cells.map(td => td.innerText.trim())
+                    // rawData is used for sorting; prefer data-order if set
+                    rawData: cells.map(td => td.dataset.order ?? td.innerText.trim())
                 };
             });
 

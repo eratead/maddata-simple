@@ -35,7 +35,7 @@
                         </div>
                     </div>
 
-                    @if (auth()->user()?->hasPermission('is_admin'))
+                    @if (auth()->user()?->hasPermission('is_admin') || auth()->user()?->hasPermission('can_edit_campaigns'))
                         <a href="{{ route('campaigns.create') }}" 
                             class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 bg-gradient-to-br from-primary to-primary-hover text-white rounded-lg text-sm font-medium shadow-[0_4px_14px_0_rgba(79,70,229,0.39)] hover:shadow-[0_6px_20px_rgba(79,70,229,0.45)] hover:-translate-y-0.5 transition-all">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCampaignRequest;
+use App\Http\Requests\UpdateCampaignRequest;
 use App\Models\Audience;
 use App\Models\Campaign;
 
@@ -37,7 +39,7 @@ class CampaignController extends Controller
             $campaigns->whereIn('client_id', $clientIds);
         }
 
-        $campaigns = $campaigns->get();
+        $campaigns = $campaigns->orderBy('created_at', 'desc')->get();
 
         // Calculate pacing data for campaigns (impressions vs expected impressions)
         $pacingData = [];
@@ -110,25 +112,19 @@ class CampaignController extends Controller
     public function create()
     {
         $this->authorize('create', Campaign::class);
-        $clients = Client::all();
+        $clients = Auth::user()->hasPermission('is_admin') ? Client::all() : Auth::user()->clients;
         return view('campaigns.create', compact('clients'));
     }
 
-    public function store(Request $request)
+    public function store(StoreCampaignRequest $request)
     {
         $this->authorize('create', Campaign::class);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'client_id' => 'required|exists:clients,id',
-            'expected_impressions' => 'nullable|integer|min:0',
-            'budget' => 'nullable|integer|min:0',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'required_sizes' => 'nullable|string',
-            'creative_optimization' => 'boolean',
-            'status' => 'required|in:active,paused',
-        ]);
+        $validated = $request->validated();
+
+        if (!Auth::user()->hasPermission('is_admin') && !Auth::user()->clients->contains('id', $validated['client_id'])) {
+            abort(403, 'You are not authorized to create campaigns for this client.');
+        }
 
         if (!Auth::user()->hasPermission('can_view_budget')) {
             unset($validated['budget']);
@@ -316,7 +312,7 @@ class CampaignController extends Controller
         $this->authorize('update', $campaign);
         $campaign->load(['creatives', 'audiences', 'locations']);
 
-        $clients = Client::all();
+        $clients = Auth::user()->hasPermission('is_admin') ? Client::all() : Auth::user()->clients;
         $connectedAudiences = $campaign->audiences;
         return view('campaigns.edit', compact('campaign', 'clients', 'connectedAudiences'));
     }
@@ -371,53 +367,15 @@ class CampaignController extends Controller
         return response()->json(['connected' => $connected]);
     }
 
-    public function update(Request $request, Campaign $campaign)
+    public function update(UpdateCampaignRequest $request, Campaign $campaign)
     {
-
         $this->authorize('update', $campaign);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'client_id' => 'required|exists:clients,id',
-            'expected_impressions' => 'nullable|integer|min:0',
-            'budget' => 'nullable|integer|min:0',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'required_sizes' => 'nullable|string',
-            'creative_optimization' => 'boolean',
-            'status' => 'required|in:active,paused',
-            'targeting_rules' => 'nullable|array',
-            'targeting_rules.genders' => 'nullable|array',
-            'targeting_rules.genders.*' => 'nullable|string|in:male,female,unknown',
-            'targeting_rules.ages' => 'nullable|array',
-            'targeting_rules.ages.*' => 'nullable|string|in:13-17,18-24,25-34,35-44,45-54,55-64,65+',
-            'targeting_rules.incomes' => 'nullable|array',
-            'targeting_rules.incomes.*' => 'nullable|string',
-            'targeting_rules.countries' => 'nullable|array',
-            'targeting_rules.countries.*' => 'nullable|string|max:100',
-            'targeting_rules.regions' => 'nullable|array',
-            'targeting_rules.regions.*' => 'nullable|string|max:100',
-            'targeting_rules.cities' => 'nullable|string',
-            'targeting_rules.device_types' => 'nullable|array',
-            'targeting_rules.device_types.*' => 'nullable|string|in:Mobile,Tablet,Desktop,CTV',
-            'targeting_rules.os' => 'nullable|array',
-            'targeting_rules.os.*' => 'nullable|string|in:iOS,Android,Windows,macOS',
-            'targeting_rules.connection_types' => 'nullable|array',
-            'targeting_rules.connection_types.*' => 'nullable|string|in:WiFi,Cellular',
-            'targeting_rules.environments' => 'nullable|array',
-            'targeting_rules.environments.*' => 'nullable|string|in:In-App,Mobile Web',
-            'targeting_rules.allowlist' => 'nullable|string',
-            'targeting_rules.blocklist' => 'nullable|string',
-            'targeting_rules.days' => 'nullable|array',
-            'targeting_rules.days.*' => 'nullable|string|in:Sun,Mon,Tue,Wed,Thu,Fri,Sat',
-            'targeting_rules.time_start' => 'nullable|date_format:H:i',
-            'targeting_rules.time_end' => 'nullable|date_format:H:i',
-            'locations' => 'nullable|array',
-            'locations.*.name' => 'nullable|string|max:255',
-            'locations.*.lat' => 'required_with:locations.*|numeric|between:-90,90',
-            'locations.*.lng' => 'required_with:locations.*|numeric|between:-180,180',
-            'locations.*.radius_meters' => 'nullable|integer|min:100',
-        ]);
+        $validated = $request->validated();
+
+        if (!Auth::user()->hasPermission('is_admin') && !Auth::user()->clients->contains('id', $validated['client_id'])) {
+            abort(403, 'You are not authorized to assign this campaign to that client.');
+        }
 
         if (!Auth::user()->can('editBudget', Campaign::class)) {
             unset($validated['budget']);

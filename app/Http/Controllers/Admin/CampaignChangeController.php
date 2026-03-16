@@ -97,9 +97,14 @@ class CampaignChangeController extends Controller
             return back()->with('error', 'No files to download.');
         }
 
+        $tempDir = storage_path('app/temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0750, true);
+        }
+
         $zip = new ZipArchive;
-        $fileName = 'campaign_' . $campaign->id . '_changes_' . now()->timestamp . '.zip';
-        $filePath = storage_path('app/public/' . $fileName);
+        $fileName = 'campaign_' . $campaign->id . '_changes_' . \Illuminate\Support\Str::random(16) . '.zip';
+        $filePath = $tempDir . '/' . $fileName;
 
         if ($zip->open($filePath, ZipArchive::CREATE) === TRUE) {
             foreach ($logs as $log) {

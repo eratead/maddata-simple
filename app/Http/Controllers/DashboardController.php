@@ -106,17 +106,21 @@ class DashboardController extends Controller
         $cpm = 0;
         $cpc = 0;
         $spent = 0;
-        $budget = $campaign->budget;
+        $budget = null;
 
-        if ($campaign->expected_impressions > 0) {
-            $baseImpressions = max($campaign->expected_impressions, $allImpressions);
-            $cpm = ($campaign->budget / $baseImpressions) * 1000;
-        }
+        if (Auth::user()->hasPermission('can_view_budget')) {
+            $budget = $campaign->budget;
 
-        $spent = ($summary['impressions'] ?? 0) * $cpm / 1000;
+            if ($campaign->expected_impressions > 0) {
+                $baseImpressions = max($campaign->expected_impressions, $allImpressions);
+                $cpm = ($campaign->budget / $baseImpressions) * 1000;
+            }
 
-        if ($allClicks > 0) {
-            $cpc = $spent / $allClicks;
+            $spent = ($summary['impressions'] ?? 0) * $cpm / 1000;
+
+            if ($allClicks > 0) {
+                $cpc = $spent / $allClicks;
+            }
         }
 
         return view('dashboard.index', compact(
@@ -188,7 +192,7 @@ class DashboardController extends Controller
         $ctr = $summaryBase['impressions'] ? round($summaryBase['clicks'] / $summaryBase['impressions'] * 100, 2) : 0;
         $visibility = $summaryBase['impressions'] ? round($summaryBase['visible'] / $summaryBase['impressions'] * 100, 2) : 0;
 
-        $budget = $campaign->budget;
+        $canViewBudget = Auth::user()->hasPermission('can_view_budget');
 
         if ($startDate || $endDate) {
             $allImpressions = CampaignData::where('campaign_id', $campaign->id)->whereBetween('report_date', [$startDate, $endDate])->sum('impressions');
@@ -201,16 +205,23 @@ class DashboardController extends Controller
             $allClicks = CampaignData::where('campaign_id', $campaign->id)->sum('clicks');
         }
 
+        $budget = null;
         $cpm = 0;
-        if ($campaign->expected_impressions > 0) {
-            $cpm = ($campaign->budget / max($campaign->expected_impressions, $allImpressions)) * 1000;
-        }
-
-        $spent = ($summaryBase['impressions'] ?? 0) * $cpm / 1000;
-
+        $spent = 0;
         $cpc = 0;
-        if ($allClicks > 0) {
-            $cpc = $spent / $allClicks;
+
+        if ($canViewBudget) {
+            $budget = $campaign->budget;
+
+            if ($campaign->expected_impressions > 0) {
+                $cpm = ($campaign->budget / max($campaign->expected_impressions, $allImpressions)) * 1000;
+            }
+
+            $spent = ($summaryBase['impressions'] ?? 0) * $cpm / 1000;
+
+            if ($allClicks > 0) {
+                $cpc = $spent / $allClicks;
+            }
         }
 
         $summary = [

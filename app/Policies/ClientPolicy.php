@@ -37,7 +37,7 @@ class ClientPolicy
      */
     public function update(User $user, Client $client): bool
     {
-        return $user->hasPermission('is_admin') || $user->clients->contains($client->id);
+        return $user->hasPermission('is_admin');
     }
 
     /**

@@ -123,11 +123,13 @@
 
                     <!-- Section: Manage Configuration (Accordions) -->
                     <div class="flex flex-col" x-data="{
+                            isAdmin: @json(auth()->user()->hasPermission('is_admin')),
                             selectedSizes: [],
                             videoSizes: ['1920x1080', '1080x1920'],
                             staticSizes: ['640x820', '640x960', '640x1175', '640x1280', '640x1370', '640x360', '300x250', '1080x1920'],
                             accordionOpen: false,
                             toggleSize(size) {
+                                if (!this.isAdmin) return;
                                 if (this.selectedSizes.includes(size)) {
                                     this.selectedSizes = this.selectedSizes.filter(s => s !== size);
                                 } else {
@@ -176,10 +178,7 @@
                                             <h4 @click="toggleGroup(videoSizes)" class="text-xs font-semibold uppercase tracking-wider text-gray-500 cursor-pointer hover:text-primary transition-colors select-none">Video Sizes</h4>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="size in videoSizes">
-                                                    <div @click="toggleSize(size)"
-                                                        :class="selectedSizes.includes(size) ? 'bg-primary text-white border-primary shadow-[0_2px_4px_rgba(79,70,229,0.2)]' : 'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary hover:bg-indigo-50'"
-                                                        class="px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none border"
-                                                        x-text="size"></div>
+                                                    <x-ui.size-pill />
                                                 </template>
                                             </div>
                                         </div>
@@ -188,10 +187,7 @@
                                             <h4 @click="toggleGroup(staticSizes)" class="text-xs font-semibold uppercase tracking-wider text-gray-500 cursor-pointer hover:text-primary transition-colors select-none">Static Sizes</h4>
                                             <div class="flex flex-wrap gap-2">
                                                 <template x-for="size in staticSizes">
-                                                    <div @click="toggleSize(size)"
-                                                        :class="selectedSizes.includes(size) ? 'bg-primary text-white border-primary shadow-[0_2px_4px_rgba(79,70,229,0.2)]' : 'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary hover:bg-indigo-50'"
-                                                        class="px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none border"
-                                                        x-text="size"></div>
+                                                    <x-ui.size-pill />
                                                 </template>
                                             </div>
                                         </div>
@@ -200,6 +196,8 @@
                                             <label for="custom_sizes" class="text-[0.85rem] font-medium text-gray-700">Additional Sizes (comma separated)</label>
                                             <input type="text" id="custom_sizes" placeholder="e.g. 728x90, 160x600"
                                                 @input="selectedSizes = $event.target.value.split(',').map(s => s.trim()).filter(s => s !== '')"
+                                                :disabled="!isAdmin"
+                                                :class="isAdmin ? '' : 'cursor-not-allowed bg-gray-100 opacity-60'"
                                                 class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-gray-900 text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-[3px] focus:ring-primary/20 hover:border-gray-300 transition-all">
                                         </div>
                                     </div>

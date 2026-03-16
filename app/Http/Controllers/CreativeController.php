@@ -2,124 +2,153 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCreativeRequest;
+use App\Http\Requests\UpdateCreativeRequest;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Str;
 
 use App\Models\Campaign;
 use App\Models\Creative;
 use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 
 class CreativeController extends Controller
 {
+    use AuthorizesRequests;
+
+    // Allowed MIME types for creative uploads
+    private const ALLOWED_MIMES     = 'jpeg,jpg,png,gif,mp4,webm';
+    private const ALLOWED_MIME_TYPES = 'image/jpeg,image/png,image/gif,video/mp4,video/webm';
+
     public function create(Campaign $campaign)
     {
+        $this->authorize('update', $campaign);
         return view('creatives.create', compact('campaign'));
     }
 
-    public function store(Request $request, Campaign $campaign)
+    public function store(StoreCreativeRequest $request, Campaign $campaign)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'landing' => 'required|url',
-            'status' => 'required|boolean',
-        ]);
+        $this->authorize('update', $campaign);
+
+        $validated = $request->validated();
 
         $creative = $campaign->creatives()->create($validated);
 
-        return redirect()->route('creatives.edit', $creative)->with('success', 'Creative created successfully. You can now add files.');
+        return redirect()->route('creatives.edit', $creative)
+            ->with('success', 'Creative created successfully. You can now add files.');
     }
 
     public function edit(Creative $creative)
     {
+        $this->authorize('update', $creative->campaign);
         $creative->load('files');
         return view('creatives.edit', compact('creative'));
     }
 
-    public function update(Request $request, Creative $creative)
+    public function update(UpdateCreativeRequest $request, Creative $creative)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'landing' => 'required|url',
-            'status' => 'required|boolean',
-        ]);
+        $this->authorize('update', $creative->campaign);
+
+        $validated = $request->validated();
 
         $creative->update($validated);
 
-        return redirect()->route('campaigns.edit', $creative->campaign)->with('success', 'Creative updated successfully.');
+        return redirect()->route('campaigns.edit', $creative->campaign)
+            ->with('success', 'Creative updated successfully.');
     }
-
 
     public function destroy(Creative $creative)
     {
+        $this->authorize('update', $creative->campaign);
+
         $campaign = $creative->campaign;
         $creative->delete();
 
-        return redirect()->route('campaigns.edit', $campaign)->with('success', 'Creative deleted successfully.');
+        return redirect()->route('campaigns.edit', $campaign)
+            ->with('success', 'Creative deleted successfully.');
     }
 
     public function upload(Request $request, Creative $creative)
     {
+        $this->authorize('update', $creative->campaign);
+
         $request->validate([
-            'files' => 'required',
-            'files.*' => 'file|max:51200', // 50MB max per file
+            'files'   => 'required',
+            'files.*' => [
+                'file',
+                'max:51200', // 50 MB
+                'mimes:'     . self::ALLOWED_MIMES,
+                'mimetypes:' . self::ALLOWED_MIME_TYPES,
+            ],
         ]);
 
-        $uploadedFiles = $request->file('files');
-        $count = 0;
+        $manager = new ImageManager(new GdDriver());
+        $count   = 0;
 
-        foreach ($uploadedFiles as $file) {
-            $path = $file->store($creative->id, 'creatives');
-            
-            // Auto-detect dimensions
-            $width = 0;
+        foreach ($request->file('files') as $file) {
+            $mimeType = $file->getMimeType();
+            $isImage  = str_starts_with($mimeType, 'image/');
+
+            // Detect dimensions
+            $width  = 0;
             $height = 0;
-            
-            if (str_starts_with($file->getMimeType(), 'image/')) {
+
+            if ($isImage) {
                 try {
-                    $dimensions = getimagesize($file->getPathname());
-                    if ($dimensions) {
-                        $width = $dimensions[0];
-                        $height = $dimensions[1];
+                    $dims = getimagesize($file->getPathname());
+                    if ($dims) {
+                        $width  = $dims[0];
+                        $height = $dims[1];
                     }
-                } catch (\Exception $e) {
-                    // Ignore errors, keep 0x0
-                }
-            } elseif (str_starts_with($file->getMimeType(), 'video/')) {
+                } catch (\Exception $e) { /* keep 0×0 */ }
+            } elseif ($mimeType === 'video/mp4' || $mimeType === 'video/webm') {
                 try {
-                    $ffprobeCommand = "ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 " . escapeshellarg($file->getPathname());
-                    $output = shell_exec($ffprobeCommand);
+                    $output = shell_exec(
+                        'ffprobe -v error -select_streams v:0 -show_entries stream=width,height'
+                        . ' -of csv=s=x:p=0 ' . escapeshellarg($file->getPathname())
+                    );
                     if ($output) {
-                        $dimensions = explode('x', trim($output));
-                        if (count($dimensions) == 2) {
-                            $width = (int)$dimensions[0];
-                            $height = (int)$dimensions[1];
+                        $parts = explode('x', trim($output));
+                        if (count($parts) === 2) {
+                            $width  = (int) $parts[0];
+                            $height = (int) $parts[1];
                         }
                     }
-                } catch (\Exception $e) {
-                    // Ignore errors, keep 0x0
-                }
+                } catch (\Exception $e) { /* keep 0×0 */ }
             }
 
             // Remove existing file with same dimensions
             if ($width > 0 && $height > 0) {
-                $existingFiles = $creative->files()
-                    ->where('width', $width)
-                    ->where('height', $height)
-                    ->get();
-
-                foreach ($existingFiles as $existingFile) {
-                    Storage::disk('creatives')->delete($existingFile->path);
-                    $existingFile->delete();
+                foreach ($creative->files()->where('width', $width)->where('height', $height)->get() as $old) {
+                    Storage::disk('creatives')->delete($old->path);
+                    $old->delete();
                 }
             }
 
+            // Build a safe random path, preserving the original extension
+            $ext      = strtolower($file->getClientOriginalExtension());
+            $safePath = $creative->id . '/' . Str::random(40) . '.' . $ext;
+
+            if ($isImage) {
+                // Re-encode through Intervention Image → strips all EXIF metadata
+                $encoded = $manager->read($file->getPathname())->encodeByMediaType($mimeType);
+                Storage::disk('creatives')->put($safePath, (string) $encoded);
+            } else {
+                // Videos: store directly (no EXIF concern)
+                Storage::disk('creatives')->put($safePath, file_get_contents($file->getPathname()));
+            }
+
             $creative->files()->create([
-                'name' => $file->getClientOriginalName(),
-                'width' => $width,
-                'height' => $height,
-                'path' => $path,
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
+                'name'      => $file->getClientOriginalName(),
+                'width'     => $width,
+                'height'    => $height,
+                'path'      => $safePath,
+                'mime_type' => $mimeType,
+                'size'      => $file->getSize(),
             ]);
+
             $count++;
         }
 
@@ -128,7 +157,9 @@ class CreativeController extends Controller
 
     public function deleteFile(\App\Models\CreativeFile $file)
     {
-        \Illuminate\Support\Facades\Storage::disk('creatives')->delete($file->path);
+        $this->authorize('update', $file->creative->campaign);
+
+        Storage::disk('creatives')->delete($file->path);
         $file->delete();
 
         return back()->with('success', 'File deleted successfully.');
@@ -136,15 +167,29 @@ class CreativeController extends Controller
 
     public function preview(\App\Models\CreativeFile $file)
     {
+        $this->authorize('view', $file->creative->campaign);
+
         if (!Storage::disk('creatives')->exists($file->path)) {
             abort(404);
         }
 
-        return response()->file(Storage::disk('creatives')->path($file->path));
+        // Use the MIME type recorded at upload time, not auto-detected at serve time.
+        // Pair with nosniff so browsers cannot reclassify the response.
+        return response()->file(
+            Storage::disk('creatives')->path($file->path),
+            [
+                'Content-Type'              => $file->mime_type,
+                'X-Content-Type-Options'    => 'nosniff',
+                'Content-Security-Policy'   => "default-src 'none'",
+                'Content-Disposition'       => 'inline',
+            ]
+        );
     }
 
     public function downloadFile(\App\Models\CreativeFile $file)
     {
+        $this->authorize('view', $file->creative->campaign);
+
         if (!Storage::disk('creatives')->exists($file->path)) {
             abort(404);
         }
@@ -154,33 +199,36 @@ class CreativeController extends Controller
 
     public function downloadAll(Creative $creative)
     {
+        $this->authorize('view', $creative->campaign);
+
         $files = $creative->files;
 
         if ($files->isEmpty()) {
             return back()->with('error', 'No files to download.');
-        }   
-
-        $zipFileName = 'creative-' . $creative->id . '-files-' . now()->timestamp . '.zip';
-        $zipPath = storage_path('app/public/' . $zipFileName); // Temporarily store in public disk
-        
-        // Ensure directory exists
-        if (!file_exists(dirname($zipPath))) {
-            mkdir(dirname($zipPath), 0755, true);
         }
 
-        $zip = new \ZipArchive;
+        // Use a private temp directory — never under storage/app/public (symlinked to webroot)
+        $tempDir  = storage_path('app/temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0750, true);
+        }
 
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) === TRUE) {
-            foreach ($files as $file) {
-                if (Storage::disk('creatives')->exists($file->path)) {
-                    $content = Storage::disk('creatives')->get($file->path);
-                    $zip->addFromString($file->name, $content);
-                }
+        $zipFileName = 'creative-' . $creative->id . '-' . Str::random(16) . '.zip';
+        $zipPath     = $tempDir . '/' . $zipFileName;
+
+        $zip = new \ZipArchive();
+
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return back()->with('error', 'Could not create zip file.');
+        }
+
+        foreach ($files as $file) {
+            if (Storage::disk('creatives')->exists($file->path)) {
+                $zip->addFromString($file->name, Storage::disk('creatives')->get($file->path));
             }
-            $zip->close();
-        } else {
-             return back()->with('error', 'Could not create zip file.');
         }
+
+        $zip->close();
 
         return response()->download($zipPath)->deleteFileAfterSend(true);
     }

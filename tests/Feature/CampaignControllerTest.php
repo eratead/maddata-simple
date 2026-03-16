@@ -104,6 +104,7 @@ class CampaignControllerTest extends TestCase
             'name' => 'Test Campaign',
             'client_id' => $client->id,
             'expected_impressions' => 10000,
+            'status' => 'active',
         ]);
 
         $response->assertForbidden();
@@ -149,6 +150,7 @@ class CampaignControllerTest extends TestCase
             'name' => 'Blocked Update',
             'client_id' => $campaign->client_id,
             'expected_impressions' => $campaign->expected_impressions,
+            'status' => 'active',
         ]);
 
         $response->assertForbidden();

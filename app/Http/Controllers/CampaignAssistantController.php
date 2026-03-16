@@ -10,6 +10,8 @@ class CampaignAssistantController extends Controller
 {
     public function chat(Request $request)
     {
+        abort_unless(auth()->user()->hasPermission('can_edit_campaigns'), 403);
+
         $request->validate([
             'chatHistory'     => 'required|array',
             'currentFormData' => 'required|array',

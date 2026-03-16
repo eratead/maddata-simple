@@ -11,7 +11,15 @@ class ActivityLogController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ActivityLog::with(['user', 'campaign', 'subject']);
+        $query = ActivityLog::with([
+            'user',
+            'campaign',
+            'subject' => function ($morphTo) {
+                $morphTo->morphWith([
+                    \App\Models\CreativeFile::class => ['creative'],
+                ]);
+            },
+        ]);
 
         // Check if ANY filter is applied
         $hasFilters = $request->hasAny(['action', 'user_id', 'campaign', 'date_start', 'date_end', 'search']);

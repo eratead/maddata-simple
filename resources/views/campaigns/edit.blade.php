@@ -203,15 +203,16 @@
                                 <!-- Section: Manage Configuration (Accordions) -->
                                 <div class="flex flex-col" x-data="{ activeAccordion: null }">
 
-                                        @if (auth()->user()->hasPermission('is_admin'))
                                                 <!-- Accordion 1: Required Sizes -->
                                                 <div class="mb-3 bg-white rounded-md border border-[#F18561] overflow-hidden"
                                                         :class="{ 'open': activeAccordion === 'sizes' }"
                                                         x-data="{
+                                                            isAdmin: @json(auth()->user()->hasPermission('is_admin')),
                                                             selectedSizes: ['{{ implode("','", explode(',', $campaign->required_sizes ?? '')) }}'].filter(s => s !== ''),
                                                             videoSizes: ['1920x1080', '1080x1920'],
                                                             staticSizes: ['640x820', '640x960', '640x1175', '640x1280', '640x1370', '640x360', '300x250', '1080x1920'],
                                                             toggleSize(size) {
+                                                                if (!this.isAdmin) return;
                                                                 if (this.selectedSizes.includes(size)) {
                                                                     this.selectedSizes = this.selectedSizes.filter(s => s !== size);
                                                                 } else {
@@ -271,20 +272,9 @@
                                                                                         <h4 @click="toggleGroup(videoSizes)"
                                                                                                 class="text-xs font-semibold uppercase tracking-wider text-gray-500 cursor-pointer hover:text-primary transition-colors select-none">
                                                                                                 Video Sizes</h4>
-                                                                                        <div
-                                                                                                class="flex flex-wrap gap-2">
-                                                                                                <template
-                                                                                                        x-for="size in videoSizes">
-                                                                                                        <div @click="toggleSize(size)"
-                                                                                                                :class="selectedSizes
-                                                                                                                    .includes(
-                                                                                                                        size
-                                                                                                                        ) ?
-                                                                                                                    'bg-primary text-white border-primary shadow-[0_2px_4px_rgba(79,70,229,0.2)]' :
-                                                                                                                    'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary hover:bg-indigo-50'"
-                                                                                                                class="px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none border"
-                                                                                                                x-text="size">
-                                                                                                        </div>
+                                                                                        <div class="flex flex-wrap gap-2">
+                                                                                                <template x-for="size in videoSizes">
+                                                                                                        <x-ui.size-pill />
                                                                                                 </template>
                                                                                         </div>
                                                                                 </div>
@@ -293,20 +283,9 @@
                                                                                         <h4 @click="toggleGroup(staticSizes)"
                                                                                                 class="text-xs font-semibold uppercase tracking-wider text-gray-500 cursor-pointer hover:text-primary transition-colors select-none">
                                                                                                 Static Sizes</h4>
-                                                                                        <div
-                                                                                                class="flex flex-wrap gap-2">
-                                                                                                <template
-                                                                                                        x-for="size in staticSizes">
-                                                                                                        <div @click="toggleSize(size)"
-                                                                                                                :class="selectedSizes
-                                                                                                                    .includes(
-                                                                                                                        size
-                                                                                                                        ) ?
-                                                                                                                    'bg-primary text-white border-primary shadow-[0_2px_4px_rgba(79,70,229,0.2)]' :
-                                                                                                                    'bg-white text-gray-500 border-gray-200 hover:border-primary hover:text-primary hover:bg-indigo-50'"
-                                                                                                                class="px-3.5 py-1.5 text-xs font-medium rounded-full cursor-pointer transition-colors select-none border"
-                                                                                                                x-text="size">
-                                                                                                        </div>
+                                                                                        <div class="flex flex-wrap gap-2">
+                                                                                                <template x-for="size in staticSizes">
+                                                                                                        <x-ui.size-pill />
                                                                                                 </template>
                                                                                         </div>
                                                                                 </div>
@@ -322,13 +301,14 @@
                                                                                                 placeholder="e.g. 728x90, 160x600"
                                                                                                 @input="selectedSizes = $event.target.value.split(',').map(s => s.trim()).filter(s => s !== '')"
                                                                                                 :value="selectedSizes.join(', ')"
+                                                                                                :disabled="!isAdmin"
+                                                                                                :class="isAdmin ? '' : 'cursor-not-allowed bg-gray-100 opacity-60'"
                                                                                                 class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-gray-900 text-sm focus:outline-none focus:bg-white focus:border-primary focus:ring-[3px] focus:ring-primary/20 hover:border-gray-300 transition-all">
                                                                                 </div>
                                                                         </div>
                                                                 </div>
                                                         </div>
                                                 </div>
-                                        @endif
 
                                         <!-- Accordion 2: Creatives -->
                                         <div class="mb-3 bg-white rounded-md border border-[#F18561] overflow-hidden"
@@ -549,7 +529,7 @@
                                                                 style="background: rgba(30,41,59,0.45); backdrop-filter: blur(2px)">
                                                                 <div @click.away="showModal = false"
                                                                         class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden"
-                                                                        style="max-height: 90vh">
+                                                                        style="height: 90vh; max-height: 90vh">
 
                                                                         <!-- Modal Search Header -->
                                                                         <div
@@ -577,8 +557,7 @@
                                                                         </div>
 
                                                                         <!-- Modal Body -->
-                                                                        <div class="flex flex-1 overflow-hidden"
-                                                                                style="min-height: 480px; height: 65vh">
+                                                                        <div class="flex flex-1 overflow-hidden min-h-0">
 
                                                                                 <!-- Left: Categories -->
                                                                                 <div class="w-60 border-r border-gray-100 bg-gray-50/60 flex flex-col flex-shrink-0 overflow-y-auto"
@@ -998,7 +977,7 @@
 
                                                                 <!-- Tab Nav -->
                                                                 <div
-                                                                        class="flex border-b border-gray-100 px-5 bg-white overflow-x-hidden">
+                                                                        class="flex border-b border-gray-100 px-5 bg-white overflow-hidden">
                                                                         @foreach ([['demographics', 'Demographics'], ['geo', 'Geo &amp; Locations'], ['devices', 'Devices &amp; Tech'], ['inventory', 'Inventory'], ['schedule', 'Schedule']] as [$tabId, $tabLabel])
                                                                                 <button type="button"
                                                                                         @click="activeTab = '{{ $tabId }}'"
@@ -1013,7 +992,7 @@
                                                                 </div>
 
                                                                 <!-- Tab Panels -->
-                                                                <div class="p-5 sm:p-6">
+                                                                <div class="p-5 sm:p-6" style="min-height: 420px">
 
                                                                         <!-- Demographics -->
                                                                         <div x-show="activeTab === 'demographics'">
@@ -1118,7 +1097,7 @@
                                                                                                 class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                                                                                                 <!-- Countries -->
-                                                                                                <div>
+                                                                                                <div class="relative">
                                                                                                         <div
                                                                                                                 class="flex items-center justify-between mb-1.5">
                                                                                                                 <label
@@ -1132,9 +1111,12 @@
                                                                                                                 @click="$el.querySelector('input').focus()">
                                                                                                                 <input type="text"
                                                                                                                         x-model="countryInput"
+                                                                                                                        @focus="showCountrySug = true"
+                                                                                                                        @input="showCountrySug = true"
                                                                                                                         @keydown.enter.prevent="addCountry()"
-                                                                                                                        @keydown.comma.prevent="addCountry()"
-                                                                                                                        placeholder="e.g. Israel, USA..."
+                                                                                                                        @keydown.escape="showCountrySug = false"
+                                                                                                                        @blur="setTimeout(() => showCountrySug = false, 150)"
+                                                                                                                        placeholder="Search countries..."
                                                                                                                         class="w-full bg-transparent text-sm text-textMain placeholder-textLight outline-none px-0.5 py-0.5 cursor-text">
                                                                                                                 <div
                                                                                                                         class="flex flex-wrap gap-1.5">
@@ -1153,10 +1135,19 @@
                                                                                                                         </template>
                                                                                                                 </div>
                                                                                                         </div>
+                                                                                                        <ul x-show="showCountrySug && filteredCountrySug.length"
+                                                                                                                class="absolute z-50 w-full bg-white border border-gray-200 shadow-lg rounded-md mt-1 max-h-48 overflow-y-auto"
+                                                                                                                style="display:none">
+                                                                                                                <template x-for="sug in filteredCountrySug" :key="sug">
+                                                                                                                        <li @mousedown.prevent="addCountry(sug)"
+                                                                                                                                class="px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-primary cursor-pointer transition-colors"
+                                                                                                                                x-text="sug"></li>
+                                                                                                                </template>
+                                                                                                        </ul>
                                                                                                 </div>
 
                                                                                                 <!-- Regions -->
-                                                                                                <div>
+                                                                                                <div class="relative">
                                                                                                         <div
                                                                                                                 class="flex items-center justify-between mb-1.5">
                                                                                                                 <label
@@ -1170,9 +1161,12 @@
                                                                                                                 @click="$el.querySelector('input').focus()">
                                                                                                                 <input type="text"
                                                                                                                         x-model="regionInput"
+                                                                                                                        @focus="showRegionSug = true"
+                                                                                                                        @input="showRegionSug = true"
                                                                                                                         @keydown.enter.prevent="addRegion()"
-                                                                                                                        @keydown.comma.prevent="addRegion()"
-                                                                                                                        placeholder="e.g. Central, North..."
+                                                                                                                        @keydown.escape="showRegionSug = false"
+                                                                                                                        @blur="setTimeout(() => showRegionSug = false, 150)"
+                                                                                                                        placeholder="Search regions..."
                                                                                                                         class="w-full bg-transparent text-sm text-textMain placeholder-textLight outline-none px-0.5 py-0.5 cursor-text">
                                                                                                                 <div
                                                                                                                         class="flex flex-wrap gap-1.5">
@@ -1191,10 +1185,20 @@
                                                                                                                         </template>
                                                                                                                 </div>
                                                                                                         </div>
+                                                                                                        <ul x-show="showRegionSug && filteredRegionSug.length"
+                                                                                                                class="absolute z-50 w-full bg-white border border-gray-200 shadow-lg rounded-md mt-1 max-h-48 overflow-y-auto"
+                                                                                                                style="display:none">
+                                                                                                                <li x-show="geoLoadingRegions" class="px-3 py-2 text-sm text-gray-400 italic">Loading...</li>
+                                                                                                                <template x-for="sug in filteredRegionSug" :key="sug">
+                                                                                                                        <li @mousedown.prevent="addRegion(sug)"
+                                                                                                                                class="px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-primary cursor-pointer transition-colors"
+                                                                                                                                x-text="sug"></li>
+                                                                                                                </template>
+                                                                                                        </ul>
                                                                                                 </div>
 
                                                                                                 <!-- Cities -->
-                                                                                                <div>
+                                                                                                <div class="relative">
                                                                                                         <div
                                                                                                                 class="flex items-center justify-between mb-1.5">
                                                                                                                 <label
@@ -1208,9 +1212,12 @@
                                                                                                                 @click="$el.querySelector('input').focus()">
                                                                                                                 <input type="text"
                                                                                                                         x-model="cityInput"
+                                                                                                                        @focus="showCitySug = true"
+                                                                                                                        @input="showCitySug = true"
                                                                                                                         @keydown.enter.prevent="addCity()"
-                                                                                                                        @keydown.comma.prevent="addCity()"
-                                                                                                                        placeholder="e.g. Tel Aviv, Haifa..."
+                                                                                                                        @keydown.escape="showCitySug = false"
+                                                                                                                        @blur="setTimeout(() => showCitySug = false, 150)"
+                                                                                                                        placeholder="Search cities..."
                                                                                                                         class="w-full bg-transparent text-sm text-textMain placeholder-textLight outline-none px-0.5 py-0.5 cursor-text">
                                                                                                                 <div
                                                                                                                         class="flex flex-wrap gap-1.5">
@@ -1229,19 +1236,24 @@
                                                                                                                         </template>
                                                                                                                 </div>
                                                                                                         </div>
+                                                                                                        <ul x-show="showCitySug && filteredCitySug.length"
+                                                                                                                class="absolute z-50 w-full bg-white border border-gray-200 shadow-lg rounded-md mt-1 max-h-48 overflow-y-auto"
+                                                                                                                style="display:none">
+                                                                                                                <li x-show="geoLoadingCities" class="px-3 py-2 text-sm text-gray-400 italic">Loading...</li>
+                                                                                                                <template x-for="sug in filteredCitySug" :key="sug">
+                                                                                                                        <li @mousedown.prevent="addCity(sug)"
+                                                                                                                                class="px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-primary cursor-pointer transition-colors"
+                                                                                                                                x-text="sug"></li>
+                                                                                                                </template>
+                                                                                                        </ul>
                                                                                                 </div>
 
                                                                                         </div>
 
-                                                                                        <p
-                                                                                                class="text-xs text-textLight mt-3">
-                                                                                                Type a value and press
-                                                                                                <kbd
-                                                                                                        class="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono">Enter</kbd>
-                                                                                                or <kbd
-                                                                                                        class="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono">,</kbd>
-                                                                                                to add. Leave all empty
-                                                                                                to target all.</p>
+                                                                                        <p class="text-xs text-textLight mt-3">
+                                                                                                Type to search and select, or press
+                                                                                                <kbd class="px-1 py-0.5 bg-gray-100 border border-gray-200 rounded text-[10px] font-mono">Enter</kbd>
+                                                                                                to add a custom value. Leave all empty to target all.</p>
                                                                                 </div>
 
                                                                                 <!-- Proximity Targeting -->
@@ -2413,6 +2425,29 @@
                                 countryInput: '',
                                 regionInput: '',
                                 cityInput: '',
+                                showCountrySug: false,
+                                showRegionSug: false,
+                                showCitySug: false,
+                                geoCountriesList: [],
+                                geoRegionsList: [],
+                                geoCitiesList: [],
+                                geoLoadingRegions: false,
+                                geoLoadingCities: false,
+                                get filteredCountrySug() {
+                                        const q = this.countryInput.trim().toLowerCase();
+                                        const list = q ? this.geoCountriesList.filter(c => c.toLowerCase().includes(q)) : this.geoCountriesList;
+                                        return list.filter(c => !this.countries.includes(c)).slice(0, 10);
+                                },
+                                get filteredRegionSug() {
+                                        const q = this.regionInput.trim().toLowerCase();
+                                        const list = q ? this.geoRegionsList.filter(r => r.toLowerCase().includes(q)) : this.geoRegionsList;
+                                        return list.filter(r => !this.regions.includes(r)).slice(0, 10);
+                                },
+                                get filteredCitySug() {
+                                        const q = this.cityInput.trim().toLowerCase();
+                                        const list = q ? this.geoCitiesList.filter(c => c.toLowerCase().includes(q)) : this.geoCitiesList;
+                                        return list.filter(c => !this.cities.includes(c)).slice(0, 10);
+                                },
                                 isAiOpen: false,
                                 aiPrompt: '',
                                 isAiLoading: false,
@@ -2420,6 +2455,8 @@
                                         this._map = null;
                                         this._layers = [];
                                         this._clickMarker = null;
+                                        this.loadCountriesList();
+                                        if (this.countries.length) this.loadGeoData();
                                         this.$watch('activeTab', (tab) => {
                                                 if (tab === 'geo') {
                                                         setTimeout(() => {
@@ -2541,26 +2578,60 @@
                                         }
                                         return parts.join('  ·  ') || 'All';
                                 },
-                                addCountry() {
-                                        const c = this.countryInput.trim();
-                                        if (c && !this.countries.includes(c)) this.countries.push(c);
+                                async loadCountriesList() {
+                                        try {
+                                                const res = await fetch('https://countriesnow.space/api/v0.1/countries/iso');
+                                                const data = await res.json();
+                                                if (!data.error) this.geoCountriesList = data.data.map(c => c.name).sort();
+                                        } catch {}
+                                },
+                                async loadGeoData() {
+                                        if (!this.countries.length) { this.geoRegionsList = []; this.geoCitiesList = []; return; }
+                                        const country = this.countries[this.countries.length - 1];
+                                        this.geoLoadingRegions = true;
+                                        this.geoLoadingCities = true;
+                                        try {
+                                                const [rRes, cRes] = await Promise.all([
+                                                        fetch('https://countriesnow.space/api/v0.1/countries/states', {
+                                                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ country })
+                                                        }),
+                                                        fetch('https://countriesnow.space/api/v0.1/countries/cities', {
+                                                                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ country })
+                                                        })
+                                                ]);
+                                                const [rData, cData] = await Promise.all([rRes.json(), cRes.json()]);
+                                                if (!rData.error) this.geoRegionsList = rData.data.states.map(s => s.name);
+                                                if (!cData.error) this.geoCitiesList = cData.data;
+                                        } catch {}
+                                        this.geoLoadingRegions = false;
+                                        this.geoLoadingCities = false;
+                                },
+                                addCountry(name) {
+                                        const c = (name ?? this.countryInput).trim();
+                                        if (c && !this.countries.includes(c)) { this.countries.push(c); this.loadGeoData(); }
                                         this.countryInput = '';
+                                        this.showCountrySug = false;
                                 },
                                 removeCountry(index) {
                                         this.countries.splice(index, 1);
+                                        this.loadGeoData();
                                 },
-                                addRegion() {
-                                        const r = this.regionInput.trim();
+                                addRegion(name) {
+                                        const r = (name ?? this.regionInput).trim();
                                         if (r && !this.regions.includes(r)) this.regions.push(r);
                                         this.regionInput = '';
+                                        this.showRegionSug = false;
                                 },
                                 removeRegion(index) {
                                         this.regions.splice(index, 1);
                                 },
-                                addCity() {
-                                        const c = this.cityInput.trim();
+                                addCity(name) {
+                                        const c = (name ?? this.cityInput).trim();
                                         if (c && !this.cities.includes(c)) this.cities.push(c);
                                         this.cityInput = '';
+                                        this.showCitySug = false;
                                 },
                                 removeCity(index) {
                                         this.cities.splice(index, 1);

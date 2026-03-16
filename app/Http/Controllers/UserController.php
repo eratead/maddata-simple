@@ -13,12 +13,13 @@ class UserController extends Controller
     use AuthorizesRequests;
     public function index()
     {
+        $this->authorize('viewAny', User::class);
 
-        $this->authorize('viewAny', User::class); // optional if you want admin-only
+        $users = User::with(['clients', 'userRole'])->get();
+        $roles = \App\Models\Role::orderBy('sort_order')->get();
+        $clients = \App\Models\Client::orderBy('name')->get();
 
-        $users = User::with('clients')->get();
-
-        return view('users.index', compact('users'));
+        return view('users.index', compact('users', 'roles', 'clients'));
     }
 
     public function create()
