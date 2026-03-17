@@ -68,8 +68,6 @@ Route::middleware(['auth'])->group(function () {
 
     // Admin Routes
     Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(function () {
-        Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
-
         // Audiences
         Route::get('/audiences', [\App\Http\Controllers\Admin\AudienceController::class, 'index'])->name('audiences.index');
         Route::post('/audiences', [\App\Http\Controllers\Admin\AudienceController::class, 'store'])->name('audiences.store');
@@ -78,6 +76,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/audiences/upload', [\App\Http\Controllers\Admin\AudienceController::class, 'upload'])->name('audiences.upload');
         Route::post('roles/reorder', [\App\Http\Controllers\Admin\RoleController::class, 'reorder'])->name('roles.reorder');
         Route::resource('roles', \App\Http\Controllers\Admin\RoleController::class);
+    });
+
+    // Log Routes (admin OR can_see_logs)
+    Route::prefix('admin')->middleware(['auth', 'can_see_logs'])->name('admin.')->group(function () {
+        Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
 
         // Campaign Changes CRM
         Route::prefix('campaign-changes')->name('campaign_changes.')->group(function () {

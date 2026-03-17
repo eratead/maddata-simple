@@ -27,6 +27,7 @@ class Role extends Model
             'can_edit_campaigns' => 'Can Create & Edit Campaigns',
             'can_view_budget' => 'Can View Budget',
             'can_upload_reports' => 'Reports Upload',
+            'can_see_logs' => 'Can See Logs',
         ];
     }
 

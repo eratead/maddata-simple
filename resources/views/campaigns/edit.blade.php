@@ -793,6 +793,8 @@
                                                     connectionTypes: ['WiFi', 'Cellular'],
                                                     environments: {{ Js::from(old('targeting_rules.environments', $campaign->targeting_rules['environments'] ?? ['In-App', 'Mobile Web'])) }},
                                                     days: {{ Js::from(old('targeting_rules.days', $campaign->targeting_rules['days'] ?? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])) }},
+                                                    timeStart: {{ Js::from(old('targeting_rules.time_start', $campaign->targeting_rules['time_start'] ?? '')) }},
+                                                    timeEnd: {{ Js::from(old('targeting_rules.time_end', $campaign->targeting_rules['time_end'] ?? '')) }},
                                                     locations: {{ Js::from($campaign->locations->map(fn($l) => ['name' => $l->name, 'lat' => $l->lat, 'lng' => $l->lng, 'radius_meters' => $l->radius_meters])->values()) }},
                                                     countries: {{ Js::from(old('targeting_rules.countries', $campaign->targeting_rules['countries'] ?? ['Israel'])) }},
                                                     regions: {{ Js::from(old('targeting_rules.regions', $campaign->targeting_rules['regions'] ?? [])) }},
@@ -970,6 +972,16 @@
                                                                                                 class="text-textLight">Days:</span>
                                                                                         <span class="text-textMain"
                                                                                                 x-text="_fmt(days, 7)"></span>
+                                                                                        <template x-if="timeStart || timeEnd">
+                                                                                                <span class="text-gray-300 select-none">·</span>
+                                                                                        </template>
+                                                                                        <template x-if="timeStart || timeEnd">
+                                                                                                <span class="text-textLight">Hours:</span>
+                                                                                        </template>
+                                                                                        <template x-if="timeStart || timeEnd">
+                                                                                                <span class="text-textMain"
+                                                                                                        x-text="(timeStart || '00:00') + ' – ' + (timeEnd || '24:00')"></span>
+                                                                                        </template>
                                                                                 </div>
 
                                                                         </div>
@@ -1882,7 +1894,14 @@
                                                                                 </div>
 
                                                                                 <!-- Active Hours -->
-                                                                                <div>
+                                                                                <div x-data="{
+                                                                                    _th(v){ return v ? v.split(':')[0] : '' },
+                                                                                    _tm(v){ return v ? v.split(':')[1] : '' },
+                                                                                    setTime(field, h, m) {
+                                                                                        if (!h && !m) { this[field] = ''; return; }
+                                                                                        this[field] = (h||'00') + ':' + (m||'00');
+                                                                                    }
+                                                                                }">
                                                                                         <h4
                                                                                                 class="text-xs font-semibold uppercase tracking-wider text-textMuted mb-3">
                                                                                                 Active Hours</h4>
@@ -1892,19 +1911,53 @@
                                                                                                         <label
                                                                                                                 class="block text-xs font-medium text-textMuted mb-1">Start
                                                                                                                 Time</label>
-                                                                                                        <input type="time"
-                                                                                                                name="targeting_rules[time_start]"
-                                                                                                                value="{{ old('targeting_rules.time_start', $campaign->targeting_rules['time_start'] ?? '') }}"
-                                                                                                                class="w-full rounded-md border border-border bg-surface text-sm text-textMain px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                                                                                                        <input type="hidden" name="targeting_rules[time_start]" :value="timeStart">
+                                                                                                        <div class="flex gap-1">
+                                                                                                                <select @change="setTime('timeStart', $event.target.value, _tm(timeStart))"
+                                                                                                                        class="w-full rounded-md border border-border bg-surface text-sm text-textMain px-2 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                                                                                                                        <option value="">HH</option>
+                                                                                                                        @for ($h = 0; $h < 24; $h++)
+                                                                                                                                <option value="{{ str_pad($h, 2, '0', STR_PAD_LEFT) }}"
+                                                                                                                                        :selected="_th(timeStart) === '{{ str_pad($h, 2, '0', STR_PAD_LEFT) }}'">
+                                                                                                                                        {{ str_pad($h, 2, '0', STR_PAD_LEFT) }}
+                                                                                                                                </option>
+                                                                                                                        @endfor
+                                                                                                                </select>
+                                                                                                                <span class="self-center text-textMuted">:</span>
+                                                                                                                <select @change="setTime('timeStart', _th(timeStart), $event.target.value)"
+                                                                                                                        class="w-full rounded-md border border-border bg-surface text-sm text-textMain px-2 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                                                                                                                        <option value="">MM</option>
+                                                                                                                        @foreach (['00','10','20','30','40','50'] as $m)
+                                                                                                                                <option value="{{ $m }}" :selected="_tm(timeStart) === '{{ $m }}'">{{ $m }}</option>
+                                                                                                                        @endforeach
+                                                                                                                </select>
+                                                                                                        </div>
                                                                                                 </div>
                                                                                                 <div>
                                                                                                         <label
                                                                                                                 class="block text-xs font-medium text-textMuted mb-1">End
                                                                                                                 Time</label>
-                                                                                                        <input type="time"
-                                                                                                                name="targeting_rules[time_end]"
-                                                                                                                value="{{ old('targeting_rules.time_end', $campaign->targeting_rules['time_end'] ?? '') }}"
-                                                                                                                class="w-full rounded-md border border-border bg-surface text-sm text-textMain px-3 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                                                                                                        <input type="hidden" name="targeting_rules[time_end]" :value="timeEnd">
+                                                                                                        <div class="flex gap-1">
+                                                                                                                <select @change="setTime('timeEnd', $event.target.value, _tm(timeEnd))"
+                                                                                                                        class="w-full rounded-md border border-border bg-surface text-sm text-textMain px-2 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                                                                                                                        <option value="">HH</option>
+                                                                                                                        @for ($h = 0; $h < 24; $h++)
+                                                                                                                                <option value="{{ str_pad($h, 2, '0', STR_PAD_LEFT) }}"
+                                                                                                                                        :selected="_th(timeEnd) === '{{ str_pad($h, 2, '0', STR_PAD_LEFT) }}'">
+                                                                                                                                        {{ str_pad($h, 2, '0', STR_PAD_LEFT) }}
+                                                                                                                                </option>
+                                                                                                                        @endfor
+                                                                                                                </select>
+                                                                                                                <span class="self-center text-textMuted">:</span>
+                                                                                                                <select @change="setTime('timeEnd', _th(timeEnd), $event.target.value)"
+                                                                                                                        class="w-full rounded-md border border-border bg-surface text-sm text-textMain px-2 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                                                                                                                        <option value="">MM</option>
+                                                                                                                        @foreach (['00','10','20','30','40','50'] as $m)
+                                                                                                                                <option value="{{ $m }}" :selected="_tm(timeEnd) === '{{ $m }}'">{{ $m }}</option>
+                                                                                                                        @endforeach
+                                                                                                                </select>
+                                                                                                        </div>
                                                                                                 </div>
                                                                                         </div>
                                                                                         <p
@@ -2213,7 +2266,7 @@
                  style="z-index:9003"
                  @click.self="summaryOpen = false">
                 <div x-data="{ copied: false }"
-                     class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col border border-gray-100">
+                     class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col border border-gray-100">
 
                     <!-- Header -->
                     <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
@@ -2234,7 +2287,7 @@
                     <!-- Content -->
                     <div class="flex-1 overflow-y-auto p-5 min-h-0">
                         <textarea id="summaryTextarea" readonly
-                                  class="w-full min-h-[380px] text-xs font-mono text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-4 resize-none focus:outline-none leading-relaxed">{{ $summaryText }}</textarea>
+                                  class="w-full h-full min-h-[50vh] text-xs font-mono text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-4 resize-none focus:outline-none leading-relaxed">{{ $summaryText }}</textarea>
                     </div>
 
                     <!-- Footer -->

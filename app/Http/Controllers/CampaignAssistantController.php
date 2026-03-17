@@ -85,7 +85,7 @@ class CampaignAssistantController extends Controller
             . '- start_date (YYYY-MM-DD): Campaign start date' . "\n"
             . '- end_date (YYYY-MM-DD): Campaign end date' . "\n"
             . '- status: "active" | "inactive" | "draft" | "ended"' . "\n"
-            . '- genders: array subset of ["Male","Female"]. (Hebrew: "גברים"=Male, "נשים"=Female. Empty means All genders.)' . "\n"
+            . '- genders: array subset of ["male","female","unknown"]. (Hebrew: "גברים"=male, "נשים"=female. Empty means All genders.)' . "\n"
             . '- ages: array subset of ["13-17","18-24","25-34","35-44","45-54","55-64","65+"]. Map logically, e.g. 21-30 → ["18-24","25-34"]. Empty means All ages.' . "\n"
             . '- incomes: array subset of ["0-195K","195-220K","220-245K","245K+"] — empty means All incomes' . "\n"
             . '- environments: array subset of ["In-App","Mobile Web"] — empty means All environments' . "\n"

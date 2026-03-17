@@ -6,11 +6,15 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
 
 class ActivityLogController extends Controller
 {
     public function index(Request $request)
     {
+        $user = Auth::user();
+        $isAdmin = $user->hasPermission('is_admin');
+
         $query = ActivityLog::with([
             'user',
             'campaign',
@@ -20,6 +24,18 @@ class ActivityLogController extends Controller
                 ]);
             },
         ]);
+
+        // Non-admin: restrict to campaigns belonging to user's clients
+        if (!$isAdmin) {
+            $allowedCampaignIds = $user->clients()
+                ->with('campaigns')
+                ->get()
+                ->flatMap(fn($client) => $client->campaigns->pluck('id'))
+                ->unique()
+                ->values();
+
+            $query->whereIn('campaign_id', $allowedCampaignIds);
+        }
 
         // Check if ANY filter is applied
         $hasFilters = $request->hasAny(['action', 'user_id', 'campaign', 'date_start', 'date_end', 'search']);
@@ -64,9 +80,11 @@ class ActivityLogController extends Controller
 
         $logs = $query->latest()->paginate(50)->appends($request->query());
 
-        // For the filter dropdown
-        $users = \App\Models\User::orderBy('name')->get();
+        // For the filter dropdown — admins see all users, others see only themselves
+        $users = $isAdmin
+            ? \App\Models\User::orderBy('name')->get()
+            : collect([$user]);
 
-        return view('admin.activity_logs.index', compact('logs', 'users'));
+        return view('admin.activity_logs.index', compact('logs', 'users', 'isAdmin'));
     }
 }

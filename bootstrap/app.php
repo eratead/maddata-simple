@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check-token-expiry' => \App\Http\Middleware\CheckTokenExpiry::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'campaign_manager' => \App\Http\Middleware\EnsureUserIsCampaignManager::class,
+            'can_see_logs' => \App\Http\Middleware\EnsureUserCanSeeLogs::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

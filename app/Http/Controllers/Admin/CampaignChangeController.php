@@ -7,24 +7,53 @@ use App\Models\ActivityLog;
 use App\Models\Campaign;
 use App\Models\CreativeFile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use ZipArchive;
 
 class CampaignChangeController extends Controller
 {
+    private function allowedCampaignIds(): ?array
+    {
+        $user = Auth::user();
+        if ($user->hasPermission('is_admin')) {
+            return null; // null = no restriction
+        }
+
+        return $user->clients()
+            ->with('campaigns')
+            ->get()
+            ->flatMap(fn($client) => $client->campaigns->pluck('id'))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function index()
     {
-        $campaigns = Campaign::whereHas('activityLogs', function ($query) {
-            $query->pending();
-        })->withCount(['activityLogs' => function ($query) {
-            $query->pending();
-        }])->get();
+        $allowedIds = $this->allowedCampaignIds();
+
+        $query = Campaign::whereHas('activityLogs', function ($q) {
+            $q->pending();
+        })->withCount(['activityLogs' => function ($q) {
+            $q->pending();
+        }]);
+
+        if ($allowedIds !== null) {
+            $query->whereIn('id', $allowedIds);
+        }
+
+        $campaigns = $query->get();
 
         return view('admin.campaign_changes.index', compact('campaigns'));
     }
 
     public function show(Campaign $campaign)
     {
+        $allowedIds = $this->allowedCampaignIds();
+        if ($allowedIds !== null && !in_array($campaign->id, $allowedIds)) {
+            abort(403);
+        }
         $allLogs = $campaign->activityLogs()
             ->pending()
             ->with(['user', 'subject' => function ($morphTo) {
@@ -72,6 +101,11 @@ class CampaignChangeController extends Controller
 
     public function download(ActivityLog $log)
     {
+        $allowedIds = $this->allowedCampaignIds();
+        if ($allowedIds !== null && !in_array($log->campaign_id, $allowedIds)) {
+            abort(403);
+        }
+
         if ($log->subject_type !== CreativeFile::class || !$log->subject) {
             return back()->with('error', 'File not found or invalid log type.');
         }
@@ -87,6 +121,11 @@ class CampaignChangeController extends Controller
 
     public function downloadAll(Campaign $campaign)
     {
+        $allowedIds = $this->allowedCampaignIds();
+        if ($allowedIds !== null && !in_array($campaign->id, $allowedIds)) {
+            abort(403);
+        }
+
         $logs = $campaign->activityLogs()
             ->pending()
             ->where('subject_type', CreativeFile::class)
@@ -121,6 +160,11 @@ class CampaignChangeController extends Controller
 
     public function markAsHandled(Request $request, Campaign $campaign)
     {
+        $allowedIds = $this->allowedCampaignIds();
+        if ($allowedIds !== null && !in_array($campaign->id, $allowedIds)) {
+            abort(403);
+        }
+
         $logIds = $request->input('log_ids', []);
 
         if (empty($logIds)) {
