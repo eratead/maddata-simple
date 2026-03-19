@@ -188,7 +188,7 @@
                         <tr class="hover:bg-gray-50/60 transition-colors">
                             <td class="pl-5 pr-3 py-3">
                                 <a href="{{ route('dashboard.campaign', $campaign->id) }}"
-                                   class="text-sm font-semibold text-[#F97316] hover:text-[#EA580C] transition-colors"
+                                   class="text-sm font-semibold text-gray-900 hover:text-[#F97316] transition-colors"
                                    title="{{ $campaign->name }}">
                                     {{ $campaign->name }}
                                 </a>

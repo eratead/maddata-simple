@@ -133,7 +133,7 @@
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-4 py-3">
                                     <a :href="user.edit_url"
-                                       class="font-semibold text-[#F97316] hover:text-[#EA580C] transition-colors"
+                                       class="font-semibold text-gray-900 hover:text-[#F97316] transition-colors"
                                        x-text="user.name"></a>
                                 </td>
                                 <td class="px-4 py-3 text-gray-500" x-text="user.email"></td>

@@ -6,9 +6,9 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{{ config('app.name', 'MadData') }} — {{ $title }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
   @vite(['resources/css/app.css', 'resources/js/app.js'])
-  <style>body { font-family: 'Inter', sans-serif; }</style>
+  <style>body { font-family: 'Rubik', sans-serif; }</style>
 </head>
 <body class="antialiased bg-white">
 

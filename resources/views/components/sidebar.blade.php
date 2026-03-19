@@ -9,12 +9,8 @@
 
     {{-- ── Logo ──────────────────────────────────────────────────── --}}
     <div class="flex items-center h-14 px-5 border-b border-white/10 shrink-0">
-        <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="28" height="28" rx="6" fill="#F97316"/>
-                <text x="5" y="20" font-family="Inter,sans-serif" font-weight="700" font-size="16" fill="white">M</text>
-            </svg>
-            <span class="text-white font-bold text-sm tracking-tight">Mad<span class="text-[#F97316]">Data</span></span>
+        <a href="{{ route('dashboard') }}" class="flex items-center">
+            <img src="{{ asset('images/madata_logo_white_orange.png') }}" alt="MadData" class="h-7">
         </a>
 
         {{-- Mobile close button --}}

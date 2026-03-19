@@ -306,15 +306,29 @@
                         <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-3">Time Range</p>
                         <div class="flex items-center gap-4">
                             <div class="flex flex-col gap-1">
-                                <label class="text-xs text-gray-400">From</label>
-                                <input type="time" x-model="timeStart"
-                                    class="px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 transition-all">
+                                <label class="text-xs text-gray-600">From</label>
+                                <select x-model="timeStart"
+                                    class="pl-3 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 transition-all cursor-pointer">
+                                    <option value="">—</option>
+                                    @for ($h = 0; $h < 24; $h++)
+                                        @for ($m = 0; $m < 60; $m += 10)
+                                            <option value="{{ sprintf('%02d:%02d', $h, $m) }}">{{ sprintf('%02d:%02d', $h, $m) }}</option>
+                                        @endfor
+                                    @endfor
+                                </select>
                             </div>
                             <span class="text-gray-400 mt-4">—</span>
                             <div class="flex flex-col gap-1">
-                                <label class="text-xs text-gray-400">To</label>
-                                <input type="time" x-model="timeEnd"
-                                    class="px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 transition-all">
+                                <label class="text-xs text-gray-600">To</label>
+                                <select x-model="timeEnd"
+                                    class="pl-3 pr-8 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 transition-all cursor-pointer">
+                                    <option value="">—</option>
+                                    @for ($h = 0; $h < 24; $h++)
+                                        @for ($m = 0; $m < 60; $m += 10)
+                                            <option value="{{ sprintf('%02d:%02d', $h, $m) }}">{{ sprintf('%02d:%02d', $h, $m) }}</option>
+                                        @endfor
+                                    @endfor
+                                </select>
                             </div>
                             <button type="button" @click="timeStart=''; timeEnd=''"
                                 x-show="timeStart || timeEnd"
@@ -475,66 +489,70 @@
                             Proximity Targeting <span class="normal-case tracking-normal font-normal text-gray-400">(Points of Interest)</span>
                         </p>
 
-                        {{-- AI Location Generator --}}
-                        <div class="mb-4">
-                            <button type="button" @click="isAiOpen = !isAiOpen"
-                                class="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-violet-50/40 hover:border-violet-200 transition-colors group">
-                                <div class="flex items-center gap-2">
-                                    <svg class="w-3.5 h-3.5 text-violet-500" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
-                                    </svg>
-                                    <span class="text-sm font-medium text-gray-600 group-hover:text-violet-700 transition-colors">Ask AI to find locations</span>
-                                </div>
-                                <svg class="w-4 h-4 text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': isAiOpen }"
-                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                </svg>
-                            </button>
-                            <div x-show="isAiOpen" x-collapse class="overflow-hidden">
-                                <div class="pt-3 flex gap-2">
-                                    <input type="text" x-model="aiPrompt"
-                                        placeholder="e.g. Shopping malls in Tel Aviv..."
-                                        @keydown.enter.prevent="generateAiLocations()"
-                                        class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-200/40 transition-all">
-                                    <button type="button" @click="generateAiLocations()"
-                                        :disabled="isAiLoading || aiPrompt.trim() === ''"
-                                        class="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold transition-colors">
-                                        <span x-show="!isAiLoading">Generate</span>
-                                        <span x-show="isAiLoading">...</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Map Search --}}
-                        <div class="relative mb-4" @click.outside="searchResults = []">
-                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
-                            </svg>
-                            <input type="text" x-model="searchQuery"
-                                @input.debounce.400ms="searchPlace()"
-                                placeholder="Search for a place or address..."
-                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 transition-all">
-                            <div x-show="searchResults.length > 0"
-                                class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
-                                <template x-for="result in searchResults" :key="result.place_id">
-                                    <button type="button" @click="selectResult(result)"
-                                        class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors">
-                                        <span class="font-medium" x-text="result.display_name.split(',')[0]"></span>
-                                        <span class="text-xs text-gray-400 ml-1" x-text="result.display_name.split(',').slice(1,3).join(',')"></span>
-                                    </button>
-                                </template>
-                            </div>
-                        </div>
-
-                        {{-- Map + New Location side by side --}}
                         <div class="grid grid-cols-2 gap-4">
-                            {{-- Leaflet Map --}}
-                            <div id="geo-map" class="w-full rounded-xl overflow-hidden border border-gray-200" style="height:300px"></div>
+                            {{-- Left column: AI + Search + Map --}}
+                            <div class="flex flex-col gap-3">
 
-                            {{-- New Location Form + List --}}
-                            <div class="border border-gray-200 rounded-xl p-4 bg-gray-50/40 flex flex-col gap-3" style="min-height:300px">
+                                {{-- AI Location Generator --}}
+                                <div>
+                                    <button type="button" @click="isAiOpen = !isAiOpen"
+                                        class="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-violet-50/40 hover:border-violet-200 transition-colors group">
+                                        <div class="flex items-center gap-2">
+                                            <svg class="w-3.5 h-3.5 text-violet-500" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+                                            </svg>
+                                            <span class="text-sm font-medium text-gray-600 group-hover:text-violet-700 transition-colors">Ask AI to find locations</span>
+                                        </div>
+                                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': isAiOpen }"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                    <div x-show="isAiOpen" x-collapse class="overflow-hidden">
+                                        <div class="pt-3 flex gap-2">
+                                            <input type="text" x-model="aiPrompt"
+                                                placeholder="e.g. Shopping malls in Tel Aviv..."
+                                                @keydown.enter.prevent="generateAiLocations()"
+                                                class="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-200/40 transition-all">
+                                            <button type="button" @click="generateAiLocations()"
+                                                :disabled="isAiLoading || aiPrompt.trim() === ''"
+                                                class="px-4 py-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-xs font-semibold transition-colors">
+                                                <span x-show="!isAiLoading">Generate</span>
+                                                <span x-show="isAiLoading">...</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Map Search --}}
+                                <div class="relative" @click.outside="searchResults = []">
+                                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
+                                    </svg>
+                                    <input type="text" x-model="searchQuery"
+                                        @input.debounce.400ms="searchPlace()"
+                                        placeholder="Search for a place or address..."
+                                        class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/20 transition-all">
+                                    <div x-show="searchResults.length > 0"
+                                        class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                                        <template x-for="result in searchResults" :key="result.place_id">
+                                            <button type="button" @click="selectResult(result)"
+                                                class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-[#F97316] transition-colors">
+                                                <span class="font-medium" x-text="result.display_name.split(',')[0]"></span>
+                                                <span class="text-xs text-gray-400 ml-1" x-text="result.display_name.split(',').slice(1,3).join(',')"></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                {{-- Leaflet Map --}}
+                                <div id="geo-map" class="w-full rounded-xl overflow-hidden border border-gray-200 flex-1" style="min-height:260px"></div>
+
+                            </div>{{-- end left column --}}
+
+                            {{-- Right column: New Location Form + List --}}
+                            <div class="border border-gray-200 rounded-xl p-4 bg-gray-50/40 flex flex-col gap-3">
                                 <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400">New Location</p>
 
                                 <div>
@@ -600,7 +618,8 @@
                         <div x-show="showEditModal" x-cloak
                             class="fixed inset-0 bg-black/40 flex items-center justify-center p-4"
                             style="z-index:9020"
-                            @click.self="closeEdit()">
+                            @click.self="closeEdit()"
+                            @keydown.window.escape="closeEdit()">
                             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-gray-100 p-6">
                                 <h3 class="text-sm font-semibold text-gray-800 mb-4">Edit Location</h3>
                                 <div class="flex flex-col gap-4">

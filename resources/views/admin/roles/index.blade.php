@@ -38,7 +38,7 @@
                             </td>
                             <td class="px-4 py-3 font-medium text-gray-800">
                                 <a href="{{ route('admin.roles.edit', $role->id) }}"
-                                   class="font-semibold text-[#F97316] hover:text-[#EA580C] transition-colors">
+                                   class="font-semibold text-gray-900 hover:text-[#F97316] transition-colors">
                                     {{ $role->name }}
                                 </a>
                             </td>

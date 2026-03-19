@@ -57,7 +57,7 @@
                             <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $client->agency }}</td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <a href="{{ url('/campaigns/client/' . $client->id) }}"
-                                   class="font-semibold text-[#F97316] hover:text-[#EA580C] transition-colors">
+                                   class="font-semibold text-gray-900 hover:text-[#F97316] transition-colors">
                                     {{ $client->name }}
                                 </a>
                             </td>

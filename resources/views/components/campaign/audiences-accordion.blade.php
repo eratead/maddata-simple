@@ -95,7 +95,8 @@
             x-transition:leave-end="opacity-0 scale-95"
             class="fixed inset-0 flex items-center justify-center p-4"
             style="z-index:9011"
-            @click.self="showModal = false">
+            @click.self="showModal = false"
+            @keydown.window.escape="showModal = false">
 
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col border border-gray-100 overflow-hidden"
                 style="height: min(80vh, 620px)">

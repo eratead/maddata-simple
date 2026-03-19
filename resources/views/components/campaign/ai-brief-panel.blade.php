@@ -9,7 +9,8 @@
     x-transition:leave-start="translate-x-0"
     x-transition:leave-end="translate-x-full"
     class="fixed top-0 right-0 h-full w-full max-w-[440px] bg-white shadow-2xl flex flex-col border-l border-gray-200"
-    style="z-index:9001">
+    style="z-index:9001"
+    @keydown.window.escape="isOpen = false">
 
     {{-- Panel Header --}}
     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-white flex-shrink-0">

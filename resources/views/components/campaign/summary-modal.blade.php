@@ -107,7 +107,8 @@
     x-transition:leave-end="opacity-0 scale-95"
     class="fixed inset-0 flex items-center justify-center p-4"
     style="z-index:9003"
-    @click.self="summaryOpen = false">
+    @click.self="summaryOpen = false"
+    @keydown.window.escape="summaryOpen = false">
 
     <div x-data="{ copied: false }"
         class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col border border-gray-100 overflow-hidden">
