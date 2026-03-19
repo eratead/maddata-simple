@@ -23,6 +23,9 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('users', \App\Http\Controllers\UserController::class)
         ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->middleware('auth');
+    Route::post('/users/{user}/reset-2fa', [UserController::class, 'reset2fa'])
+        ->name('users.reset-2fa')
+        ->middleware('admin');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -36,6 +37,14 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    // ── Two-Factor Authentication ────────────────────────────────────────
+    // These routes are exempt from RequireTwoFactor (see middleware EXEMPT_ROUTES)
+    Route::get('2fa/setup',     [TwoFactorController::class, 'showSetup'])->name('2fa.setup');
+    Route::post('2fa/setup',    [TwoFactorController::class, 'confirmSetup'])->name('2fa.confirm');
+    Route::get('2fa/challenge', [TwoFactorController::class, 'showChallenge'])->name('2fa.challenge');
+    Route::post('2fa/challenge',[TwoFactorController::class, 'verify'])->name('2fa.verify')->middleware('throttle:5,1');
+    // ────────────────────────────────────────────────────────────────────
+
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 

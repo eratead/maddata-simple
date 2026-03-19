@@ -115,6 +115,17 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
 
+    public function reset2fa(User $user): \Illuminate\Http\RedirectResponse
+    {
+        // Only admins may reset another user's 2FA secret
+        abort_unless(auth()->user()->hasPermission('is_admin'), 403);
+
+        $user->update(['google2fa_secret' => null]);
+
+        return redirect()->route('users.edit', $user)
+            ->with('success', "2FA has been reset for {$user->name}. They will be required to set it up again on next login.");
+    }
+
     public function attachClient(User $user)
     {
         $this->authorize('update', $user);

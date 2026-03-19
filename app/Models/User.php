@@ -31,6 +31,7 @@ class User extends Authenticatable
         'is_report',
         'receive_activity_notifications',
         'role_id',
+        'google2fa_secret',
     ];
 
     public function userRole()
@@ -67,6 +68,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'google2fa_secret',
     ];
 
     /**
@@ -81,6 +83,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'is_report' => 'boolean',
+            'google2fa_secret' => 'encrypted', // auto encrypt/decrypt; column is text
         ];
     }
 }

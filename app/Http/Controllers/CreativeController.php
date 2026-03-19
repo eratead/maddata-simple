@@ -136,8 +136,12 @@ class CreativeController extends Controller
                 $encoded = $manager->read($file->getPathname())->encodeByMediaType($mimeType);
                 Storage::disk('creatives')->put($safePath, (string) $encoded);
             } else {
-                // Videos: store directly (no EXIF concern)
-                Storage::disk('creatives')->put($safePath, file_get_contents($file->getPathname()));
+                // Videos: stream directly to avoid loading 50 MB into PHP memory
+                $stream = fopen($file->getPathname(), 'rb');
+                Storage::disk('creatives')->put($safePath, $stream);
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
             }
 
             $creative->files()->create([

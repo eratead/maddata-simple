@@ -113,6 +113,9 @@ input[type=number] {
     }
 }
 
+/* Hide Alpine elements before initialization */
+[x-cloak] { display: none !important; }
+
 /* Status badge pulse */
 .status-dot {
     animation: pulse-dot 2s ease-in-out infinite;
