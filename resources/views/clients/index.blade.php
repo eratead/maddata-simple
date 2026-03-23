@@ -6,7 +6,7 @@
 
 @push('page-actions')
     @can('create', App\Models\Client::class)
-        <a href="{{ route('clients.create') }}">
+        <a href="{{ route('admin.clients.create') }}">
             <x-primary-button>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -54,7 +54,7 @@
                 <tbody class="divide-y divide-gray-100 bg-white text-sm">
                     @foreach ($clients as $client)
                         <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $client->agency }}</td>
+                            <td class="px-4 py-3 text-gray-600 whitespace-nowrap">{{ $client->agency?->name ?? '—' }}</td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <a href="{{ url('/campaigns/client/' . $client->id) }}"
                                    class="font-semibold text-gray-900 hover:text-[#F97316] transition-colors">
@@ -74,7 +74,7 @@
                             </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-3">
-                                    <a href="{{ route('clients.edit', $client->id) }}"
+                                    <a href="{{ route('admin.clients.edit', $client->id) }}"
                                        class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-[#F97316] transition-colors px-2 py-1 rounded-md hover:bg-[#F97316]/5">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6.293-6.293a1 1 0 011.414 0l1.586 1.586a1 1 0 010 1.414L12 13.5 9 15l.5-2.5z"/>
@@ -84,13 +84,13 @@
                                     </a>
                                     @can('delete', $client)
                                         <form id="delete-client-{{ $client->id }}"
-                                              action="{{ route('clients.destroy', $client->id) }}"
+                                              action="{{ route('admin.clients.destroy', $client->id) }}"
                                               method="POST" class="inline m-0">
                                             @csrf @method('DELETE')
                                             <button type="button"
                                                     @click="$dispatch('confirm-action', {
                                                         title:        'Delete client?',
-                                                        message:      '{{ addslashes($client->name) }} will be permanently removed.',
+                                                        message:      @js($client->name) + ' will be permanently removed.',
                                                         confirmLabel: 'Delete',
                                                         form:         $el.closest('form')
                                                     })"

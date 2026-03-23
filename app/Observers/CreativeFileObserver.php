@@ -25,19 +25,19 @@ class CreativeFileObserver implements ShouldHandleEventsAfterCommit
             'height' => $creativeFile->height,
             'creative_id' => $creativeFile->creative_id,
         ];
-        $this->logger->log('created', $creativeFile, 'Uploaded file "' . $creativeFile->name . '"', $data);
+        $this->logger->log('created', $creativeFile, 'Uploaded file "'.$creativeFile->name.'"', $data);
     }
 
     public function updated(CreativeFile $creativeFile): void
     {
         $changes = $creativeFile->getChanges();
-        if (!empty($changes)) {
+        if (! empty($changes)) {
             // Merge dimension data into changes so we can always track by dimension
             $changes['width'] = $creativeFile->width;
             $changes['height'] = $creativeFile->height;
             $changes['creative_id'] = $creativeFile->creative_id;
-            
-            $this->logger->log('updated', $creativeFile, 'Updated file "' . $creativeFile->name . '"', $changes);
+
+            $this->logger->log('updated', $creativeFile, 'Updated file "'.$creativeFile->name.'"', $changes);
         }
     }
 
@@ -48,6 +48,6 @@ class CreativeFileObserver implements ShouldHandleEventsAfterCommit
             'height' => $creativeFile->height,
             'creative_id' => $creativeFile->creative_id,
         ];
-        $this->logger->log('deleted', $creativeFile, 'Deleted file "' . $creativeFile->name . '"', $data);
+        $this->logger->log('deleted', $creativeFile, 'Deleted file "'.$creativeFile->name.'"', $data);
     }
 }

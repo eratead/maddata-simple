@@ -171,7 +171,7 @@
                                         <button type="button"
                                                 @click="$dispatch('confirm-action', {
                                                     title:        'Delete audience?',
-                                                    message:      '{{ addslashes($audience->name) }} will be permanently removed.',
+                                                    message:      @js($audience->name) + ' will be permanently removed.',
                                                     confirmLabel: 'Delete',
                                                     form:         $el.closest('form')
                                                 })"

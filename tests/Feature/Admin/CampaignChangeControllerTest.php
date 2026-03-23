@@ -13,12 +13,13 @@ class CampaignChangeControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $nonAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->admin    = User::factory()->create(['is_admin' => true]);
+        $this->admin = User::factory()->create(['is_admin' => true]);
         $this->nonAdmin = User::factory()->create();
     }
 
@@ -29,13 +30,13 @@ class CampaignChangeControllerTest extends TestCase
     private function pendingLog(Campaign $campaign, array $overrides = []): ActivityLog
     {
         return ActivityLog::create(array_merge([
-            'user_id'      => $this->admin->id,
-            'campaign_id'  => $campaign->id,
+            'user_id' => $this->admin->id,
+            'campaign_id' => $campaign->id,
             'subject_type' => Campaign::class,
-            'subject_id'   => $campaign->id,
-            'action'       => 'updated',
-            'description'  => 'Test change',
-            'status'       => 'pending',
+            'subject_id' => $campaign->id,
+            'action' => 'updated',
+            'description' => 'Test change',
+            'status' => 'pending',
         ], $overrides));
     }
 
@@ -55,7 +56,7 @@ class CampaignChangeControllerTest extends TestCase
 
     public function test_index_only_shows_campaigns_with_pending_logs(): void
     {
-        $withPending    = Campaign::factory()->create(['name' => 'Has Pending']);
+        $withPending = Campaign::factory()->create(['name' => 'Has Pending']);
         $withoutPending = Campaign::factory()->create(['name' => 'No Pending']);
 
         // CampaignObserver auto-creates a pending log on creation; remove the one for $withoutPending
@@ -75,13 +76,13 @@ class CampaignChangeControllerTest extends TestCase
         // Clear observer-created pending log(s), then add only a handled one
         ActivityLog::where('campaign_id', $campaign->id)->delete();
         ActivityLog::create([
-            'user_id'      => $this->admin->id,
-            'campaign_id'  => $campaign->id,
+            'user_id' => $this->admin->id,
+            'campaign_id' => $campaign->id,
             'subject_type' => Campaign::class,
-            'subject_id'   => $campaign->id,
-            'action'       => 'updated',
-            'description'  => 'Already done',
-            'status'       => 'handled',
+            'subject_id' => $campaign->id,
+            'action' => 'updated',
+            'description' => 'Already done',
+            'status' => 'handled',
         ]);
 
         $response = $this->actingAs($this->admin)->get(route('admin.campaign_changes.index'));
@@ -116,13 +117,13 @@ class CampaignChangeControllerTest extends TestCase
         $campaign = Campaign::factory()->create();
         $this->pendingLog($campaign, ['description' => 'Pending Change']);
         ActivityLog::create([
-            'user_id'      => $this->admin->id,
-            'campaign_id'  => $campaign->id,
+            'user_id' => $this->admin->id,
+            'campaign_id' => $campaign->id,
             'subject_type' => Campaign::class,
-            'subject_id'   => $campaign->id,
-            'action'       => 'updated',
-            'description'  => 'Handled Change',
-            'status'       => 'handled',
+            'subject_id' => $campaign->id,
+            'action' => 'updated',
+            'description' => 'Handled Change',
+            'status' => 'handled',
         ]);
 
         $response = $this->actingAs($this->admin)->get(route('admin.campaign_changes.show', $campaign));

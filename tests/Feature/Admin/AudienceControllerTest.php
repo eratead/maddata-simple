@@ -12,12 +12,13 @@ class AudienceControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $nonAdmin;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->admin    = User::factory()->create(['is_admin' => true]);
+        $this->admin = User::factory()->create(['is_admin' => true]);
         $this->nonAdmin = User::factory()->create();
     }
 
@@ -59,11 +60,11 @@ class AudienceControllerTest extends TestCase
     public function test_admin_can_create_audience(): void
     {
         $response = $this->actingAs($this->admin)->post(route('admin.audiences.store'), [
-            'main_category'   => 'Interests',
-            'sub_category'    => 'Content',
-            'name'            => 'Tech Readers',
+            'main_category' => 'Interests',
+            'sub_category' => 'Content',
+            'name' => 'Tech Readers',
             'estimated_users' => 50000,
-            'provider'        => 'DV360',
+            'provider' => 'DV360',
         ]);
 
         $response->assertRedirect(route('admin.audiences.index'));
@@ -74,8 +75,8 @@ class AudienceControllerTest extends TestCase
     {
         $this->actingAs($this->admin)->post(route('admin.audiences.store'), [
             'main_category' => 'Interests',
-            'sub_category'  => 'Behavioral',
-            'name'          => 'Online Shoppers',
+            'sub_category' => 'Behavioral',
+            'name' => 'Online Shoppers',
         ]);
 
         $this->assertDatabaseHas('audiences', [
@@ -87,8 +88,8 @@ class AudienceControllerTest extends TestCase
     {
         $this->actingAs($this->admin)->post(route('admin.audiences.store'), [
             'main_category' => 'Demographic',
-            'sub_category'  => '',
-            'name'          => 'Parents',
+            'sub_category' => '',
+            'name' => 'Parents',
         ]);
 
         $audience = Audience::where('name', 'Parents')->first();
@@ -100,8 +101,8 @@ class AudienceControllerTest extends TestCase
     {
         $this->actingAs($this->admin)->post(route('admin.audiences.store'), [
             'main_category' => 'Interests',
-            'sub_category'  => '',
-            'name'          => 'Default Active',
+            'sub_category' => '',
+            'name' => 'Default Active',
         ]);
 
         $this->assertDatabaseHas('audiences', ['name' => 'Default Active', 'is_active' => true]);
@@ -111,7 +112,7 @@ class AudienceControllerTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->post(route('admin.audiences.store'), [
             'main_category' => '',
-            'name'          => '',
+            'name' => '',
         ]);
 
         $response->assertSessionHasErrors(['main_category', 'name']);
@@ -125,14 +126,14 @@ class AudienceControllerTest extends TestCase
     {
         $audience = Audience::factory()->create([
             'main_category' => 'Interests',
-            'sub_category'  => 'Content',
-            'name'          => 'Old Name',
+            'sub_category' => 'Content',
+            'name' => 'Old Name',
         ]);
 
         $response = $this->actingAs($this->admin)->put(route('admin.audiences.update', $audience), [
             'main_category' => 'Interests',
-            'sub_category'  => 'Content',
-            'name'          => 'New Name',
+            'sub_category' => 'Content',
+            'name' => 'New Name',
         ]);
 
         $response->assertRedirect(route('admin.audiences.index'));
@@ -143,19 +144,19 @@ class AudienceControllerTest extends TestCase
     {
         $audience = Audience::factory()->create([
             'main_category' => 'Interests',
-            'sub_category'  => 'Content',
-            'name'          => 'Old Name',
-            'full_path'     => 'Audience > Interests > Content > Old Name',
+            'sub_category' => 'Content',
+            'name' => 'Old Name',
+            'full_path' => 'Audience > Interests > Content > Old Name',
         ]);
 
         $this->actingAs($this->admin)->put(route('admin.audiences.update', $audience), [
             'main_category' => 'Demographic',
-            'sub_category'  => 'Family',
-            'name'          => 'New Parents',
+            'sub_category' => 'Family',
+            'name' => 'New Parents',
         ]);
 
         $this->assertDatabaseHas('audiences', [
-            'id'        => $audience->id,
+            'id' => $audience->id,
             'full_path' => 'Audience > Demographic > Family > New Parents',
         ]);
     }

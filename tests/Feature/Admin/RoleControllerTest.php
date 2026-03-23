@@ -23,9 +23,9 @@ class RoleControllerTest extends TestCase
     public function test_admin_can_view_roles_index()
     {
         Role::create(['name' => 'Manager', 'permissions' => ['is_admin' => true]]);
-        
+
         $response = $this->actingAs($this->admin)->get(route('admin.roles.index'));
-        
+
         $response->assertStatus(200);
         $response->assertSee('Manager');
     }
@@ -33,7 +33,7 @@ class RoleControllerTest extends TestCase
     public function test_admin_can_view_create_role_page()
     {
         $response = $this->actingAs($this->admin)->get(route('admin.roles.create'));
-        
+
         $response->assertStatus(200);
         $response->assertSee('Create Role');
         $response->assertSee('Role Name');
@@ -46,14 +46,14 @@ class RoleControllerTest extends TestCase
             'permissions' => [
                 'can_view_budget' => '1',
                 'can_upload_reports' => '1',
-            ]
+            ],
         ]);
 
         $response->assertRedirect(route('admin.roles.index'));
         $this->assertDatabaseHas('roles', [
             'name' => 'Editor',
         ]);
-        
+
         $role = Role::where('name', 'Editor')->first();
         $this->assertEquals(true, $role->permissions['can_view_budget']);
         $this->assertEquals(true, $role->permissions['can_upload_reports']);
@@ -66,7 +66,7 @@ class RoleControllerTest extends TestCase
 
         $response = $this->actingAs($this->admin)->post(route('admin.roles.store'), [
             'name' => 'Duplicate Role',
-            'permissions' => []
+            'permissions' => [],
         ]);
 
         $response->assertSessionHasErrors('name');
@@ -75,9 +75,9 @@ class RoleControllerTest extends TestCase
     public function test_admin_can_view_edit_role_page()
     {
         $role = Role::create(['name' => 'Viewer', 'permissions' => ['can_view_budget' => true]]);
-        
+
         $response = $this->actingAs($this->admin)->get(route('admin.roles.edit', $role->id));
-        
+
         $response->assertStatus(200);
         $response->assertSee('Save Changes');
         $response->assertSee('Viewer');
@@ -91,11 +91,11 @@ class RoleControllerTest extends TestCase
             'name' => 'Super Updater',
             'permissions' => [
                 'is_admin' => '1',
-            ]
+            ],
         ]);
 
         $response->assertRedirect(route('admin.roles.index'));
-        
+
         $role->refresh();
         $this->assertEquals('Super Updater', $role->name);
         $this->assertEquals(true, $role->permissions['is_admin']);

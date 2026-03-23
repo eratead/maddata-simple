@@ -5,7 +5,7 @@
 @endpush
 
 @push('page-actions')
-    <a href="{{ route('users.create') }}">
+    <a href="{{ route('admin.users.create') }}">
         <x-primary-button>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -25,8 +25,8 @@
             'role_id'    => $u->role_id,
             'role_name'  => $u->userRole?->name,
             'clients'    => $u->clients->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values(),
-            'edit_url'   => route('users.edit', $u),
-            'delete_url' => route('users.destroy', $u),
+            'edit_url'   => route('admin.users.edit', $u),
+            'delete_url' => route('admin.users.destroy', $u),
             'is_current' => $u->id === auth()->id(),
         ])),
         search: '',

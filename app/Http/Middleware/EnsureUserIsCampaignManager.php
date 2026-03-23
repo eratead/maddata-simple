@@ -17,14 +17,14 @@ class EnsureUserIsCampaignManager
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             abort(403, 'Unauthorized action.');
         }
 
         $isAdmin = $user->hasPermission('is_admin');
         $isCampaignManager = $user->userRole && $user->userRole->name === 'Campaign Manager';
 
-        if (!$isAdmin && !$isCampaignManager) {
+        if (! $isAdmin && ! $isCampaignManager) {
             abort(403, 'Unauthorized action.');
         }
 

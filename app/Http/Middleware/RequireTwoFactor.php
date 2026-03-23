@@ -45,6 +45,7 @@ class RequireTwoFactor
         // No secret yet — must go through setup first
         if (! $user->google2fa_secret) {
             Redirect::setIntendedUrl(url()->current());
+
             return redirect()->route('2fa.setup');
         }
 
@@ -52,15 +53,17 @@ class RequireTwoFactor
         $cookieToken = $request->cookie('2fa_remember');
         if ($cookieToken) {
             // HMAC ties the token to this specific user + their current secret
-            $expected = hash_hmac('sha256', $user->id . $user->google2fa_secret, config('app.key'));
+            $expected = hash_hmac('sha256', $user->id.$user->google2fa_secret, config('app.key'));
             if (hash_equals($expected, $cookieToken)) {
                 session(['2fa_verified' => true]);
+
                 return $next($request);
             }
         }
 
         // Must complete the challenge
         Redirect::setIntendedUrl(url()->current());
+
         return redirect()->route('2fa.challenge');
     }
 }

@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class TokenController extends Controller
 {
     public function index()
     {
         $tokens = Auth::user()->tokens()->get(['id', 'name', 'created_at', 'expires_at']);
+
         return view('tokens.index', compact('tokens'));
     }
 
@@ -20,7 +20,7 @@ class TokenController extends Controller
             'token_name' => 'required|string|max:255',
         ]);
 
-        $plainToken = Auth::user()->createToken($request->token_name);
+        $plainToken = Auth::user()->createToken($request->token_name, ['reports:read']);
         $plainToken->accessToken->expires_at = now()->addDays(30);
         $plainToken->accessToken->save();
 

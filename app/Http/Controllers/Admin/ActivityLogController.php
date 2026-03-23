@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-
 use App\Models\ActivityLog;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ActivityLogController extends Controller
@@ -26,13 +25,8 @@ class ActivityLogController extends Controller
         ]);
 
         // Non-admin: restrict to campaigns belonging to user's clients
-        if (!$isAdmin) {
-            $allowedCampaignIds = $user->clients()
-                ->with('campaigns')
-                ->get()
-                ->flatMap(fn($client) => $client->campaigns->pluck('id'))
-                ->unique()
-                ->values();
+        if (! $isAdmin) {
+            $allowedCampaignIds = \App\Models\Campaign::whereIn('client_id', $user->accessibleClientIds())->pluck('id');
 
             $query->whereIn('campaign_id', $allowedCampaignIds);
         }
@@ -40,10 +34,10 @@ class ActivityLogController extends Controller
         // Check if ANY filter is applied
         $hasFilters = $request->hasAny(['action', 'user_id', 'campaign', 'date_start', 'date_end', 'search']);
 
-        if (!$hasFilters) {
+        if (! $hasFilters) {
             // Default State: Show only new campaign creations
             $query->where('action', 'created')
-                  ->where('subject_type', 'App\Models\Campaign');
+                ->where('subject_type', 'App\Models\Campaign');
         } else {
             // Apply Filters
             if ($request->filled('action')) {
@@ -57,7 +51,7 @@ class ActivityLogController extends Controller
             if ($request->filled('campaign')) {
                 $campaignName = $request->input('campaign');
                 $query->whereHas('campaign', function ($q) use ($campaignName) {
-                    $q->where('name', 'like', '%' . $campaignName . '%');
+                    $q->where('name', 'like', '%'.$campaignName.'%');
                 });
             }
 
@@ -72,8 +66,8 @@ class ActivityLogController extends Controller
             if ($request->filled('search')) {
                 $searchTerm = $request->input('search');
                 $query->where(function ($q) use ($searchTerm) {
-                    $q->where('description', 'like', '%' . $searchTerm . '%')
-                      ->orWhere('subject_type', 'like', '%' . $searchTerm . '%');
+                    $q->where('description', 'like', '%'.$searchTerm.'%')
+                        ->orWhere('subject_type', 'like', '%'.$searchTerm.'%');
                 });
             }
         }

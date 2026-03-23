@@ -48,13 +48,46 @@
             Report
         </a>
 
+        {{-- ── Agency Manager section (non-admin managers only) ──── --}}
+        @if (Auth::user() && !Auth::user()->hasPermission('is_admin') && Auth::user()->hasPermission('can_manage_users'))
+            @php
+                $sidebarManagedAgency = Auth::user()->managedAgency();
+            @endphp
+            @if ($sidebarManagedAgency)
+                <p class="px-2 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+                    Agency: {{ $sidebarManagedAgency->name }}
+                </p>
+
+                {{-- Agency Users --}}
+                <a href="{{ route('agency.users.index', $sidebarManagedAgency) }}"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('agency/'.$sidebarManagedAgency->id.'/users*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
+                    {{-- Flowbite: user/users --}}
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Users
+                </a>
+
+                {{-- Agency Clients --}}
+                <a href="{{ route('agency.clients.index', $sidebarManagedAgency) }}"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('agency/'.$sidebarManagedAgency->id.'/clients*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
+                    {{-- Flowbite: general/building --}}
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Clients
+                </a>
+            @endif
+        @endif
+
         {{-- ── Manage section (admin + can_see_logs only) ─────────── --}}
         @if (Auth::user() && (Auth::user()->hasPermission('is_admin') || Auth::user()->hasPermission('can_see_logs')))
             @php
                 $sidebarIsAdmin = Auth::user()->hasPermission('is_admin');
                 $sidebarCanLogs = Auth::user()->hasPermission('can_see_logs');
-                $isManageActive = request()->is('clients*')
-                    || request()->is('users*')
+                $isManageActive = request()->is('admin/agencies*')
+                    || request()->is('admin/clients*')
+                    || request()->is('admin/users*')
                     || request()->is('admin/roles*')
                     || request()->is('admin/activity-logs*')
                     || request()->is('admin/campaign-changes*')
@@ -64,9 +97,19 @@
             <p class="px-2 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Manage</p>
 
             @if ($sidebarIsAdmin)
+                {{-- Agencies --}}
+                <a href="{{ route('admin.agencies.index') }}"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('admin/agencies*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
+                    {{-- Flowbite: general/briefcase --}}
+                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 0 0-2 2v4m5-6h8M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m0 0h3a2 2 0 0 1 2 2v4m0 0v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6m18 0s-4 2-9 2-9-2-9-2m9-2h.01"/>
+                    </svg>
+                    Agencies
+                </a>
+
                 {{-- Clients --}}
-                <a href="{{ route('clients.index') }}"
-                   class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('clients*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
+                <a href="{{ route('admin.clients.index') }}"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('admin/clients*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
                     {{-- Flowbite: general/building --}}
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
@@ -75,8 +118,8 @@
                 </a>
 
                 {{-- Users --}}
-                <a href="{{ route('users.index') }}"
-                   class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('users*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
+                <a href="{{ route('admin.users.index') }}"
+                   class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('admin/users*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
                     {{-- Flowbite: user/users --}}
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>

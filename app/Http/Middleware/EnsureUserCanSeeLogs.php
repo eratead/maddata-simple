@@ -12,7 +12,7 @@ class EnsureUserCanSeeLogs
     {
         $user = auth()->user();
 
-        if (!$user || (!$user->hasPermission('is_admin') && !$user->hasPermission('can_see_logs'))) {
+        if (! $user || (! $user->hasPermission('is_admin') && ! $user->hasPermission('can_see_logs'))) {
             abort(403, 'Unauthorized action.');
         }
 

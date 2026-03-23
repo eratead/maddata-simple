@@ -31,7 +31,7 @@ class CreativeUploadTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors();
-        
+
         $this->assertDatabaseHas('creative_files', [
             'creative_id' => $creative->id,
             'name' => 'test_300x250.jpg',
@@ -79,7 +79,7 @@ class CreativeUploadTest extends TestCase
             'width' => 300,
             'height' => 250,
         ]);
-        
+
         // Assert only 1 file total
         $this->assertEquals(1, $creative->files()->count());
     }

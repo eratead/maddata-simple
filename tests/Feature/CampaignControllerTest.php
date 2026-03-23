@@ -115,7 +115,7 @@ class CampaignControllerTest extends TestCase
         $user = User::factory()->create(['is_admin' => false]);
         $client = \App\Models\Client::factory()->create();
         $user->clients()->attach($client);
-        
+
         $campaign = \App\Models\Campaign::factory()->create([
             'name' => 'Original',
             'client_id' => $client->id,
@@ -138,7 +138,7 @@ class CampaignControllerTest extends TestCase
         $user = User::factory()->create(['is_admin' => false]);
         $userClient = \App\Models\Client::factory()->create();
         $user->clients()->attach($userClient);
-        
+
         $otherClient = \App\Models\Client::factory()->create();
         $campaign = \App\Models\Campaign::factory()->create([
             'name' => 'Original',

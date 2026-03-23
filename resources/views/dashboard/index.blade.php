@@ -604,11 +604,11 @@
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: {!! json_encode($chartLabels) !!},
+                    labels: @js($chartLabels),
                     datasets: [
                         {
                             label: 'Impressions',
-                            data: {!! json_encode($chartImpressions) !!},
+                            data: @js($chartImpressions),
                             borderColor: '#3B82F6',
                             backgroundColor: gradientBlue,
                             borderWidth: 2,
@@ -621,7 +621,7 @@
                         },
                         {
                             label: 'CTR (%)',
-                            data: {!! json_encode(array_map(fn($i, $c) => $i ? round(($c / $i) * 100, 2) : 0, $chartImpressions, $chartClicks)) !!},
+                            data: @js(array_map(fn($i, $c) => $i ? round(($c / $i) * 100, 2) : 0, $chartImpressions, $chartClicks)),
                             borderColor: '#F97316',
                             backgroundColor: gradientOrange,
                             borderWidth: 2,

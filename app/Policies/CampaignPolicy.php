@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Campaign;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class CampaignPolicy
 {
@@ -13,7 +12,7 @@ class CampaignPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,10 +20,14 @@ class CampaignPolicy
      */
     public function view(User $user, Campaign $campaign): bool
     {
-        if ($user->hasPermission('is_admin')) return true;
-        if (!$user->role_id) return $user->clients->contains($campaign->client_id);
-        
-        return $user->hasPermission('can_view_campaigns') && $user->clients->contains($campaign->client_id);
+        if ($user->hasPermission('is_admin')) {
+            return true;
+        }
+        if (! $user->role_id) {
+            return $user->accessibleClientIds()->contains($campaign->client_id);
+        }
+
+        return $user->hasPermission('can_view_campaigns') && $user->accessibleClientIds()->contains($campaign->client_id);
     }
 
     /**
@@ -32,7 +35,9 @@ class CampaignPolicy
      */
     public function create(User $user): bool
     {
-        if (!$user->role_id) return $user->hasPermission('is_admin');
+        if (! $user->role_id) {
+            return $user->hasPermission('is_admin');
+        }
 
         return $user->hasPermission('is_admin') || $user->hasPermission('can_edit_campaigns');
     }
@@ -42,10 +47,14 @@ class CampaignPolicy
      */
     public function update(User $user, Campaign $campaign): bool
     {
-        if ($user->hasPermission('is_admin')) return true;
-        if (!$user->role_id) return $user->clients->contains($campaign->client_id);
+        if ($user->hasPermission('is_admin')) {
+            return true;
+        }
+        if (! $user->role_id) {
+            return $user->accessibleClientIds()->contains($campaign->client_id);
+        }
 
-        return $user->hasPermission('can_edit_campaigns') && $user->clients->contains($campaign->client_id);
+        return $user->hasPermission('can_edit_campaigns') && $user->accessibleClientIds()->contains($campaign->client_id);
     }
 
     /**
@@ -53,10 +62,14 @@ class CampaignPolicy
      */
     public function delete(User $user, Campaign $campaign): bool
     {
-        if ($user->hasPermission('is_admin')) return true;
-        if (!$user->role_id) return $user->clients->contains($campaign->client_id);
+        if ($user->hasPermission('is_admin')) {
+            return true;
+        }
+        if (! $user->role_id) {
+            return $user->accessibleClientIds()->contains($campaign->client_id);
+        }
 
-        return $user->hasPermission('can_edit_campaigns') && $user->clients->contains($campaign->client_id);
+        return $user->hasPermission('can_edit_campaigns') && $user->accessibleClientIds()->contains($campaign->client_id);
     }
 
     /**

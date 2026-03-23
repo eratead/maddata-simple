@@ -28,6 +28,8 @@ class Role extends Model
             'can_view_budget' => 'Can View Budget',
             'can_upload_reports' => 'Reports Upload',
             'can_see_logs' => 'Can See Logs',
+            'can_manage_users' => 'Can Manage Users',
+            'can_manage_clients' => 'Can Manage Clients',
         ];
     }
 

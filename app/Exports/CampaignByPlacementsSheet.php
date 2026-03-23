@@ -4,13 +4,14 @@ namespace App\Exports;
 
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class CampaignByPlacementsSheet implements FromView, WithTitle, WithColumnWidths, WithColumnFormatting
+class CampaignByPlacementsSheet implements FromView, WithColumnFormatting, WithColumnWidths, WithTitle
 {
     protected $campaignDataByPlacement;
+
     protected $campaign;
 
     public function __construct($campaignDataByPlacement, $campaign)
@@ -18,10 +19,12 @@ class CampaignByPlacementsSheet implements FromView, WithTitle, WithColumnWidths
         $this->campaignDataByPlacement = $campaignDataByPlacement;
         $this->campaign = $campaign;
     }
+
     public function title(): string
     {
         return 'Placements';
     }
+
     public function view(): View
     {
         return view('exports.campaign_by_placements', [
@@ -29,6 +32,7 @@ class CampaignByPlacementsSheet implements FromView, WithTitle, WithColumnWidths
             'campaignDataByPlacement' => $this->campaignDataByPlacement,
         ]);
     }
+
     public function columnWidths(): array
     {
         return [
@@ -36,6 +40,7 @@ class CampaignByPlacementsSheet implements FromView, WithTitle, WithColumnWidths
             'B' => 15,
         ];
     }
+
     public function columnFormats(): array
     {
         return [

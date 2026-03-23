@@ -111,8 +111,8 @@
             <div class="flex border-b border-gray-100 bg-white overflow-x-auto">
                 @foreach ([
                     ['demographics', 'Demographics'],
-                    ['geo', 'Geo &amp; Locations'],
-                    ['devices', 'Devices &amp; Tech'],
+                    ['geo', 'Geo & Locations'],
+                    ['devices', 'Devices & Tech'],
                     ['inventory', 'Inventory'],
                     ['schedule', 'Schedule'],
                 ] as [$tabId, $tabLabel])
@@ -122,7 +122,7 @@
                         ? 'text-[#F97316] border-b-2 border-[#F97316] font-semibold'
                         : 'text-gray-400 hover:text-gray-700 border-b-2 border-transparent'"
                     class="px-5 py-3 text-xs transition-colors whitespace-nowrap flex-shrink-0">
-                    {!! $tabLabel !!}
+                    {{ $tabLabel }}
                 </button>
                 @endforeach
             </div>

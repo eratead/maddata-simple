@@ -2,117 +2,190 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserRequest;
+use App\Models\Agency;
 use App\Models\Client;
+use App\Models\Role;
 use App\Models\User;
-use Illuminate\Http\Request;
+use App\Services\ActivityLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
     use AuthorizesRequests;
+
     public function index()
     {
         $this->authorize('viewAny', User::class);
 
         $users = User::with(['clients', 'userRole'])->get();
-        $roles = \App\Models\Role::orderBy('sort_order')->get();
-        $clients = \App\Models\Client::orderBy('name')->get();
+        $roles = Role::orderBy('sort_order')->get();
+        $clients = Client::orderBy('name')->get();
 
         return view('users.index', compact('users', 'roles', 'clients'));
     }
 
     public function create()
     {
-        $this->authorize('create', User::class); // Optional if policy is used
+        $this->authorize('create', User::class);
 
-        $clients = \App\Models\Client::all();
-        $roles = \App\Models\Role::orderBy('sort_order')->get();
+        $roles = Role::orderBy('sort_order')->get();
+        $agencies = Agency::orderBy('name')->get();
+        $clientsByAgency = Agency::with('clients:id,name,agency_id')->get()
+            ->mapWithKeys(fn ($a) => [$a->id => $a->clients->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])]);
 
-        return view('users.create', compact('clients', 'roles'));
+        return view('users.create', compact('roles', 'agencies', 'clientsByAgency'));
     }
 
-    public function store(Request $request)
+    public function store(StoreUserRequest $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'min:6'],
-            'clients' => ['array'],
-            'clients.*' => ['exists:clients,id'],
-            'role_id' => ['nullable', 'exists:roles,id'],
-        ]);
+        $this->authorize('create', User::class);
+
+        $validated = $request->validated();
+
+        // Anti-escalation: prevent assigning a role with is_admin unless current user has is_admin
+        $roleId = $validated['role_id'] ?? null;
+        if ($roleId) {
+            $targetRole = Role::find($roleId);
+            if ($targetRole && $targetRole->hasPermission('is_admin') && ! auth()->user()->hasPermission('is_admin')) {
+                abort(403, 'You cannot assign an admin role.');
+            }
+        }
+
+        // Single-agency manager constraint
+        $agencyData = $validated['agencies'] ?? [];
+        if ($roleId) {
+            $targetRole = $targetRole ?? Role::find($roleId);
+            if ($targetRole?->hasPermission('can_manage_users') && count($agencyData) > 1) {
+                return back()->withErrors(['agencies' => 'Users with management permissions can only belong to one agency.'])->withInput();
+            }
+        }
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'receive_activity_notifications' => $request->has('receive_activity_notifications'),
-            'role_id' => $validated['role_id'] ?? null,
         ]);
 
-        // Attach selected clients
-        $user->clients()->sync($validated['clients'] ?? []);
+        $user->role_id = $roleId;
+        $user->save();
 
-        return redirect()->route('users.index')->with('success', 'User created successfully.');
+        // Sync agency assignments and collect specific client IDs
+        $isManager = $targetRole?->hasPermission('can_manage_users') ?? false;
+        $syncData = [];
+        $allClientIds = [];
+        foreach ($agencyData as $entry) {
+            $agencyId = $entry['agency_id'];
+            $accessAll = $isManager ? true : (bool) ($entry['access_all_clients'] ?? true);
+            $syncData[$agencyId] = ['access_all_clients' => $accessAll];
+            if (! $accessAll && isset($entry['clients'])) {
+                $allClientIds = array_merge($allClientIds, $entry['clients']);
+            }
+        }
+        $user->agencies()->sync($syncData);
+        $user->clients()->sync($allClientIds);
+
+        app(ActivityLogger::class)->log('created', $user, "Created user \"{$user->name}\" ({$user->email})");
+
+        return redirect()->route('admin.users.index')->with('success', 'User created successfully.');
     }
 
     public function destroy(User $user)
     {
         if (auth()->id() === $user->id) {
-            return redirect()->route('users.index')
+            return redirect()->route('admin.users.index')
                 ->with('error', 'You cannot delete your own account.');
         }
 
-        $this->authorize('delete', $user); // Optional if you use policies
+        $this->authorize('delete', $user);
 
-        $user->clients()->detach(); // Remove client relationships
+        app(ActivityLogger::class)->log('deleted', $user, "Deleted user \"{$user->name}\" ({$user->email})");
+
+        $user->clients()->detach();
         $user->delete();
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+        return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
     }
-
-
 
     public function edit(User $user)
     {
-        $this->authorize('update', $user); // Optional, for admin control
+        $this->authorize('update', $user);
 
-        $clients = Client::all();
-        $roles = \App\Models\Role::orderBy('sort_order')->get();
+        $roles = Role::orderBy('sort_order')->get();
+        $agencies = Agency::orderBy('name')->get();
+        $clientsByAgency = Agency::with('clients:id,name,agency_id')->get()
+            ->mapWithKeys(fn ($a) => [$a->id => $a->clients->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])]);
 
-        return view('users.edit', compact('user', 'clients', 'roles'));
+        // Pre-populate existing agency assignments for this user
+        $userAgencies = $user->agencies->map(fn ($a) => [
+            'agency_id' => $a->id,
+            'name' => $a->name,
+            'access_all_clients' => (bool) $a->pivot->access_all_clients,
+            'clients' => $user->clients()->whereIn('clients.id',
+                Client::where('agency_id', $a->id)->pluck('id')
+            )->pluck('clients.id')->toArray(),
+        ]);
+
+        return view('users.edit', compact('user', 'roles', 'agencies', 'clientsByAgency', 'userAgencies'));
     }
 
-    public function update(Request $request, User $user)
+    public function update(UpdateUserRequest $request, User $user)
     {
         $this->authorize('update', $user);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email,' . $user->id],
-            'password' => ['nullable', 'min:6'],
-            'clients' => ['array'],
-            'clients.*' => ['exists:clients,id'],
-            'role_id' => ['nullable', 'exists:roles,id'],
-        ]);
+        $validated = $request->validated();
+
+        // Anti-escalation: prevent assigning a role with is_admin unless current user has is_admin
+        $roleId = $validated['role_id'] ?? null;
+        if ($roleId) {
+            $targetRole = Role::find($roleId);
+            if ($targetRole && $targetRole->hasPermission('is_admin') && ! auth()->user()->hasPermission('is_admin')) {
+                abort(403, 'You cannot assign an admin role.');
+            }
+        }
+
+        // Single-agency manager constraint
+        $agencyData = $validated['agencies'] ?? [];
+        if ($roleId) {
+            $targetRole = $targetRole ?? Role::find($roleId);
+            if ($targetRole?->hasPermission('can_manage_users') && count($agencyData) > 1) {
+                return back()->withErrors(['agencies' => 'Users with management permissions can only belong to one agency.'])->withInput();
+            }
+        }
 
         // Update user info
         $user->name = $validated['name'];
         $user->email = $validated['email'];
         $user->receive_activity_notifications = $request->has('receive_activity_notifications');
-        $user->role_id = $validated['role_id'] ?? null;
+        $user->role_id = $roleId;
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);
         }
 
         $user->save();
 
-        // Sync client relationships
-        $user->clients()->sync($validated['clients'] ?? []);
+        // Sync agency assignments and collect specific client IDs
+        $isManager = ($targetRole ?? Role::find($roleId))?->hasPermission('can_manage_users') ?? false;
+        $syncData = [];
+        $allClientIds = [];
+        foreach ($agencyData as $entry) {
+            $agencyId = $entry['agency_id'];
+            $accessAll = $isManager ? true : (bool) ($entry['access_all_clients'] ?? true);
+            $syncData[$agencyId] = ['access_all_clients' => $accessAll];
+            if (! $accessAll && isset($entry['clients'])) {
+                $allClientIds = array_merge($allClientIds, $entry['clients']);
+            }
+        }
+        $user->agencies()->sync($syncData);
+        $user->clients()->sync($allClientIds);
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        app(ActivityLogger::class)->log('updated', $user, "Updated user \"{$user->name}\" ({$user->email})");
+
+        return redirect()->route('admin.users.index')->with('success', 'User updated successfully.');
     }
 
     public function reset2fa(User $user): \Illuminate\Http\RedirectResponse
@@ -122,7 +195,7 @@ class UserController extends Controller
 
         $user->update(['google2fa_secret' => null]);
 
-        return redirect()->route('users.edit', $user)
+        return redirect()->route('admin.users.edit', $user)
             ->with('success', "2FA has been reset for {$user->name}. They will be required to set it up again on next login.");
     }
 
@@ -131,7 +204,7 @@ class UserController extends Controller
         $this->authorize('update', $user);
 
         return response()->json([
-            'message' => "Attach client dialog for user {$user->name} (ID: {$user->id})"
+            'message' => "Attach client dialog for user {$user->name} (ID: {$user->id})",
         ]);
     }
 }

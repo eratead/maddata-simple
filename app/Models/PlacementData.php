@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class PlacementData extends Model
 {
     use HasFactory;
+
     protected $table = 'placements_data';
+
     protected $fillable = [
         'name',
         'campaign_id',

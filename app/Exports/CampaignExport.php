@@ -2,18 +2,23 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\Exportable;
+use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class CampaignExport implements WithMultipleSheets
 {
     use Exportable;
 
     protected $campaign;
+
     protected $summary;
+
     protected $campaignData;
+
     protected $campaignDataByPlacement;
+
     protected $startDate;
+
     protected $endDate;
 
     public function __construct($campaign, $summary, $campaignData, $campaignDataByPlacement, $startDate, $endDate)

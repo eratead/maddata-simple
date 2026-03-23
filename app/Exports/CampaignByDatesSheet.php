@@ -4,16 +4,18 @@ namespace App\Exports;
 
 use Illuminate\Contracts\View\View;
 use Maatwebsite\Excel\Concerns\FromView;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithTitle;
 
-class CampaignByDatesSheet implements FromView, WithTitle, WithColumnWidths, WithColumnFormatting
+class CampaignByDatesSheet implements FromView, WithColumnFormatting, WithColumnWidths, WithTitle
 {
     protected $campaignData;
+
     protected $startDate;
+
     protected $endDate;
+
     protected $campaign;
 
     public function __construct($campaignData, $startDate, $endDate, $campaign)
@@ -23,10 +25,12 @@ class CampaignByDatesSheet implements FromView, WithTitle, WithColumnWidths, Wit
         $this->endDate = $endDate;
         $this->campaign = $campaign;
     }
+
     public function title(): string
     {
         return 'Dates';
     }
+
     public function view(): View
     {
         return view('exports.campaign_by_dates', [
@@ -36,6 +40,7 @@ class CampaignByDatesSheet implements FromView, WithTitle, WithColumnWidths, Wit
             'endDate' => $this->endDate,
         ]);
     }
+
     public function columnWidths(): array
     {
         return [
@@ -43,6 +48,7 @@ class CampaignByDatesSheet implements FromView, WithTitle, WithColumnWidths, Wit
             'B' => 15,
         ];
     }
+
     public function columnFormats(): array
     {
         return [

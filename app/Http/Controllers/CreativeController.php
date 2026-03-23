@@ -4,27 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCreativeRequest;
 use App\Http\Requests\UpdateCreativeRequest;
-use Illuminate\Http\Request;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Str;
-
 use App\Models\Campaign;
 use App\Models\Creative;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
+use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\ImageManager;
 
 class CreativeController extends Controller
 {
     use AuthorizesRequests;
 
     // Allowed MIME types for creative uploads
-    private const ALLOWED_MIMES     = 'jpeg,jpg,png,gif,mp4,webm';
+    private const ALLOWED_MIMES = 'jpeg,jpg,png,gif,mp4,webm';
+
     private const ALLOWED_MIME_TYPES = 'image/jpeg,image/png,image/gif,video/mp4,video/webm';
 
     public function create(Campaign $campaign)
     {
         $this->authorize('update', $campaign);
+
         return view('creatives.create', compact('campaign'));
     }
 
@@ -44,6 +45,7 @@ class CreativeController extends Controller
     {
         $this->authorize('update', $creative->campaign);
         $creative->load('files');
+
         return view('creatives.edit', compact('creative'));
     }
 
@@ -75,48 +77,50 @@ class CreativeController extends Controller
         $this->authorize('update', $creative->campaign);
 
         $request->validate([
-            'files'   => 'required',
+            'files' => 'required',
             'files.*' => [
                 'file',
                 'max:51200', // 50 MB
-                'mimes:'     . self::ALLOWED_MIMES,
-                'mimetypes:' . self::ALLOWED_MIME_TYPES,
+                'mimes:'.self::ALLOWED_MIMES,
+                'mimetypes:'.self::ALLOWED_MIME_TYPES,
             ],
         ]);
 
-        $manager = new ImageManager(new GdDriver());
-        $count   = 0;
+        $manager = new ImageManager(new GdDriver);
+        $count = 0;
 
         foreach ($request->file('files') as $file) {
             $mimeType = $file->getMimeType();
-            $isImage  = str_starts_with($mimeType, 'image/');
+            $isImage = str_starts_with($mimeType, 'image/');
 
             // Detect dimensions
-            $width  = 0;
+            $width = 0;
             $height = 0;
 
             if ($isImage) {
                 try {
                     $dims = getimagesize($file->getPathname());
                     if ($dims) {
-                        $width  = $dims[0];
+                        $width = $dims[0];
                         $height = $dims[1];
                     }
-                } catch (\Exception $e) { /* keep 0×0 */ }
+                } catch (\Exception $e) { /* keep 0×0 */
+                }
             } elseif ($mimeType === 'video/mp4' || $mimeType === 'video/webm') {
                 try {
                     $output = shell_exec(
                         'ffprobe -v error -select_streams v:0 -show_entries stream=width,height'
-                        . ' -of csv=s=x:p=0 ' . escapeshellarg($file->getPathname())
+                        .' -of csv=s=x:p=0 '.escapeshellarg($file->getPathname())
                     );
                     if ($output) {
                         $parts = explode('x', trim($output));
                         if (count($parts) === 2) {
-                            $width  = (int) $parts[0];
+                            $width = (int) $parts[0];
                             $height = (int) $parts[1];
                         }
                     }
-                } catch (\Exception $e) { /* keep 0×0 */ }
+                } catch (\Exception $e) { /* keep 0×0 */
+                }
             }
 
             // Remove existing file with same dimensions
@@ -128,8 +132,8 @@ class CreativeController extends Controller
             }
 
             // Build a safe random path, preserving the original extension
-            $ext      = strtolower($file->getClientOriginalExtension());
-            $safePath = $creative->id . '/' . Str::random(40) . '.' . $ext;
+            $ext = strtolower($file->getClientOriginalExtension());
+            $safePath = $creative->id.'/'.Str::random(40).'.'.$ext;
 
             if ($isImage) {
                 // Re-encode through Intervention Image → strips all EXIF metadata
@@ -145,12 +149,12 @@ class CreativeController extends Controller
             }
 
             $creative->files()->create([
-                'name'      => $file->getClientOriginalName(),
-                'width'     => $width,
-                'height'    => $height,
-                'path'      => $safePath,
+                'name' => $file->getClientOriginalName(),
+                'width' => $width,
+                'height' => $height,
+                'path' => $safePath,
                 'mime_type' => $mimeType,
-                'size'      => $file->getSize(),
+                'size' => $file->getSize(),
             ]);
 
             $count++;
@@ -173,7 +177,7 @@ class CreativeController extends Controller
     {
         $this->authorize('view', $file->creative->campaign);
 
-        if (!Storage::disk('creatives')->exists($file->path)) {
+        if (! Storage::disk('creatives')->exists($file->path)) {
             abort(404);
         }
 
@@ -182,10 +186,10 @@ class CreativeController extends Controller
         return response()->file(
             Storage::disk('creatives')->path($file->path),
             [
-                'Content-Type'              => $file->mime_type,
-                'X-Content-Type-Options'    => 'nosniff',
-                'Content-Security-Policy'   => "default-src 'none'",
-                'Content-Disposition'       => 'inline',
+                'Content-Type' => $file->mime_type,
+                'X-Content-Type-Options' => 'nosniff',
+                'Content-Security-Policy' => "default-src 'none'",
+                'Content-Disposition' => 'inline',
             ]
         );
     }
@@ -194,7 +198,7 @@ class CreativeController extends Controller
     {
         $this->authorize('view', $file->creative->campaign);
 
-        if (!Storage::disk('creatives')->exists($file->path)) {
+        if (! Storage::disk('creatives')->exists($file->path)) {
             abort(404);
         }
 
@@ -212,15 +216,15 @@ class CreativeController extends Controller
         }
 
         // Use a private temp directory — never under storage/app/public (symlinked to webroot)
-        $tempDir  = storage_path('app/temp');
-        if (!is_dir($tempDir)) {
+        $tempDir = storage_path('app/temp');
+        if (! is_dir($tempDir)) {
             mkdir($tempDir, 0750, true);
         }
 
-        $zipFileName = 'creative-' . $creative->id . '-' . Str::random(16) . '.zip';
-        $zipPath     = $tempDir . '/' . $zipFileName;
+        $zipFileName = 'creative-'.$creative->id.'-'.Str::random(16).'.zip';
+        $zipPath = $tempDir.'/'.$zipFileName;
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
 
         if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return back()->with('error', 'Could not create zip file.');

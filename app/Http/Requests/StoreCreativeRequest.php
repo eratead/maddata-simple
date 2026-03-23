@@ -14,9 +14,9 @@ class StoreCreativeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'    => 'required|string|min:2|max:255',
+            'name' => 'required|string|min:2|max:255',
             'landing' => 'required|url|max:2048',
-            'status'  => 'required|boolean',
+            'status' => 'required|boolean',
         ];
     }
 }

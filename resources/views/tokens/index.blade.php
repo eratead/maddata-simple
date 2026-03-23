@@ -117,7 +117,7 @@
                                     <button type="button"
                                             @click="$dispatch('confirm-action', {
                                                 title:        'Revoke token?',
-                                                message:      '{{ addslashes($token->name) }} will be permanently revoked. Applications using it will immediately lose access.',
+                                                message:      @js($token->name) + ' will be permanently revoked. Applications using it will immediately lose access.',
                                                 confirmLabel: 'Revoke',
                                                 form:         document.getElementById('delete-token-{{ $token->id }}')
                                             })"

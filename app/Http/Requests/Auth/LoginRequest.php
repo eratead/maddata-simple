@@ -49,6 +49,16 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Block disabled users from logging in
+        $user = Auth::user();
+        if ($user && ! $user->is_active) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => ['Your account has been disabled. Contact your agency manager.'],
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

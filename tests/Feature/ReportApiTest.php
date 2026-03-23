@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Campaign;
 use App\Models\Client;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -12,12 +12,12 @@ class ReportApiTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_summary_returns_dates_in_Ymd_format()
+    public function test_summary_returns_dates_in_ymd_format()
     {
         $user = User::factory()->create();
         $client = Client::factory()->create();
         $user->clients()->attach($client);
-        
+
         $campaign = Campaign::factory()->create([
             'client_id' => $client->id,
             'start_date' => '2023-01-01 10:00:00',

@@ -11,8 +11,13 @@ class Client extends Model
 
     protected $fillable = [
         'name',
-        'agency',
+        'agency_id',
     ];
+
+    public function agency()
+    {
+        return $this->belongsTo(Agency::class);
+    }
 
     public function campaigns()
     {

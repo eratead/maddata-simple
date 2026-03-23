@@ -264,7 +264,7 @@
                                             <button type="button"
                                                     @click="$dispatch('confirm-action', {
                                                         title:        'Delete campaign?',
-                                                        message:      '{{ addslashes($campaign->name) }} will be permanently deleted.',
+                                                        message:      @js($campaign->name) + ' will be permanently deleted.',
                                                         confirmLabel: 'Delete',
                                                         form:         document.getElementById('delete-campaign-{{ $campaign->id }}')
                                                     })"
@@ -282,6 +282,10 @@
                 </tbody>
             </table>
         </x-ui.datatable>
+
+        <div class="px-5 py-3 border-t border-gray-100">
+            {{ $campaigns->links() }}
+        </div>
     </x-page-box>
 
 </x-app-layout>

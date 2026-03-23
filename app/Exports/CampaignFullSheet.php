@@ -8,9 +8,13 @@ use Maatwebsite\Excel\Concerns\FromView;
 class CampaignFullSheet implements FromView
 {
     protected $campaign;
+
     protected $summary;
+
     protected $campaignData;
+
     protected $startDate;
+
     protected $endDate;
 
     public function __construct($campaign, $summary, $campaignData, $startDate, $endDate)

@@ -2,7 +2,7 @@
 
 @push('page-title')
     <div class="flex items-center gap-2 text-sm min-w-0">
-        <a href="{{ route('users.index') }}" class="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">Users</a>
+        <a href="{{ route('admin.users.index') }}" class="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">Users</a>
         <svg class="w-3 h-3 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
@@ -12,13 +12,15 @@
 
     <x-flash-messages />
 
-    <form id="editUserForm" method="POST" action="{{ route('users.update', $user) }}">
+    <form id="editUserForm" method="POST" action="{{ route('admin.users.update', $user) }}"
+          x-data="agencyAssignments()"
+          @submit.prevent="submitForm($el)">
         @csrf
         @method('PUT')
 
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
 
-            {{-- Left: User Details + Client Assignments --}}
+            {{-- Left: User Details + Agency Assignments --}}
             <div class="md:col-span-8 space-y-6">
 
                 {{-- User Details --}}
@@ -62,63 +64,124 @@
                     </div>
                 </x-page-box>
 
-                {{-- Client Assignments --}}
+                {{-- Agency Assignments --}}
                 <x-page-box class="p-6">
                     <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
                         <div class="flex items-center gap-2">
                             <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 0 0-2 2v4m5-6h8M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m0 0h3a2 2 0 0 1 2 2v4m0 0v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6m18 0s-4 2-9 2-9-2-9-2m9-2h.01"/>
                             </svg>
-                            <h2 class="text-sm font-semibold text-gray-700">Client Assignments</h2>
+                            <h2 class="text-sm font-semibold text-gray-700">Agency Assignments</h2>
                         </div>
-                        <button type="button" onclick="toggleClientsPanel()"
-                                class="text-xs font-semibold text-[#F97316] hover:text-[#EA580C] bg-[#F97316]/5 hover:bg-[#F97316]/10 px-3 py-1.5 rounded-md transition-colors border border-[#F97316]/20 cursor-pointer">
-                            Manage Specific Clients
-                        </button>
+                        <div x-show="unassignedAgencies.length > 0" x-transition>
+                            <div class="relative" x-data="{ open: false }">
+                                <button type="button" @click="open = !open"
+                                        class="text-xs font-semibold text-[#F97316] hover:text-[#EA580C] bg-[#F97316]/5 hover:bg-[#F97316]/10 px-3 py-1.5 rounded-md transition-colors border border-[#F97316]/20 cursor-pointer inline-flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"/>
+                                    </svg>
+                                    Add Agency
+                                </button>
+                                <div x-show="open" @click.away="open = false" x-transition
+                                     class="absolute right-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1 max-h-60 overflow-y-auto">
+                                    <template x-for="agency in unassignedAgencies" :key="agency.id">
+                                        <button type="button"
+                                                @click="addAgency(agency.id); open = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-[#F97316]/5 hover:text-[#F97316] transition-colors cursor-pointer"
+                                                x-text="agency.name">
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    @php $attachedClientIds = $user->clients->pluck('id')->toArray(); @endphp
+                    <x-input-error :messages="$errors->get('agencies')" />
 
-                    <div class="mb-4">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">Attached Clients</p>
-                        <div id="attached-clients-label"
-                             class="text-sm text-gray-500 font-medium py-2 px-3 bg-gray-50 border border-gray-200 rounded-lg min-h-[42px] leading-relaxed">
-                            None
-                        </div>
+                    {{-- Empty state --}}
+                    <div x-show="agencies.length === 0" class="text-center py-8">
+                        <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7H5a2 2 0 0 0-2 2v4m5-6h8M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m0 0h3a2 2 0 0 1 2 2v4m0 0v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6m18 0s-4 2-9 2-9-2-9-2"/>
+                        </svg>
+                        <p class="text-sm text-gray-400">No agencies assigned.</p>
+                        <p class="text-xs text-gray-400 mt-1">Click "Add Agency" to assign this user to an agency.</p>
                     </div>
 
-                    <div id="clients-panel" style="display: none;" class="mt-4 pt-4 border-t border-gray-100">
-                        <div id="attached-clients-hidden-inputs"></div>
+                    {{-- Agency cards --}}
+                    <div class="space-y-4">
+                        <template x-for="(assignment, index) in agencies" :key="assignment.agency_id">
+                            <div class="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden transition-all"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 translate-y-2"
+                                 x-transition:enter-end="opacity-100 translate-y-0">
 
-                        <div class="relative mb-3">
-                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                            <input type="text" id="client-filter" placeholder="Filter clients by name or agency…"
-                                   class="w-full pl-9 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/30 transition-colors"
-                                   oninput="filterClients(this.value)">
-                        </div>
+                                {{-- Agency header --}}
+                                <div class="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-md bg-[#F97316]/10 flex items-center justify-center">
+                                            <svg class="w-3.5 h-3.5 text-[#F97316]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                            </svg>
+                                        </div>
+                                        <span class="text-sm font-semibold text-gray-800" x-text="assignment.name"></span>
+                                    </div>
+                                    <button type="button" @click="removeAgency(index)"
+                                            class="text-xs font-medium text-red-400 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors cursor-pointer inline-flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                        Remove
+                                    </button>
+                                </div>
 
-                        <div class="overflow-hidden border border-gray-200 rounded-lg max-h-80 overflow-y-auto">
-                            <table id="clients-table" class="min-w-full divide-y divide-gray-100 text-sm bg-white">
-                                <thead class="bg-gray-50 sticky top-0 z-10">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Agency</th>
-                                        <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Client</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100 bg-white">
-                                    @foreach ($clients as $client)
-                                        <tr data-id="{{ $client->id }}"
-                                            class="cursor-pointer hover:bg-[#F97316]/5 transition-colors group"
-                                            onclick="toggleClient({{ $client->id }})">
-                                            <td class="px-4 py-3 text-gray-500 group-hover:text-[#F97316] transition-colors border-l-2 border-transparent">{{ $client->agency }}</td>
-                                            <td class="px-4 py-3 font-medium text-gray-800 group-hover:text-[#F97316] transition-colors">{{ $client->name }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                                {{-- Client access controls --}}
+                                <div class="px-4 py-4">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-500 mb-3">Client Access</p>
+
+                                    <div class="flex items-center gap-6">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" :name="'agency_access_' + assignment.agency_id"
+                                                   :checked="assignment.access_all_clients"
+                                                   @change="assignment.access_all_clients = true"
+                                                   class="w-4 h-4 text-[#F97316] border-gray-300 focus:ring-[#F97316]/30">
+                                            <span class="text-sm text-gray-700">All agency clients</span>
+                                        </label>
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="radio" :name="'agency_access_' + assignment.agency_id"
+                                                   :checked="!assignment.access_all_clients"
+                                                   @change="assignment.access_all_clients = false"
+                                                   class="w-4 h-4 text-[#F97316] border-gray-300 focus:ring-[#F97316]/30">
+                                            <span class="text-sm text-gray-700">Specific clients</span>
+                                        </label>
+                                    </div>
+
+                                    {{-- Client checkboxes (shown when "Specific clients" is selected) --}}
+                                    <div x-show="!assignment.access_all_clients" x-transition class="mt-3">
+                                        <div class="border border-gray-200 rounded-lg bg-white max-h-48 overflow-y-auto divide-y divide-gray-100"
+                                             x-show="getClientsForAgency(assignment.agency_id).length > 0">
+                                            <template x-for="client in getClientsForAgency(assignment.agency_id)" :key="client.id">
+                                                <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-[#F97316]/5 transition-colors cursor-pointer">
+                                                    <input type="checkbox"
+                                                           :checked="assignment.clients.includes(client.id)"
+                                                           @change="toggleClient(index, client.id)"
+                                                           class="w-4 h-4 text-[#F97316] border-gray-300 rounded focus:ring-[#F97316]/30">
+                                                    <span class="text-sm text-gray-700" x-text="client.name"></span>
+                                                </label>
+                                            </template>
+                                        </div>
+                                        <p x-show="getClientsForAgency(assignment.agency_id).length === 0"
+                                           class="text-xs text-gray-400 italic mt-1">No clients in this agency yet.</p>
+                                    </div>
+                                </div>
+
+                                {{-- Hidden inputs for form submission --}}
+                                <input type="hidden" :name="'agencies[' + index + '][agency_id]'" :value="assignment.agency_id">
+                                <input type="hidden" :name="'agencies[' + index + '][access_all_clients]'" :value="assignment.access_all_clients ? 1 : 0">
+                                <template x-for="clientId in assignment.clients" :key="clientId">
+                                    <input type="hidden" :name="'agencies[' + index + '][clients][]'" :value="clientId">
+                                </template>
+                            </div>
+                        </template>
                     </div>
                 </x-page-box>
 
@@ -160,7 +223,7 @@
                     <button type="button"
                             @click="$dispatch('confirm-action', {
                                 title:        'Delete user?',
-                                message:      '{{ addslashes($user->name) }} will be permanently removed.',
+                                message:      @js($user->name) + ' will be permanently removed.',
                                 confirmLabel: 'Delete',
                                 form:         document.getElementById('delete-form')
                             })"
@@ -177,7 +240,7 @@
                     <button type="button"
                             @click="$dispatch('confirm-action', {
                                 title:        'Reset 2FA?',
-                                message:      '{{ addslashes($user->name) }} will be forced to re-enrol on their next login.',
+                                message:      @js($user->name) + ' will be forced to re-enrol on their next login.',
                                 confirmLabel: 'Reset',
                                 form:         document.getElementById('reset-2fa-form')
                             })"
@@ -192,7 +255,7 @@
 
             {{-- Right: save / cancel --}}
             <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-                <a href="{{ route('users.index') }}">
+                <a href="{{ route('admin.users.index') }}">
                     <x-secondary-button>Cancel</x-secondary-button>
                 </a>
                 <x-primary-button type="submit">
@@ -206,77 +269,62 @@
 
     {{-- Hidden forms --}}
     @unless (auth()->id() === $user->id)
-        <form id="delete-form" action="{{ route('users.destroy', $user) }}" method="POST" class="hidden">
+        <form id="delete-form" action="{{ route('admin.users.destroy', $user) }}" method="POST" class="hidden">
             @csrf @method('DELETE')
         </form>
     @endunless
 
     @if(auth()->user()->hasPermission('is_admin'))
-        <form id="reset-2fa-form" action="{{ route('users.reset-2fa', $user) }}" method="POST" class="hidden">
+        <form id="reset-2fa-form" action="{{ route('admin.users.reset-2fa', $user) }}" method="POST" class="hidden">
             @csrf
         </form>
     @endif
 
-    @php $clientNames = $clients->pluck('name', 'id'); @endphp
     <script>
-        const allClients = @json($clientNames);
-        let attachedClientIds = @json($attachedClientIds);
+        function agencyAssignments() {
+            return {
+                agencies: @js($userAgencies),
+                availableAgencies: @js($agencies->map(fn($a) => ['id' => $a->id, 'name' => $a->name])),
+                allClientsByAgency: @js($clientsByAgency),
 
-        function updateClientUI() {
-            const label = document.getElementById('attached-clients-label');
-            const displayText = attachedClientIds.map(id => allClients[id]).filter(Boolean).join(', ');
-            label.textContent = displayText || 'None Selected. Click "Manage Specific Clients" to assign.';
-            if (displayText) {
-                label.classList.add('bg-[#F97316]/5', 'text-[#EA580C]', 'border-[#F97316]/20');
-                label.classList.remove('bg-gray-50', 'text-gray-500', 'border-gray-200');
-            } else {
-                label.classList.remove('bg-[#F97316]/5', 'text-[#EA580C]', 'border-[#F97316]/20');
-                label.classList.add('bg-gray-50', 'text-gray-500', 'border-gray-200');
-            }
+                get unassignedAgencies() {
+                    return this.availableAgencies.filter(a => !this.agencies.find(aa => aa.agency_id == a.id));
+                },
 
-            const inputContainer = document.getElementById('attached-clients-hidden-inputs');
-            inputContainer.innerHTML = '';
-            attachedClientIds.forEach(id => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'clients[]';
-                input.value = id;
-                inputContainer.appendChild(input);
-            });
+                addAgency(agencyId) {
+                    const agency = this.availableAgencies.find(a => a.id == agencyId);
+                    if (!agency) return;
+                    this.agencies.push({
+                        agency_id: agency.id,
+                        name: agency.name,
+                        access_all_clients: true,
+                        clients: [],
+                    });
+                },
 
-            document.querySelectorAll('#clients-table tbody tr').forEach(row => {
-                const id = parseInt(row.dataset.id);
-                const firstTd = row.querySelector('td:first-child');
-                if (attachedClientIds.includes(id)) {
-                    row.classList.add('bg-[#F97316]/10');
-                    firstTd.classList.replace('border-transparent', 'border-[#F97316]');
-                } else {
-                    row.classList.remove('bg-[#F97316]/10');
-                    firstTd.classList.replace('border-[#F97316]', 'border-transparent');
-                }
-            });
+                removeAgency(index) {
+                    this.agencies.splice(index, 1);
+                },
+
+                toggleClient(agencyIndex, clientId) {
+                    const assignment = this.agencies[agencyIndex];
+                    const idx = assignment.clients.indexOf(clientId);
+                    if (idx === -1) {
+                        assignment.clients.push(clientId);
+                    } else {
+                        assignment.clients.splice(idx, 1);
+                    }
+                },
+
+                getClientsForAgency(agencyId) {
+                    return this.allClientsByAgency[agencyId] || [];
+                },
+
+                submitForm(formEl) {
+                    formEl.submit();
+                },
+            };
         }
-
-        function toggleClient(id) {
-            const index = attachedClientIds.indexOf(id);
-            if (index === -1) attachedClientIds.push(id);
-            else attachedClientIds.splice(index, 1);
-            updateClientUI();
-        }
-
-        function filterClients(query) {
-            query = query.toLowerCase();
-            document.querySelectorAll('#clients-table tbody tr').forEach(row => {
-                row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
-            });
-        }
-
-        function toggleClientsPanel() {
-            const panel = document.getElementById('clients-panel');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-        }
-
-        document.addEventListener('DOMContentLoaded', updateClientUI);
     </script>
 
 </x-app-layout>

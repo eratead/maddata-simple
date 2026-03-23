@@ -2,14 +2,14 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Client;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use App\Models\Campaign;
 use App\Models\CampaignData;
+use App\Models\Client;
 use App\Models\PlacementData;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 class InitialSeed extends Seeder
 {
@@ -52,7 +52,7 @@ class InitialSeed extends Seeder
             for ($i = 1; $i <= 2; $i++) {
                 $campaign = Campaign::create([
                     'client_id' => $client->id,
-                    'name' => "Campaign {$client->id}-{$i}"
+                    'name' => "Campaign {$client->id}-{$i}",
                 ]);
 
                 for ($d = 0; $d < 5; $d++) {

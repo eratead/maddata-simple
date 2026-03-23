@@ -24,7 +24,7 @@
     <button type="button"
             @click="$dispatch('confirm-action', {
                 title:        'Mark all as handled?',
-                message:      'All pending changes for {{ addslashes($campaign->name) }} will be marked as handled.',
+                message:      'All pending changes for ' + @js($campaign->name) + ' will be marked as handled.',
                 confirmLabel: 'Mark Handled',
                 form:         document.getElementById('mark-all-handled-form')
             })"

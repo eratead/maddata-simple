@@ -25,7 +25,7 @@ class CampaignTest extends TestCase
         $client = Client::factory()->create();
 
         $campaign = Campaign::factory()->create([
-            'client_id'            => $client->id,
+            'client_id' => $client->id,
             'expected_impressions' => 1000,
         ]);
 
@@ -52,9 +52,9 @@ class CampaignTest extends TestCase
         $client = Client::factory()->create();
 
         $campaign = Campaign::factory()->create([
-            'client_id'  => $client->id,
+            'client_id' => $client->id,
             'start_date' => '2025-11-20',
-            'end_date'   => '2025-11-25',
+            'end_date' => '2025-11-25',
         ]);
 
         // Depending on casts, these may be Carbon instances – compare as dates:

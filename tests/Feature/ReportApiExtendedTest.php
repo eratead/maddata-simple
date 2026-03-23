@@ -20,8 +20,8 @@ class ReportApiExtendedTest extends TestCase
 
     private function userWithCampaign(): array
     {
-        $user     = User::factory()->create();
-        $client   = Client::factory()->create();
+        $user = User::factory()->create();
+        $client = Client::factory()->create();
         $user->clients()->attach($client);
         $campaign = Campaign::factory()->create(['client_id' => $client->id]);
 
@@ -38,8 +38,8 @@ class ReportApiExtendedTest extends TestCase
         CampaignData::factory()->create([
             'campaign_id' => $campaign->id,
             'report_date' => '2024-01-15',
-            'impressions'  => 1000,
-            'clicks'       => 20,
+            'impressions' => 1000,
+            'clicks' => 20,
         ]);
 
         $response = $this->actingAs($user)->getJson(route('reports.by-date', $campaign));
@@ -58,14 +58,14 @@ class ReportApiExtendedTest extends TestCase
         CampaignData::factory()->create([
             'campaign_id' => $campaign->id,
             'report_date' => '2024-01-10',
-            'impressions'  => 600,
-            'clicks'       => 10,
+            'impressions' => 600,
+            'clicks' => 10,
         ]);
         CampaignData::factory()->create([
             'campaign_id' => $campaign->id,
             'report_date' => '2024-01-11',
-            'impressions'  => 400,
-            'clicks'       => 5,
+            'impressions' => 400,
+            'clicks' => 5,
         ]);
 
         $response = $this->actingAs($user)->getJson(route('reports.by-date', $campaign));
@@ -83,8 +83,8 @@ class ReportApiExtendedTest extends TestCase
         CampaignData::factory()->create([
             'campaign_id' => $campaign->id,
             'report_date' => '2024-03-01',
-            'impressions'  => 1000,
-            'clicks'       => 25,
+            'impressions' => 1000,
+            'clicks' => 25,
         ]);
 
         $response = $this->actingAs($user)->getJson(route('reports.by-date', $campaign));
@@ -99,16 +99,16 @@ class ReportApiExtendedTest extends TestCase
         CampaignData::factory()->create([
             'campaign_id' => $campaign->id,
             'report_date' => '2024-01-05',
-            'impressions'  => 100,
+            'impressions' => 100,
         ]);
         CampaignData::factory()->create([
             'campaign_id' => $campaign->id,
             'report_date' => '2024-01-20',
-            'impressions'  => 200,
+            'impressions' => 200,
         ]);
 
         $response = $this->actingAs($user)->getJson(
-            route('reports.by-date', $campaign) . '?start=2024-01-01&end=2024-01-10'
+            route('reports.by-date', $campaign).'?start=2024-01-01&end=2024-01-10'
         );
 
         $byDate = $response->json('by_date');
@@ -145,8 +145,8 @@ class ReportApiExtendedTest extends TestCase
 
     public function test_by_date_rejects_unauthorized_user(): void
     {
-        $campaign    = Campaign::factory()->create();
-        $outsider    = User::factory()->create();
+        $campaign = Campaign::factory()->create();
+        $outsider = User::factory()->create();
 
         $response = $this->actingAs($outsider)->getJson(route('reports.by-date', $campaign));
 
@@ -161,11 +161,11 @@ class ReportApiExtendedTest extends TestCase
     {
         [$user, $campaign] = $this->userWithCampaign();
         PlacementData::create([
-            'campaign_id'         => $campaign->id,
-            'name'                => 'Homepage Banner',
-            'report_date'         => '2024-01-01',
-            'impressions'         => 500,
-            'clicks'              => 10,
+            'campaign_id' => $campaign->id,
+            'name' => 'Homepage Banner',
+            'report_date' => '2024-01-01',
+            'impressions' => 500,
+            'clicks' => 10,
             'visible_impressions' => 400,
         ]);
 
@@ -184,17 +184,17 @@ class ReportApiExtendedTest extends TestCase
         [$user, $campaign] = $this->userWithCampaign();
         PlacementData::create([
             'campaign_id' => $campaign->id,
-            'name'        => 'Banner A',
+            'name' => 'Banner A',
             'report_date' => '2024-01-01',
             'impressions' => 300,
-            'clicks'      => 6,
+            'clicks' => 6,
         ]);
         PlacementData::create([
             'campaign_id' => $campaign->id,
-            'name'        => 'Banner A',
+            'name' => 'Banner A',
             'report_date' => '2024-01-02',
             'impressions' => 200,
-            'clicks'      => 4,
+            'clicks' => 4,
         ]);
 
         $response = $this->actingAs($user)->getJson(route('reports.by-placement', $campaign));
@@ -210,21 +210,21 @@ class ReportApiExtendedTest extends TestCase
         [$user, $campaign] = $this->userWithCampaign();
         PlacementData::create([
             'campaign_id' => $campaign->id,
-            'name'        => 'In Range',
+            'name' => 'In Range',
             'report_date' => '2024-02-05',
             'impressions' => 100,
-            'clicks'      => 2,
+            'clicks' => 2,
         ]);
         PlacementData::create([
             'campaign_id' => $campaign->id,
-            'name'        => 'Out of Range',
+            'name' => 'Out of Range',
             'report_date' => '2024-03-01',
             'impressions' => 50,
-            'clicks'      => 1,
+            'clicks' => 1,
         ]);
 
         $response = $this->actingAs($user)->getJson(
-            route('reports.by-placement', $campaign) . '?start=2024-02-01&end=2024-02-28'
+            route('reports.by-placement', $campaign).'?start=2024-02-01&end=2024-02-28'
         );
 
         $placements = collect($response->json('by_placement'))->pluck('placement');
@@ -248,16 +248,16 @@ class ReportApiExtendedTest extends TestCase
 
     public function test_campaigns_returns_only_accessible_campaigns_for_regular_user(): void
     {
-        $user   = User::factory()->create();
+        $user = User::factory()->create();
         $client = Client::factory()->create();
         $user->clients()->attach($client);
 
-        $ownCampaign   = Campaign::factory()->create(['client_id' => $client->id,                'name' => 'My Campaign']);
+        $ownCampaign = Campaign::factory()->create(['client_id' => $client->id,                'name' => 'My Campaign']);
         $otherCampaign = Campaign::factory()->create(['name' => 'Other Campaign']);
 
         $response = $this->actingAs($user)->getJson(route('reports.campaigns'));
 
-        $names = collect($response->json())->pluck('name');
+        $names = collect($response->json('data'))->pluck('name');
         $this->assertContains('My Campaign', $names->all());
         $this->assertNotContains('Other Campaign', $names->all());
     }
@@ -270,19 +270,19 @@ class ReportApiExtendedTest extends TestCase
 
         $response = $this->actingAs($admin)->getJson(route('reports.campaigns'));
 
-        $names = collect($response->json())->pluck('name');
+        $names = collect($response->json('data'))->pluck('name');
         $this->assertContains('Campaign Alpha', $names->all());
         $this->assertContains('Campaign Beta', $names->all());
     }
 
     public function test_campaigns_returns_expected_fields(): void
     {
-        $admin  = User::factory()->create(['is_admin' => true]);
+        $admin = User::factory()->create(['is_admin' => true]);
         Campaign::factory()->create();
 
         $response = $this->actingAs($admin)->getJson(route('reports.campaigns'));
 
-        $response->assertJsonStructure([['id', 'name', 'client_name', 'client_id', 'created_at']]);
+        $response->assertJsonStructure(['data' => [['id', 'name', 'client_name', 'client_id', 'created_at']]]);
     }
 
     public function test_campaigns_filters_by_date_range(): void
@@ -292,10 +292,10 @@ class ReportApiExtendedTest extends TestCase
         Campaign::factory()->create(['name' => 'Current Campaign', 'created_at' => '2024-06-15']);
 
         $response = $this->actingAs($admin)->getJson(
-            route('reports.campaigns') . '?start=2024-01-01&end=2024-12-31'
+            route('reports.campaigns').'?start=2024-01-01&end=2024-12-31'
         );
 
-        $names = collect($response->json())->pluck('name');
+        $names = collect($response->json('data'))->pluck('name');
         $this->assertContains('Current Campaign', $names->all());
         $this->assertNotContains('Old Campaign', $names->all());
     }

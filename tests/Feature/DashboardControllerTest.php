@@ -37,7 +37,6 @@ class DashboardControllerTest extends TestCase
         $response->assertSee($campaign->name);
     }
 
-
     public function test_user_cannot_view_dashboard_for_unauthorized_campaign()
     {
         $authorizedClient = Client::factory()->create();
@@ -53,8 +52,6 @@ class DashboardControllerTest extends TestCase
 
         $response->assertForbidden();
     }
-
-
 
     public function test_dashboard_filters_data_by_date_range()
     {
@@ -116,10 +113,10 @@ class DashboardControllerTest extends TestCase
         CampaignData::factory()->create([
             'campaign_id' => $campaign->id,
             'report_date' => now()->toDateString(),
-            'video_25'    => 800,
-            'video_50'    => 600,
-            'video_75'    => 400,
-            'video_100'   => 200,
+            'video_25' => 800,
+            'video_50' => 600,
+            'video_75' => 400,
+            'video_100' => 200,
         ]);
 
         $response = $this->actingAs($user)->get(route('dashboard.campaign', $campaign));

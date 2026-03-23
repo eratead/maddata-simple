@@ -13,7 +13,7 @@ class ClientFactory extends Factory
     {
         return [
             'name' => $this->faker->company,
-            'agency' => fake()->company(),
+            'agency_id' => \App\Models\Agency::factory(),
         ];
     }
 }

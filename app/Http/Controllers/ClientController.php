@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreClientRequest;
+use App\Http\Requests\UpdateClientRequest;
+use App\Models\Agency;
 use App\Models\Client;
-use Illuminate\Support\Facades\Auth;
+use App\Services\ActivityLogger;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Facades\Gate;
-
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class ClientController extends Controller
 {
@@ -16,58 +18,58 @@ class ClientController extends Controller
     public function index()
     {
         $user = Auth::user();
-        // dump($user);
         $this->authorize('viewAny', Client::class);
-
 
         // If admin, show all clients; otherwise, only their own
         $clients = $user->hasPermission('is_admin')
-            ? Client::withCount(['campaigns' => fn($q) => $q->where('status', 'active')])->get()
-            : $user->clients()->withCount(['campaigns' => fn($q) => $q->where('status', 'active')])->get();
+            ? Client::with('agency')->withCount(['campaigns' => fn ($q) => $q->where('status', 'active')])->get()
+            : $user->clients()->with('agency')->withCount(['campaigns' => fn ($q) => $q->where('status', 'active')])->get();
+
         return view('clients.index', compact('clients'));
     }
 
     public function edit(Client $client)
     {
         $this->authorize('update', $client);
-        $agencies = Client::whereNotNull('agency')->select('agency')->distinct()->pluck('agency');
+        $agencies = Agency::orderBy('name')->get();
+
         return view('clients.edit', compact('client', 'agencies'));
     }
 
-    public function update(Request $request, \App\Models\Client $client)
+    public function update(UpdateClientRequest $request, Client $client)
     {
         $this->authorize('update', $client);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'agency' => ['nullable', 'string', 'max:255'],
-        ]);
+        $oldName = $client->name;
+        $client->update($request->validated());
 
-        $client->update($validated);
+        app(ActivityLogger::class)->log('updated', $client, "Updated client \"{$oldName}\"");
 
-        return redirect()->route('clients.index')
+        Cache::forget('clients_list');
+
+        return redirect()->route('admin.clients.index')
             ->with('success', 'Client updated successfully.');
     }
 
     public function create()
     {
         $this->authorize('create', Client::class);
-        $agencies = Client::whereNotNull('agency')->select('agency')->distinct()->pluck('agency');
+        $agencies = Agency::orderBy('name')->get();
+
         return view('clients.create', compact('agencies'));
     }
 
-    public function store(Request $request)
+    public function store(StoreClientRequest $request)
     {
         $this->authorize('create', Client::class);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'agency' => ['nullable', 'string', 'max:255'],
-        ]);
+        $client = Client::create($request->validated());
 
-        Client::create($validated);
+        app(ActivityLogger::class)->log('created', $client, "Created client \"{$client->name}\"");
 
-        return redirect()->route('clients.index')
+        Cache::forget('clients_list');
+
+        return redirect()->route('admin.clients.index')
             ->with('success', 'Client created successfully.');
     }
 
@@ -75,9 +77,13 @@ class ClientController extends Controller
     {
         $this->authorize('delete', $client);
 
+        app(ActivityLogger::class)->log('deleted', $client, "Deleted client \"{$client->name}\"");
+
         $client->delete();
 
-        return redirect()->route('clients.index')
+        Cache::forget('clients_list');
+
+        return redirect()->route('admin.clients.index')
             ->with('success', 'Client deleted successfully.');
     }
 }

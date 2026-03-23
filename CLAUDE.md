@@ -161,3 +161,20 @@ mysqldump -u root maddata_simple > /tmp/staging_dump.sql
 scp -i ~/.ssh/id_rsa /tmp/staging_dump.sql root@207.154.253.28:/tmp/
 ssh -i ~/.ssh/id_rsa root@207.154.253.28 "mysql -u webusr -p'PASS' maddata_simple < /tmp/staging_dump.sql"
 ```
+
+
+## Agent Team
+
+This project uses a multi-agent system. Each agent has a defined role:
+
+| Agent | Trigger | Responsibility |
+|-------|---------|----------------|
+| **architect** | "plan", "design", "architect" | Designs features, writes specs to `docs/specs/` |
+| **builder** | "build", "implement", "code" | Implements specs, writes actual Laravel code |
+| **reviewer** | "review", "check", "quality" | Reviews code quality and Laravel conventions |
+| **tester** | "write tests", "test coverage" | Writes PHPUnit/Pest tests |
+| **security** | "security check", "audit" | Audits for vulnerabilities |
+| **documenter** | "document", "API docs" | Writes docs, PHPDoc, README |
+| **performance** | "performance", "optimize", "slow", "N+1", "cache" | Audits for bottlenecks, N+1 queries, caching gaps |
+| **frontend** | "blade", "view", "UI", "component", "tailwind", "page", "form", "alpine" | Builds Blade templates, Tailwind styling, Alpine.js interactivity |
+| **server** | "deploy", "server", "nginx", "php version", "ssl", "staging", "ssh" | Server management, deployments, PHP/Nginx/MySQL config, package updates |

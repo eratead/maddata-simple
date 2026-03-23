@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Audience;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AudienceController extends Controller
@@ -42,11 +43,11 @@ class AudienceController extends Controller
     {
         $validated = $request->validate([
             'main_category' => 'required|string|max:255',
-            'sub_category'  => 'nullable|string|max:255',
-            'name'          => 'required|string|max:255',
+            'sub_category' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
             'estimated_users' => 'nullable|integer|min:0',
-            'provider'      => 'nullable|string|max:255',
-            'is_active'     => 'boolean',
+            'provider' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -55,6 +56,8 @@ class AudienceController extends Controller
 
         Audience::create($validated);
 
+        Cache::forget('active_audiences');
+
         return redirect()->route('admin.audiences.index')->with('success', 'Audience created successfully.');
     }
 
@@ -62,11 +65,11 @@ class AudienceController extends Controller
     {
         $validated = $request->validate([
             'main_category' => 'required|string|max:255',
-            'sub_category'  => 'nullable|string|max:255',
-            'name'          => 'required|string|max:255',
+            'sub_category' => 'nullable|string|max:255',
+            'name' => 'required|string|max:255',
             'estimated_users' => 'nullable|integer|min:0',
-            'provider'      => 'nullable|string|max:255',
-            'is_active'     => 'boolean',
+            'provider' => 'nullable|string|max:255',
+            'is_active' => 'boolean',
         ]);
 
         $validated['is_active'] = $request->boolean('is_active', true);
@@ -75,12 +78,16 @@ class AudienceController extends Controller
 
         $audience->update($validated);
 
+        Cache::forget('active_audiences');
+
         return redirect()->route('admin.audiences.index')->with('success', 'Audience updated successfully.');
     }
 
     public function destroy(Audience $audience)
     {
         $audience->delete();
+
+        Cache::forget('active_audiences');
 
         return redirect()->route('admin.audiences.index')->with('success', 'Audience deleted.');
     }
@@ -90,13 +97,14 @@ class AudienceController extends Controller
         if ($sub && $sub !== $main) {
             return "Audience > {$main} > {$sub} > {$name}";
         }
+
         return "Audience > {$main} > {$name}";
     }
 
     public function upload(Request $request)
     {
         $request->validate([
-            'file'     => ['required', 'file', 'mimes:xlsx,xls'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls'],
             'provider' => 'nullable|string|max:255',
         ]);
 
@@ -108,10 +116,14 @@ class AudienceController extends Controller
 
         foreach ($collection as $index => $row) {
             // Skip header row
-            if ($index === 0) continue;
+            if ($index === 0) {
+                continue;
+            }
 
             // Skip rows with empty col A
-            if (empty($row[0])) continue;
+            if (empty($row[0])) {
+                continue;
+            }
 
             $fullPath = trim($row[0]);
             $parts = array_map('trim', explode('>', $fullPath));
@@ -136,11 +148,11 @@ class AudienceController extends Controller
             $existing = Audience::where('full_path', $fullPath)->first();
 
             $fields = [
-                'main_category'   => $mainCategory,
-                'sub_category'    => $subCategory,
-                'name'            => $name,
+                'main_category' => $mainCategory,
+                'sub_category' => $subCategory,
+                'name' => $name,
                 'estimated_users' => $estimatedUsers,
-                'is_active'       => true,
+                'is_active' => true,
             ];
             if ($provider !== null) {
                 $fields['provider'] = $provider;
@@ -156,6 +168,9 @@ class AudienceController extends Controller
         }
 
         $total = $newCount + $updatedCount;
+
+        Cache::forget('active_audiences');
+
         return redirect()->back()->with('success', "Imported {$total} audiences ({$updatedCount} updated, {$newCount} new).");
     }
 }

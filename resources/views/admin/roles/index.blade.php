@@ -74,7 +74,7 @@
                                                 <button type="button"
                                                         @click="$dispatch('confirm-action', {
                                                             title:        'Delete role?',
-                                                            message:      '{{ addslashes($role->name) }} will be permanently removed.',
+                                                            message:      @js($role->name) + ' will be permanently removed.',
                                                             confirmLabel: 'Delete',
                                                             form:         $el.closest('form')
                                                         })"

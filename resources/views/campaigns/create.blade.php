@@ -50,7 +50,7 @@
                         open:         false,
                         search:       '',
                         selectedId:   '{{ $oldClientId }}',
-                        selectedName: '{{ addslashes($oldClientName ?: 'Select a client') }}',
+                        selectedName: @js($oldClientName ?: 'Select a client'),
                         clients:      @js($clients->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()),
                         get filtered() {
                             const q = this.search.toLowerCase();

@@ -8,7 +8,6 @@ use App\Models\Client;
 use App\Models\Creative;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class CampaignChangeFilterTest extends TestCase
@@ -76,7 +75,7 @@ class CampaignChangeFilterTest extends TestCase
 
         // Assert
         $response->assertOk();
-        
+
         // Should only see the LATEST log for 300x250
         $response->assertViewHas('logs', function ($logs) use ($latestLog) {
             return $logs->count() === 1 && $logs->first()->id === $latestLog->id;
@@ -119,7 +118,7 @@ class CampaignChangeFilterTest extends TestCase
         $response = $this->actingAs($admin)->get(route('admin.campaign_changes.show', $campaign));
 
         $response->assertOk();
-        
+
         // Should see BOTH logs
         $response->assertViewHas('logs', function ($logs) {
             return $logs->count() === 2;
@@ -181,7 +180,7 @@ class CampaignChangeFilterTest extends TestCase
 
         // Assert
         $response->assertOk();
-        
+
         // Should only see the LATEST optimization log
         $response->assertViewHas('logs', function ($logs) use ($latestLog) {
             return $logs->count() === 1 && $logs->first()->id === $latestLog->id;

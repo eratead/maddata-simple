@@ -16,7 +16,7 @@ class ClientControllerTest extends TestCase
 
         $this->actingAs($admin);
 
-        $response = $this->get(route('clients.index'));
+        $response = $this->get(route('admin.clients.index'));
 
         $response->assertStatus(200);
         $response->assertSee('Clients'); // adjust text if needed
@@ -27,7 +27,7 @@ class ClientControllerTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin);
-        $response = $this->get(route('clients.create'));
+        $response = $this->get(route('admin.clients.create'));
 
         $response->assertStatus(200);
         $response->assertSee('Create'); // Adjust based on actual form text
@@ -38,7 +38,7 @@ class ClientControllerTest extends TestCase
         $user = User::factory()->create(['is_admin' => false]);
 
         $this->actingAs($user);
-        $response = $this->get(route('clients.index'));
+        $response = $this->get(route('admin.clients.index'));
 
         $response->assertForbidden();
     }
@@ -48,12 +48,12 @@ class ClientControllerTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin);
-        $response = $this->post(route('clients.store'), [
+        $response = $this->post(route('admin.clients.store'), [
             'name' => 'Test Client',
             'agency' => 'Test Agency',
         ]);
 
-        $response->assertRedirect(route('clients.index'));
+        $response->assertRedirect(route('admin.clients.index'));
         $this->assertDatabaseHas('clients', ['name' => 'Test Client']);
     }
 
@@ -63,11 +63,11 @@ class ClientControllerTest extends TestCase
         $client = \App\Models\Client::factory()->create(['name' => 'Old Name']);
 
         $this->actingAs($admin);
-        $response = $this->put(route('clients.update', $client), [
+        $response = $this->put(route('admin.clients.update', $client), [
             'name' => 'Updated Name',
         ]);
 
-        $response->assertRedirect(route('clients.index'));
+        $response->assertRedirect(route('admin.clients.index'));
         $this->assertDatabaseHas('clients', ['id' => $client->id, 'name' => 'Updated Name']);
     }
 
@@ -77,9 +77,9 @@ class ClientControllerTest extends TestCase
         $client = \App\Models\Client::factory()->create();
 
         $this->actingAs($admin);
-        $response = $this->delete(route('clients.destroy', $client));
+        $response = $this->delete(route('admin.clients.destroy', $client));
 
-        $response->assertRedirect(route('clients.index'));
+        $response->assertRedirect(route('admin.clients.index'));
         $this->assertDatabaseMissing('clients', ['id' => $client->id]);
     }
 }

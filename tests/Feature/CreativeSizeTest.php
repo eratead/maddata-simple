@@ -25,7 +25,7 @@ class CreativeSizeTest extends TestCase
         ]);
 
         $response->assertRedirect(route('campaigns.index'));
-        
+
         $this->assertDatabaseHas('campaigns', [
             'name' => 'Test Campaign',
             'required_sizes' => '1920x1080,300x250',
@@ -49,7 +49,7 @@ class CreativeSizeTest extends TestCase
         ]);
 
         $response->assertRedirect(route('campaigns.index'));
-        
+
         $this->assertDatabaseHas('campaigns', [
             'id' => $campaign->id,
             'required_sizes' => '1920x1080,300x250',
@@ -69,7 +69,7 @@ class CreativeSizeTest extends TestCase
         ]);
 
         $response->assertRedirect(route('campaigns.index'));
-        
+
         $this->assertDatabaseHas('campaigns', [
             'name' => 'Test Campaign Null Sizes',
             'required_sizes' => null,

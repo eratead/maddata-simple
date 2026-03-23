@@ -1,45 +1,30 @@
 <?php
 
-use App\Http\Controllers\ClientController;
+use App\Http\Controllers\Agency\AgencyUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportApiController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/ai/generate-locations', [App\Http\Controllers\AiLocationController::class, 'generate'])->name('ai.locations');
-    Route::post('/ai/campaign-assistant', [App\Http\Controllers\CampaignAssistantController::class, 'chat'])->name('ai.campaign-assistant');
-    Route::get('/', fn() => redirect('/dashboard'));
+    Route::post('/ai/generate-locations', [App\Http\Controllers\AiLocationController::class, 'generate'])->middleware('throttle:10,1')->name('ai.locations');
+    Route::post('/ai/campaign-assistant', [App\Http\Controllers\CampaignAssistantController::class, 'chat'])->middleware('throttle:10,1')->name('ai.campaign-assistant');
+    Route::get('/', fn () => redirect('/dashboard'));
     Route::get('/dashboard', function () {
         $lastId = session('last_campaign_id');
-        return $lastId ? redirect()->route('dashboard.campaign', $lastId) : redirect()->route('campaigns.index');
-    })->middleware('auth')->name('dashboard');
 
-    // Future routes: campaigns, clients, etc.
-    Route::resource('users', \App\Http\Controllers\UserController::class)
-        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
-        ->middleware('auth');
-    Route::post('/users/{user}/reset-2fa', [UserController::class, 'reset2fa'])
-        ->name('users.reset-2fa')
-        ->middleware('admin');
+        return $lastId ? redirect()->route('dashboard.campaign', $lastId) : redirect()->route('campaigns.index');
+    })->name('dashboard');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-
-
-    Route::resource('clients', \App\Http\Controllers\ClientController::class);
-
     Route::get('/campaigns/client/{client_id?}', [\App\Http\Controllers\CampaignController::class, 'index'])->name('campaigns_client.index');
-    Route::resource('campaigns', \App\Http\Controllers\CampaignController::class)
-        ->middleware('auth');
-    //upload
+    Route::resource('campaigns', \App\Http\Controllers\CampaignController::class);
+    // upload
     Route::post('/campaigns/{campaign}/upload', [\App\Http\Controllers\CampaignController::class, 'upload'])
-        ->middleware('auth')
         ->name('campaigns.upload');
 
     // Audiences
@@ -47,7 +32,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/campaigns/{campaign}/audiences/sync', [\App\Http\Controllers\CampaignController::class, 'syncAudiences'])->name('campaigns.audiences.sync');
 
     Route::get('/dashboard/{campaign}', [\App\Http\Controllers\DashboardController::class, 'show'])
-        ->middleware('auth')
         ->name('dashboard.campaign');
 
     // Creative Routes
@@ -63,14 +47,33 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/creatives/files/{file}/preview', 'preview')->name('creatives.files.preview');
         Route::get('/creatives/files/{file}/download', 'downloadFile')->name('creatives.files.download');
         Route::get('/creatives/{creative}/download-all', 'downloadAll')->name('creatives.download-all');
-    })->middleware('auth');
+    });
 
     Route::get('/dashboard/{campaign}/export', [DashboardController::class, 'exportExcel'])->name('dashboard.export.excel');
 
-    Route::get('/users/{user}/attach-client', [UserController::class, 'attachClient'])->name('users.attach-client');
+    // Agency Manager Routes — user and client management within their agency
+    Route::prefix('agency/{agency}')
+        ->middleware(['auth'])
+        ->name('agency.')
+        ->group(function () {
+            Route::resource('users', AgencyUserController::class)->except(['show']);
+            Route::resource('clients', \App\Http\Controllers\Agency\AgencyClientController::class)->except(['show']);
+        });
 
     // Admin Routes
-    Route::prefix('admin')->middleware(['auth', 'admin'])->name('admin.')->group(function () {
+    Route::prefix('admin')->middleware(['admin'])->name('admin.')->group(function () {
+        // Users
+        Route::resource('users', \App\Http\Controllers\UserController::class)
+            ->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+        Route::post('/users/{user}/reset-2fa', [UserController::class, 'reset2fa'])
+            ->name('users.reset-2fa');
+        Route::get('/users/{user}/attach-client', [UserController::class, 'attachClient'])->name('users.attach-client');
+
+        // Clients
+        Route::resource('clients', \App\Http\Controllers\ClientController::class)->except(['show']);
+
+        // Agencies
+        Route::resource('agencies', \App\Http\Controllers\Admin\AgencyController::class)->except(['show']);
         // Audiences
         Route::get('/audiences', [\App\Http\Controllers\Admin\AudienceController::class, 'index'])->name('audiences.index');
         Route::post('/audiences', [\App\Http\Controllers\Admin\AudienceController::class, 'store'])->name('audiences.store');
@@ -82,7 +85,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // Log Routes (admin OR can_see_logs)
-    Route::prefix('admin')->middleware(['auth', 'can_see_logs'])->name('admin.')->group(function () {
+    Route::prefix('admin')->middleware(['can_see_logs'])->name('admin.')->group(function () {
         Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
 
         // Campaign Changes CRM
@@ -96,16 +99,15 @@ Route::middleware(['auth'])->group(function () {
     });
 });
 
-/// API
-Route::prefix('api/reports')->middleware(['auth:sanctum', 'check-token-expiry'])->group(function () {
+// / API
+Route::prefix('api/reports')->middleware(['auth:sanctum', 'check-token-expiry', 'ability:reports:read'])->group(function () {
     Route::get('/summary/{campaign}', [ReportApiController::class, 'summary'])->name('reports.summary');
     Route::get('/by-date/{campaign}', [ReportApiController::class, 'byDate'])->name('reports.by-date');
     Route::get('/by-placement/{campaign}', [ReportApiController::class, 'byPlacement'])->name('reports.by-placement');
     Route::get('/campaigns', [\App\Http\Controllers\ReportApiController::class, 'campaigns'])->name('reports.campaigns');
 });
 
-
-/// API token
+// / API token
 use App\Http\Controllers\TokenController;
 
 Route::middleware(['auth', 'campaign_manager'])->group(function () {
@@ -115,5 +117,4 @@ Route::middleware(['auth', 'campaign_manager'])->group(function () {
     Route::post('/tokens/{id}/extend', [TokenController::class, 'extend'])->name('tokens.extend');
 });
 
-
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

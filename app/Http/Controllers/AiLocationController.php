@@ -11,15 +11,15 @@ class AiLocationController extends Controller
     {
         $request->validate(['prompt' => 'required|string|max:500']);
 
-        $response = Http::withHeaders([
-            'x-api-key'         => env('ANTHROPIC_API_KEY'),
+        $response = Http::timeout(15)->withHeaders([
+            'x-api-key' => config('services.anthropic.api_key'),
             'anthropic-version' => '2023-06-01',
-            'content-type'      => 'application/json',
+            'content-type' => 'application/json',
         ])->post('https://api.anthropic.com/v1/messages', [
-            'model'      => 'claude-sonnet-4-6',
+            'model' => 'claude-sonnet-4-6',
             'max_tokens' => 1024,
-            'system'     => 'You are a geocoding API for Israel. Return ONLY a raw JSON array of objects. No markdown formatting, no backticks, no conversational text. Each object must have: "name" (string, concise), "lat" (string, latitude), "lng" (string, longitude).',
-            'messages'   => [['role' => 'user', 'content' => $request->prompt]],
+            'system' => 'You are a geocoding API for Israel. Return ONLY a raw JSON array of objects. No markdown formatting, no backticks, no conversational text. Each object must have: "name" (string, concise), "lat" (string, latitude), "lng" (string, longitude).',
+            'messages' => [['role' => 'user', 'content' => $request->prompt]],
         ]);
 
         if ($response->failed()) {
@@ -34,7 +34,7 @@ class AiLocationController extends Controller
 
         $locations = json_decode(trim($raw), true);
 
-        if (!is_array($locations)) {
+        if (! is_array($locations)) {
             return response()->json(['error' => 'Could not parse AI response.'], 422);
         }
 

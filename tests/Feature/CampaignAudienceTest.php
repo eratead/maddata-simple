@@ -123,9 +123,9 @@ class CampaignAudienceTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
         $campaign = Campaign::factory()->create();
         $audience = Audience::factory()->create([
-            'main_category'   => 'Demographics',
-            'sub_category'    => 'Family',
-            'name'            => 'Parents with Teens',
+            'main_category' => 'Demographics',
+            'sub_category' => 'Family',
+            'name' => 'Parents with Teens',
             'estimated_users' => 500000,
         ]);
 

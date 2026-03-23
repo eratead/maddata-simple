@@ -2,7 +2,7 @@
 
 @push('page-title')
     <div class="flex items-center gap-2 text-sm min-w-0">
-        <a href="{{ route('clients.index') }}" class="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">Clients</a>
+        <a href="{{ route('admin.clients.index') }}" class="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">Clients</a>
         <svg class="w-3 h-3 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
@@ -23,7 +23,7 @@
             <h2 class="text-sm font-semibold text-gray-700">Client Details</h2>
         </div>
 
-        <form id="editClientForm" action="{{ route('clients.update', $client) }}" method="POST" class="space-y-5">
+        <form id="editClientForm" action="{{ route('admin.clients.update', $client) }}" method="POST" class="space-y-5">
             @csrf
             @method('PUT')
 
@@ -37,12 +37,17 @@
 
             {{-- Agency --}}
             <div>
-                <x-input-label for="agency" value="Agency" />
-                <x-autocomplete-input name="agency" :options="$agencies"
-                                      placeholder="Select or type agency…"
-                                      :value="old('agency', $client->agency)" />
-                <x-input-error :messages="$errors->get('agency')" />
-                <p class="mt-1.5 text-xs text-gray-400">Start typing to search existing agencies or enter a new one.</p>
+                <x-input-label for="agency_id" value="Agency" />
+                <select id="agency_id" name="agency_id"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#F97316] focus:ring-[#F97316] text-sm">
+                    <option value="">— No agency —</option>
+                    @foreach ($agencies as $agency)
+                        <option value="{{ $agency->id }}" @selected(old('agency_id', $client->agency_id) == $agency->id)>
+                            {{ $agency->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <x-input-error :messages="$errors->get('agency_id')" />
             </div>
 
             {{-- Footer --}}
@@ -53,7 +58,7 @@
                     <button type="button"
                             @click="$dispatch('confirm-action', {
                                 title:        'Delete client?',
-                                message:      '{{ addslashes($client->name) }} will be permanently removed.',
+                                message:      @js($client->name) + ' will be permanently removed.',
                                 confirmLabel: 'Delete',
                                 form:         document.getElementById('delete-client-form')
                             })"
@@ -69,7 +74,7 @@
 
                 {{-- Save / Cancel (right) --}}
                 <div class="flex items-center gap-2">
-                    <a href="{{ route('clients.index') }}">
+                    <a href="{{ route('admin.clients.index') }}">
                         <x-secondary-button>Cancel</x-secondary-button>
                     </a>
                     <x-primary-button type="submit">
@@ -82,7 +87,7 @@
 
         {{-- Hidden delete form --}}
         @can('delete', $client)
-            <form id="delete-client-form" action="{{ route('clients.destroy', $client) }}" method="POST" class="hidden">
+            <form id="delete-client-form" action="{{ route('admin.clients.destroy', $client) }}" method="POST" class="hidden">
                 @csrf @method('DELETE')
             </form>
         @endcan

@@ -9,7 +9,6 @@ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\View\View;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -31,7 +30,7 @@ class TwoFactorController extends Controller
             return redirect()->route('2fa.challenge');
         }
 
-        $google2fa = new Google2FA();
+        $google2fa = new Google2FA;
 
         // Reuse the temp secret if the user refreshes the page
         $secret = session('2fa_setup_secret') ?? $google2fa->generateSecretKey();
@@ -61,7 +60,7 @@ class TwoFactorController extends Controller
             return redirect()->route('2fa.setup');
         }
 
-        $google2fa = new Google2FA();
+        $google2fa = new Google2FA;
 
         if (! $google2fa->verifyKey($secret, $request->code)) {
             return back()->withErrors(['code' => 'That code is incorrect. Please try again.']);
@@ -102,11 +101,11 @@ class TwoFactorController extends Controller
     {
         $request->validate(['code' => ['required', 'string', 'digits:6']]);
 
-        $user   = $request->user();
+        $user = $request->user();
         // google2fa_secret is auto-decrypted by the encrypted cast
         $secret = $user->google2fa_secret;
 
-        $google2fa = new Google2FA();
+        $google2fa = new Google2FA;
 
         if (! $google2fa->verifyKey($secret, $request->code)) {
             return back()->withErrors(['code' => 'That code is incorrect. Please try again.']);
@@ -115,7 +114,7 @@ class TwoFactorController extends Controller
         session(['2fa_verified' => true]);
 
         if ($request->boolean('remember_device')) {
-            $token = hash_hmac('sha256', $user->id . $secret, config('app.key'));
+            $token = hash_hmac('sha256', $user->id.$secret, config('app.key'));
 
             cookie()->queue(
                 cookie(
@@ -138,7 +137,7 @@ class TwoFactorController extends Controller
     {
         $renderer = new ImageRenderer(
             new RendererStyle(192),
-            new SvgImageBackEnd(),
+            new SvgImageBackEnd,
         );
 
         return (new Writer($renderer))->writeString($url);

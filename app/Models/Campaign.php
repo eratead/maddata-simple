@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Campaign extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name',
         'client_id',
@@ -26,6 +27,8 @@ class Campaign extends Model
         'start_date' => 'date',
         'end_date' => 'date',
         'creative_optimization' => 'boolean',
+        'is_video' => 'boolean',
+        'budget' => 'decimal:2',
         'targeting_rules' => 'array',
     ];
 

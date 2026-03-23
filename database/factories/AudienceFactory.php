@@ -12,14 +12,14 @@ class AudienceFactory extends Factory
     public function definition(): array
     {
         return [
-            'provider'        => $this->faker->randomElement(['Google', 'Meta', 'Amazon', null]),
-            'icon'            => null,
-            'main_category'   => $this->faker->randomElement(['Demographics', 'In-Market', 'Interests', 'Lifestyle']),
-            'sub_category'    => $this->faker->randomElement(['Family', 'Education', 'Home', 'Tech', 'Travel']),
-            'name'            => $this->faker->unique()->words(3, true),
-            'full_path'       => null,
+            'provider' => $this->faker->randomElement(['Google', 'Meta', 'Amazon', null]),
+            'icon' => null,
+            'main_category' => $this->faker->randomElement(['Demographics', 'In-Market', 'Interests', 'Lifestyle']),
+            'sub_category' => $this->faker->randomElement(['Family', 'Education', 'Home', 'Tech', 'Travel']),
+            'name' => $this->faker->unique()->words(3, true),
+            'full_path' => null,
             'estimated_users' => $this->faker->optional()->numberBetween(10000, 5000000),
-            'is_active'       => true,
+            'is_active' => true,
         ];
     }
 

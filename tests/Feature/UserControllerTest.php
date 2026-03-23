@@ -16,9 +16,9 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($admin);
-        $response = $this->get(route('users.edit', $user));
+        $response = $this->get(route('admin.users.edit', $user));
         $response->assertStatus(200);
-        $response->assertSee('Edit'); // adjust if there's a specific heading
+        $response->assertSee('User Details');
     }
 
     public function test_admin_can_update_user()
@@ -27,13 +27,13 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create(['name' => 'Old Name']);
 
         $this->actingAs($admin);
-        $response = $this->put(route('users.update', $user), [
+        $response = $this->put(route('admin.users.update', $user), [
             'name' => 'New Name',
             'email' => $user->email,
             'clients' => [],
         ]);
 
-        $response->assertRedirect(route('users.index'));
+        $response->assertRedirect(route('admin.users.index'));
         $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'New Name']);
     }
 
@@ -43,9 +43,9 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($admin);
-        $response = $this->delete(route('users.destroy', $user));
+        $response = $this->delete(route('admin.users.destroy', $user));
 
-        $response->assertRedirect(route('users.index'));
+        $response->assertRedirect(route('admin.users.index'));
         $this->assertDatabaseMissing('users', ['id' => $user->id]);
     }
 
@@ -55,7 +55,7 @@ class UserControllerTest extends TestCase
         $target = User::factory()->create();
 
         $this->actingAs($regular);
-        $response = $this->delete(route('users.destroy', $target));
+        $response = $this->delete(route('admin.users.destroy', $target));
 
         $response->assertForbidden();
         $this->assertDatabaseHas('users', ['id' => $target->id]);
@@ -67,7 +67,7 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create();
 
         $this->actingAs($regular);
-        $response = $this->get(route('users.edit', $user));
+        $response = $this->get(route('admin.users.edit', $user));
 
         $response->assertForbidden();
     }
@@ -78,7 +78,7 @@ class UserControllerTest extends TestCase
         $user = User::factory()->create(['name' => 'Unchanged Name']);
 
         $this->actingAs($regular);
-        $response = $this->put(route('users.update', $user), [
+        $response = $this->put(route('admin.users.update', $user), [
             'name' => 'Changed Name',
             'email' => $user->email,
             'clients' => [],
