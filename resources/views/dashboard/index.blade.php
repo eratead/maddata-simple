@@ -113,12 +113,9 @@
 
     {{-- ── Campaign info bar ─────────────────────────────────────── --}}
     @php
-        $hasBudget        = auth()->user()?->hasPermission('can_view_budget');
-        $showBudgetPacing = $hasBudget && ($budget ?? 0) > 0;
-        $showImprPacing   = !$showBudgetPacing && !empty($summary['expected_impressions']);
-        if ($showBudgetPacing) {
-            $pacingPct = min(($spent / $budget) * 100, 100);
-        } elseif ($showImprPacing) {
+        $hasBudget      = auth()->user()?->hasPermission('can_view_budget');
+        $showImprPacing = !empty($summary['expected_impressions']);
+        if ($showImprPacing) {
             $pacingPct = $summary['expected_impressions'] > 0
                 ? ($summary['impressions'] / $summary['expected_impressions']) * 100 : 0;
         }
@@ -141,21 +138,17 @@
                 </p>
             </div>
             @endif
-            @if($showBudgetPacing || $showImprPacing)
+            @if($showImprPacing)
             <div class="flex-1 min-w-[200px]">
-                <p class="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5">
-                    {{ $showBudgetPacing ? 'Budget Pacing' : 'Impression Pacing' }}
-                </p>
+                <p class="text-[10px] text-gray-400 uppercase tracking-wide font-semibold mb-1.5">Impression Pacing</p>
                 <div class="flex items-center gap-2.5">
                     <div class="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full {{ ($pacingPct ?? 0) >= 100 && !$showBudgetPacing ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-[#F97316] to-[#FB923C]' }}"
+                        <div class="h-full rounded-full {{ ($pacingPct ?? 0) >= 100 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-[#F97316] to-[#FB923C]' }}"
                              style="width: {{ min($pacingPct ?? 0, 100) }}%"></div>
                     </div>
                     <span class="text-xs font-bold text-gray-700 whitespace-nowrap tabular-nums">{{ number_format($pacingPct ?? 0, 1) }}%</span>
                 </div>
-                @if($showBudgetPacing)
-                    <p class="text-[10px] text-gray-400 mt-0.5">₪{{ number_format($spent ?? 0) }} <span class="text-gray-300">/</span> ₪{{ number_format($budget) }}</p>
-                @elseif(($pacingPct ?? 0) > 100)
+                @if(($pacingPct ?? 0) > 100)
                     <p class="text-[10px] text-emerald-600 font-semibold mt-0.5">Overdelivering</p>
                 @else
                     <p class="text-[10px] text-gray-400 mt-0.5">{{ number_format($summary['impressions']) }} / {{ number_format($summary['expected_impressions']) }} expected</p>
