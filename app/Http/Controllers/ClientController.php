@@ -20,12 +20,20 @@ class ClientController extends Controller
         $user = Auth::user();
         $this->authorize('viewAny', Client::class);
 
-        // If admin, show all clients; otherwise, only their own
-        $clients = $user->hasPermission('is_admin')
-            ? Client::with('agency')->withCount(['campaigns' => fn ($q) => $q->where('status', 'active')])->get()
-            : $user->clients()->with('agency')->withCount(['campaigns' => fn ($q) => $q->where('status', 'active')])->get();
+        $query = $user->hasPermission('is_admin')
+            ? Client::with('agency')->withCount(['campaigns' => fn ($q) => $q->where('status', 'active')])
+            : $user->clients()->with('agency')->withCount(['campaigns' => fn ($q) => $q->where('status', 'active')]);
 
-        return view('clients.index', compact('clients'));
+        // Filter by agency if requested
+        if ($agencyId = request('agency')) {
+            $query->where('agency_id', $agencyId);
+        }
+
+        $clients = $query->get();
+        $agencies = Agency::orderBy('name')->get();
+        $currentAgency = $agencyId ? Agency::find($agencyId) : null;
+
+        return view('clients.index', compact('clients', 'agencies', 'currentAgency'));
     }
 
     public function edit(Client $client)

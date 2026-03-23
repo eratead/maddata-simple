@@ -73,6 +73,14 @@ $SSH "cd $STAGING_PATH && composer install --no-dev --optimize-autoloader"
 echo "  ✅ Dependencies installed"
 echo ""
 
+# ─── Step 4b: Fix legacy migration files ──────────────
+echo "🔧 Step 4b: Handling legacy migration files..."
+# The server may have an old Sanctum migration (2025_07_16) published directly
+# that's not in our repo. Mark it as run so it doesn't conflict.
+$SSH "cd $STAGING_PATH && mysql -u $DB_USER -p'$DB_PASS' $STAGING_DB -e \"INSERT IGNORE INTO migrations (migration, batch) SELECT '2025_07_16_080843_create_personal_access_tokens_table', 2 WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = '$STAGING_DB' AND table_name = 'personal_access_tokens') AND NOT EXISTS (SELECT 1 FROM migrations WHERE migration = '2025_07_16_080843_create_personal_access_tokens_table');\" 2>/dev/null || true"
+echo "  ✅ Legacy migrations handled"
+echo ""
+
 # ─── Step 5: Run migrations ───────────────────────────
 echo "🗃️  Step 5: Running migrations..."
 echo "  This will run all pending migrations including:"

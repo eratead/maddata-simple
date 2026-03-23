@@ -21,6 +21,20 @@
 
     <x-page-box>
         <x-ui.datatable table-id="clients-table">
+            <x-slot:filters>
+                <select onchange="window.location.href = this.value ? '{{ route('admin.clients.index') }}?agency=' + this.value : '{{ route('admin.clients.index') }}'"
+                        class="pl-3 pr-8 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 shadow-sm focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/30 transition-colors cursor-pointer appearance-none"
+                        style="background-image:url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E');background-position:right 0.25rem center;background-repeat:no-repeat;background-size:20px;">
+                    <option value="">All Agencies</option>
+                    @foreach($agencies as $agency)
+                        <option value="{{ $agency->id }}" {{ $currentAgency?->id == $agency->id ? 'selected' : '' }}>{{ $agency->name }}</option>
+                    @endforeach
+                </select>
+                @if($currentAgency)
+                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ $clients->count() }} {{ Str::plural('client', $clients->count()) }}</span>
+                    <a href="{{ route('admin.clients.index') }}" class="text-xs text-[#F97316] hover:text-[#EA580C] font-medium whitespace-nowrap">Clear</a>
+                @endif
+            </x-slot:filters>
             <table id="clients-table" class="min-w-full w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
