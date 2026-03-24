@@ -104,7 +104,7 @@ class AudienceController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt'],
             'provider' => 'nullable|string|max:255',
         ]);
 
@@ -129,19 +129,19 @@ class AudienceController extends Controller
             $parts = array_map('trim', explode('>', $fullPath));
 
             // parts[0] = "Audience" (always discard)
-            if (count($parts) === 4) {
-                // depth 4: Audience > MainCategory > SubCategory > Name
-                $mainCategory = $parts[1];
-                $subCategory = $parts[2];
-                $name = $parts[3];
-            } elseif (count($parts) === 3) {
-                // depth 3: Audience > MainCategory > Name (no sub)
-                $mainCategory = $parts[1];
-                $subCategory = $parts[1];
-                $name = $parts[2];
-            } else {
+            // Minimum: Audience > Category > Name (3 parts)
+            if (count($parts) < 3) {
                 continue;
             }
+
+            // Last part is always the name
+            $name = array_pop($parts);
+            // First part is "Audience" — discard
+            array_shift($parts);
+            // First remaining part is main_category
+            $mainCategory = array_shift($parts);
+            // Everything remaining (if any) joined as sub_category
+            $subCategory = count($parts) > 0 ? implode(' > ', $parts) : $mainCategory;
 
             $estimatedUsers = isset($row[1]) && is_numeric($row[1]) ? (int) $row[1] : null;
 
