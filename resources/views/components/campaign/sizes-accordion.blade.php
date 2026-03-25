@@ -1,6 +1,7 @@
 @props(['campaign'])
 @php
     $isAdmin = auth()->user()->hasPermission('is_admin');
+    $canEdit = $isAdmin || auth()->user()->hasPermission('can_edit_campaigns');
     $selectedSizes = array_filter(explode(',', $campaign->required_sizes ?? ''), fn($s) => $s !== '');
     $selectedSizes = old('required_sizes') ? explode(',', old('required_sizes')) : $selectedSizes;
 @endphp
@@ -9,17 +10,18 @@
     x-data="{
         open: false,
         isAdmin: @json($isAdmin),
+        canEdit: @json($canEdit),
         selectedSizes: {{ Js::from(array_values($selectedSizes)) }},
         videoSizes: ['1920x1080', '1080x1920'],
         staticSizes: ['640x820', '640x960', '640x1175', '640x1280', '640x1370', '640x360', '300x250', '1080x1920'],
         toggleSize(size) {
-            if (!this.isAdmin) return;
+            if (!this.canEdit) return;
             const idx = this.selectedSizes.indexOf(size);
             if (idx > -1) this.selectedSizes.splice(idx, 1);
             else this.selectedSizes.push(size);
         },
         toggleGroup(groupSizes) {
-            if (!this.isAdmin) return;
+            if (!this.canEdit) return;
             const allSelected = groupSizes.every(s => this.selectedSizes.includes(s));
             if (allSelected) this.selectedSizes = this.selectedSizes.filter(s => !groupSizes.includes(s));
             else groupSizes.forEach(s => { if (!this.selectedSizes.includes(s)) this.selectedSizes.push(s); });

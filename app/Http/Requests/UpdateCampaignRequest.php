@@ -25,7 +25,7 @@ class UpdateCampaignRequest extends FormRequest
             'status' => 'required|in:active,paused',
             'targeting_rules' => 'nullable|array',
             'targeting_rules.genders' => 'nullable|array',
-            'targeting_rules.genders.*' => 'nullable|string|in:male,female,unknown',
+            'targeting_rules.genders.*' => 'nullable|string|in:Male,Female,unknown',
             'targeting_rules.ages' => 'nullable|array',
             'targeting_rules.ages.*' => 'nullable|string|in:13-17,18-24,25-34,35-44,45-54,55-64,65+',
             'targeting_rules.incomes' => 'nullable|array',

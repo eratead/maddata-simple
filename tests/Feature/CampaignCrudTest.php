@@ -256,7 +256,7 @@ it('persists targeting_rules JSON correctly', function () {
     ]);
 
     $targetingRules = [
-        'genders' => ['male', 'female'],
+        'genders' => ['Male', 'Female'],
         'ages' => ['18-24', '25-34'],
         'device_types' => ['Mobile', 'Desktop'],
         'os' => ['iOS', 'Android'],
@@ -274,7 +274,7 @@ it('persists targeting_rules JSON correctly', function () {
 
     $campaign->refresh();
     $saved = $campaign->targeting_rules;
-    expect($saved['genders'])->toBe(['male', 'female']);
+    expect($saved['genders'])->toBe(['Male', 'Female']);
     expect($saved['ages'])->toBe(['18-24', '25-34']);
     expect($saved['device_types'])->toBe(['Mobile', 'Desktop']);
     expect($saved['days'])->toBe(['Mon', 'Tue', 'Wed']);
