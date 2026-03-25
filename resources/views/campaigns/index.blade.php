@@ -164,7 +164,7 @@
                             </div>
                         </th>
                         <th class="hidden px-3 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wide" data-col="agency">Agency</th>
-                        <th class="text-left px-3 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap sortable">
+                        <th class="text-left px-3 py-2.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap sortable" data-default-sort="desc">
                             <div class="flex items-center gap-2">Duration
                                 <span class="flex flex-col gap-px" aria-hidden="true">
                                     <svg class="w-2 h-2 sort-icon-asc" viewBox="0 0 10 6" fill="currentColor"><path d="M5 0L9.33 6H.67z"/></svg>

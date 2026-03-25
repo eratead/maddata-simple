@@ -39,7 +39,7 @@ class CampaignController extends Controller
             $campaigns->whereIn('client_id', $clientIds);
         }
 
-        $campaigns = $campaigns->orderBy('created_at', 'desc')->paginate(25);
+        $campaigns = $campaigns->orderByRaw('COALESCE(start_date, created_at) DESC')->paginate(25);
 
         // Calculate pacing data for campaigns (impressions vs expected impressions)
         $pacingData = [];

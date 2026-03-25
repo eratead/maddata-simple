@@ -135,8 +135,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             this.filteredRows = [...this.originalRows];
 
+            // Apply default sort from data-default-sort attribute
+            const defaultTh = this.table.querySelector('th.sortable[data-default-sort]');
+            if (defaultTh) {
+                const colIdx = Array.from(defaultTh.parentNode.children).indexOf(defaultTh);
+                this.state.sortColIdx = colIdx;
+                this.state.sortDir = defaultTh.dataset.defaultSort || 'asc';
+                defaultTh.classList.add(this.state.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+            }
+
             this.bindEvents();
-            this.render();
+            this.updateData();
         }
 
         bindEvents() {
