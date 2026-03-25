@@ -15,7 +15,7 @@
         videoSizes: ['1920x1080', '1080x1920'],
         staticSizes: ['640x820', '640x960', '640x1175', '640x1280', '640x1370', '640x360', '300x250', '1080x1920'],
         toggleSize(size) {
-            if (!this.canEdit) return;
+            if (!this.isAdmin) return;
             const idx = this.selectedSizes.indexOf(size);
             if (idx > -1) this.selectedSizes.splice(idx, 1);
             else this.selectedSizes.push(size);
