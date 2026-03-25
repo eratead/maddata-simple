@@ -5,6 +5,7 @@ namespace App\Http\Requests\Auth;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -56,6 +57,15 @@ class LoginRequest extends FormRequest
 
             throw ValidationException::withMessages([
                 'email' => ['Your account has been disabled. Contact your agency manager.'],
+            ]);
+        }
+
+        // Block non-admin users when admin-only mode is active
+        if ($user && Cache::get('admin_only_login') && ! $user->hasPermission('is_admin')) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => ['System is in maintenance mode. Only administrators can log in.'],
             ]);
         }
 

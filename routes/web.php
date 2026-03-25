@@ -85,6 +85,12 @@ Route::middleware(['auth'])->group(function () {
 
         // Activity Logs (admin only)
         Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
+
+        // System Status
+        Route::get('/system-status', [\App\Http\Controllers\Admin\SystemStatusController::class, 'index'])->name('system-status.index');
+        Route::post('/system-status/admin-only', [\App\Http\Controllers\Admin\SystemStatusController::class, 'toggleAdminOnly'])->name('system-status.toggle-admin-only');
+        Route::post('/system-status/terminate-all', [\App\Http\Controllers\Admin\SystemStatusController::class, 'terminateAll'])->name('system-status.terminate-all');
+        Route::post('/system-status/terminate/{user}', [\App\Http\Controllers\Admin\SystemStatusController::class, 'terminateUser'])->name('system-status.terminate-user');
     });
 
     // Campaign Changes CRM (admin OR can_see_logs)

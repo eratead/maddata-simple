@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\ContentSecurityPolicy::class,
             \App\Http\Middleware\RequireTwoFactor::class,
+            \App\Http\Middleware\AdminOnlyMode::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
