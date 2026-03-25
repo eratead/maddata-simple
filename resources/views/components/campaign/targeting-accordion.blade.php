@@ -211,7 +211,7 @@
                             @foreach(['Mobile','Tablet','Desktop','Connected TV'] as $device)
                             <span
                                 :class="deviceTypes.includes('{{ $device }}')
-                                    ? 'bg-[#F97316]/60 text-white border-[#F97316]/60'
+                                    ? 'bg-orange-400 text-white border-orange-400'
                                     : 'bg-gray-100 text-gray-400 border-gray-200'"
                                 class="px-3 py-1.5 text-xs font-semibold rounded-full border cursor-not-allowed opacity-75">
                                 {{ $device }}
@@ -247,7 +247,7 @@
                         <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-3">Connection Type</p>
                         <div class="flex flex-wrap gap-2">
                             @foreach(['WiFi','Cellular'] as $conn)
-                            <span class="px-3 py-1.5 text-xs font-semibold rounded-full border bg-[#F97316]/60 text-white border-[#F97316]/60 cursor-not-allowed opacity-75">
+                            <span class="px-3 py-1.5 text-xs font-semibold rounded-full border bg-orange-400 text-white border-orange-400 cursor-not-allowed opacity-75">
                                 {{ $conn }}
                             </span>
                             @endforeach
