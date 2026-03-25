@@ -238,7 +238,7 @@
                                 <div class="flex justify-end items-center gap-1">
 
                                     @auth
-                                        @if(auth()->user()->hasPermission('is_admin') || (auth()->user()->hasPermission('can_upload_reports') && auth()->user()->clients->contains($campaign->client_id)))
+                                        @if(auth()->user()->hasPermission('is_admin') || (auth()->user()->hasPermission('can_upload_reports') && auth()->user()->accessibleClientIds()->contains($campaign->client_id)))
                                             <form id="upload-form-{{ $campaign->id }}" action="{{ route('campaigns.upload', $campaign->id) }}" method="POST" enctype="multipart/form-data" class="m-0">
                                                 @csrf
                                                 <label class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer inline-block" title="Upload Report">
