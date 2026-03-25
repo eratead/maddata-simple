@@ -10,6 +10,15 @@
     </div>
 @endpush
 
+@push('page-actions')
+    <a href="{{ route('admin.users.index') }}">
+        <x-secondary-button>Cancel</x-secondary-button>
+    </a>
+    <x-primary-button type="submit" form="editUserForm">
+        Save Changes
+    </x-primary-button>
+@endpush
+
     <x-flash-messages />
 
     <form id="editUserForm" method="POST" action="{{ route('admin.users.update', $user) }}"
