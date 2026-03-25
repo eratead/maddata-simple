@@ -165,34 +165,64 @@
 
         <form x-ref="uploadForm" action="{{ route('creatives.upload', $creative) }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <div class="border-2 border-dashed rounded-xl px-6 py-10 text-center transition-colors duration-200 cursor-pointer"
-                :class="dragging ? 'border-[#F97316] bg-orange-50' : 'border-gray-200 bg-gray-50 hover:border-gray-300'"
+            <div class="border-2 border-dashed rounded-xl transition-colors duration-200"
+                :class="dragging ? 'border-[#F97316] bg-orange-50' : (fileList.length > 0 ? 'border-[#F97316]/40 bg-orange-50/30' : 'border-gray-200 bg-gray-50 hover:border-gray-300')"
                 @dragover.prevent="dragging = true"
                 @dragleave.prevent="dragging = false"
-                @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)"
-                @click="$refs.fileInput.click()">
+                @drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)">
 
-                <svg class="mx-auto w-10 h-10 mb-3 transition-colors"
-                    :class="dragging ? 'text-[#F97316]' : 'text-gray-300'"
-                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
+                {{-- Empty state / compact add-more strip --}}
+                <div class="cursor-pointer" @click="$refs.fileInput.click()">
+                    <div x-show="fileList.length === 0" class="px-6 py-10 text-center">
+                        <svg class="mx-auto w-10 h-10 mb-3 transition-colors"
+                            :class="dragging ? 'text-[#F97316]' : 'text-gray-300'"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        <p class="text-sm font-medium text-gray-600 mb-1">
+                            Drop files here or <span class="text-[#F97316]">browse</span>
+                        </p>
+                        <p class="text-xs text-gray-400">Images or videos up to 50MB</p>
+                    </div>
+                    <div x-show="fileList.length > 0" x-cloak class="px-4 py-2.5 text-center border-b border-dashed border-[#F97316]/20">
+                        <p class="text-xs text-gray-500">
+                            Drop more files or <span class="text-[#F97316] font-medium">browse</span>
+                        </p>
+                    </div>
+                </div>
 
-                <p class="text-sm font-medium text-gray-600 mb-1">
-                    Drop files here or <span class="text-[#F97316]">browse</span>
-                </p>
-                <p class="text-xs text-gray-400">Images or videos up to 50MB</p>
+                {{-- File list inside drop zone --}}
+                <div x-show="fileList.length > 0 && !processing" x-cloak class="px-4 py-3 space-y-1.5">
+                    <template x-for="(file, idx) in fileList" :key="idx">
+                        <div class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg">
+                            <svg class="w-4 h-4 text-[#F97316] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="text-sm text-gray-700 font-medium truncate" x-text="file.name"></span>
+                            <span x-show="file.dimensions" class="text-[10px] font-semibold text-[#F97316] bg-orange-50 px-1.5 py-0.5 rounded" x-text="file.dimensions"></span>
+                            <span class="text-xs text-gray-400 ml-auto shrink-0" x-text="file.size + ' MB'"></span>
+                            <button type="button" @click.stop="removeFile(idx)"
+                                class="ml-1 p-0.5 text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                                title="Remove file">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+
+                {{-- Processing spinner inside drop zone --}}
+                <div x-show="processing" class="px-6 py-6 flex items-center justify-center gap-2 text-sm text-gray-500">
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    Processing files...
+                </div>
 
                 <input id="file-upload" x-ref="fileInput" name="files[]" type="file" class="hidden" multiple
                     @change="handleFiles($el.files)" required>
-            </div>
-
-            <div x-show="processing" class="mt-3 flex items-center justify-center gap-2 text-sm text-gray-500">
-                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                </svg>
-                Processing files...
             </div>
 
             <div x-show="fileCount > 0 && !processing" class="mt-4 flex items-center justify-between">
@@ -240,21 +270,24 @@
             return {
                 dragging: false,
                 fileCount: 0,
+                fileList: [],
                 processing: false,
                 uploadedSizes: @json($uploadedSizes ?? []),
                 async handleFiles(files) {
                     this.processing = true;
                     this.fileCount = 0;
+                    this.fileList = [];
                     const validFiles = new DataTransfer();
 
                     for (let i = 0; i < files.length; i++) {
                         const file = files[i];
                         let shouldUpload = true;
+                        let sizeKey = '';
 
                         if (file.type.startsWith('image/')) {
                             try {
                                 const dimensions = await this.getImageDimensions(file);
-                                const sizeKey = `${dimensions.width}x${dimensions.height}`;
+                                sizeKey = `${dimensions.width}x${dimensions.height}`;
                                 if (this.uploadedSizes.includes(sizeKey)) {
                                     if (!confirm(`File "${file.name}" has dimensions ${sizeKey} which already exist. Replace?`)) {
                                         shouldUpload = false;
@@ -265,12 +298,26 @@
                             }
                         }
 
-                        if (shouldUpload) validFiles.items.add(file);
+                        if (shouldUpload) {
+                            validFiles.items.add(file);
+                            const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+                            this.fileList.push({ name: file.name, size: sizeMB, dimensions: sizeKey });
+                        }
                     }
 
                     this.$refs.fileInput.files = validFiles.files;
                     this.fileCount = validFiles.files.length;
                     this.processing = false;
+                },
+                removeFile(index) {
+                    this.fileList.splice(index, 1);
+                    const dt = new DataTransfer();
+                    const files = this.$refs.fileInput.files;
+                    for (let i = 0; i < files.length; i++) {
+                        if (i !== index) dt.items.add(files[i]);
+                    }
+                    this.$refs.fileInput.files = dt.files;
+                    this.fileCount = dt.files.length;
                 },
                 getImageDimensions(file) {
                     return new Promise((resolve, reject) => {

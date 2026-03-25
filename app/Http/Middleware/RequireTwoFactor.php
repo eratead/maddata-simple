@@ -32,6 +32,11 @@ class RequireTwoFactor
             return $next($request);
         }
 
+        // Skip 2FA for API token requests (Sanctum) — tokens don't use sessions/2FA
+        if ($user->currentAccessToken() && ! ($user->currentAccessToken() instanceof \Laravel\Sanctum\TransientToken)) {
+            return $next($request);
+        }
+
         // Always allow auth & 2FA routes through to prevent redirect loops
         if ($request->routeIs(self::EXEMPT_ROUTES)) {
             return $next($request);

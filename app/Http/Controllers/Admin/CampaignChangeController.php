@@ -23,15 +23,28 @@ class CampaignChangeController extends Controller
         return Campaign::whereIn('client_id', $user->accessibleClientIds())->pluck('id')->all();
     }
 
+    private function excludeBudgetLogs($query): void
+    {
+        $query->where(function ($q) {
+            $q->whereNull('changes')
+                ->orWhere('changes', 'not like', '%"budget"%');
+        });
+    }
+
     public function index()
     {
         $allowedIds = $this->allowedCampaignIds();
+        $canViewBudget = Auth::user()->hasPermission('can_view_budget');
 
-        $query = Campaign::whereHas('activityLogs', function ($q) {
+        $pendingFilter = function ($q) use ($canViewBudget) {
             $q->pending();
-        })->withCount(['activityLogs' => function ($q) {
-            $q->pending();
-        }]);
+            if (! $canViewBudget) {
+                $this->excludeBudgetLogs($q);
+            }
+        };
+
+        $query = Campaign::whereHas('activityLogs', $pendingFilter)
+            ->withCount(['activityLogs' => $pendingFilter]);
 
         if ($allowedIds !== null) {
             $query->whereIn('id', $allowedIds);
@@ -48,7 +61,7 @@ class CampaignChangeController extends Controller
         if ($allowedIds !== null && ! in_array($campaign->id, $allowedIds)) {
             abort(403);
         }
-        $allLogs = $campaign->activityLogs()
+        $logsQuery = $campaign->activityLogs()
             ->pending()
             ->with(['user', 'subject' => function ($morphTo) {
                 $morphTo->morphWith([
@@ -56,8 +69,13 @@ class CampaignChangeController extends Controller
                 ]);
             }])
             ->orderBy('created_at', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+            ->orderBy('id', 'desc');
+
+        if (! Auth::user()->hasPermission('can_view_budget')) {
+            $this->excludeBudgetLogs($logsQuery);
+        }
+
+        $allLogs = $logsQuery->get();
 
         // Filter to keep only the latest log for each (creative_id + width + height) tuple
         $logs = $allLogs->unique(function ($log) {

@@ -82,13 +82,13 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/audiences/upload', [\App\Http\Controllers\Admin\AudienceController::class, 'upload'])->name('audiences.upload');
         Route::post('roles/reorder', [\App\Http\Controllers\Admin\RoleController::class, 'reorder'])->name('roles.reorder');
         Route::resource('roles', \App\Http\Controllers\Admin\RoleController::class);
+
+        // Activity Logs (admin only)
+        Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
-    // Log Routes (admin OR can_see_logs)
+    // Campaign Changes CRM (admin OR can_see_logs)
     Route::prefix('admin')->middleware(['can_see_logs'])->name('admin.')->group(function () {
-        Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index');
-
-        // Campaign Changes CRM
         Route::prefix('campaign-changes')->name('campaign_changes.')->group(function () {
             Route::get('/', [App\Http\Controllers\Admin\CampaignChangeController::class, 'index'])->name('index');
             Route::get('/{campaign}', [App\Http\Controllers\Admin\CampaignChangeController::class, 'show'])->name('show');

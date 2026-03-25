@@ -20,11 +20,12 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::with(['clients', 'userRole'])->get();
+        $users = User::with(['clients', 'userRole', 'agencies'])->get();
         $roles = Role::orderBy('sort_order')->get();
         $clients = Client::orderBy('name')->get();
+        $agencies = Agency::orderBy('name')->get();
 
-        return view('users.index', compact('users', 'roles', 'clients'));
+        return view('users.index', compact('users', 'roles', 'clients', 'agencies'));
     }
 
     public function create()

@@ -22,6 +22,14 @@ class CampaignObserver implements ShouldHandleEventsAfterCommit
 
     public function updated(Campaign $campaign): void
     {
+        if ($campaign->isDirty('budget')) {
+            $old = $campaign->getOriginal('budget');
+            $new = $campaign->budget;
+            $this->logger->log('updated', $campaign, "Budget changed from {$old} to {$new}", [
+                'budget' => ['old' => $old, 'new' => $new],
+            ]);
+        }
+
         if ($campaign->isDirty('creative_optimization')) {
             $newValue = $campaign->creative_optimization;
             $message = $newValue

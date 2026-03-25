@@ -14,8 +14,8 @@
         genders:      {{ Js::from(old('targeting_rules.genders',      $tr['genders']      ?? [])) }},
         ages:         {{ Js::from(old('targeting_rules.ages',         $tr['ages']         ?? [])) }},
         incomes:      {{ Js::from(old('targeting_rules.incomes',      $tr['incomes']      ?? ['0-195K','195-220K','220-245K','245K+'])) }},
-        deviceTypes:  {{ Js::from(old('targeting_rules.device_types', $tr['device_types'] ?? ['Mobile','Tablet'])) }},
-        os:           {{ Js::from(old('targeting_rules.os',           $tr['os']           ?? ['iOS','Android','Windows','macOS'])) }},
+        deviceTypes:  {{ Js::from(old('targeting_rules.device_types', $tr['device_types'] ?? ['Mobile'])) }},
+        os:           {{ Js::from(old('targeting_rules.os',           $tr['os']           ?? ['iOS','Android'])) }},
         connectionTypes: ['WiFi','Cellular'],
         environments: {{ Js::from(old('targeting_rules.environments', $tr['environments'] ?? ['In-App','Mobile Web'])) }},
         days:         {{ Js::from(old('targeting_rules.days',         $tr['days']         ?? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'])) }},
@@ -46,7 +46,7 @@
     </template>
     <template x-for="co in countries" :key="'co-'+co"><input type="hidden" name="targeting_rules[countries][]" :value="co"></template>
     <template x-for="r in regions"    :key="'r-'+r"><input type="hidden" name="targeting_rules[regions][]" :value="r"></template>
-    <input type="hidden" name="targeting_rules[cities]" :value="JSON.stringify(cities)">
+    <template x-for="ci in cities" :key="'ci-'+ci"><input type="hidden" name="targeting_rules[cities][]" :value="ci"></template>
     <input type="hidden" name="targeting_rules[time_start]" :value="timeStart">
     <input type="hidden" name="targeting_rules[time_end]"   :value="timeEnd">
 
@@ -209,14 +209,13 @@
                         <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-3">Device Types</p>
                         <div class="flex flex-wrap gap-2">
                             @foreach(['Mobile','Tablet','Desktop','Connected TV'] as $device)
-                            <button type="button"
-                                @click="deviceTypes.includes('{{ $device }}') ? deviceTypes = deviceTypes.filter(d=>d!=='{{ $device }}') : deviceTypes.push('{{ $device }}')"
+                            <span
                                 :class="deviceTypes.includes('{{ $device }}')
-                                    ? 'bg-[#F97316] text-white border-[#F97316]'
-                                    : 'bg-white text-gray-500 border-gray-200 hover:border-[#F97316] hover:text-[#F97316]'"
-                                class="px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors">
+                                    ? 'bg-[#F97316]/60 text-white border-[#F97316]/60'
+                                    : 'bg-gray-100 text-gray-400 border-gray-200'"
+                                class="px-3 py-1.5 text-xs font-semibold rounded-full border cursor-not-allowed opacity-75">
                                 {{ $device }}
-                            </button>
+                            </span>
                             @endforeach
                         </div>
                     </div>
@@ -225,7 +224,7 @@
                     <div class="mb-6">
                         <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-3">Operating System</p>
                         <div class="flex flex-wrap gap-2">
-                            @foreach(['iOS','Android','Windows','macOS','Other'] as $osName)
+                            @foreach(['iOS','Android'] as $osName)
                             <button type="button"
                                 @click="os.includes('{{ $osName }}') ? os = os.filter(o=>o!=='{{ $osName }}') : os.push('{{ $osName }}')"
                                 :class="os.includes('{{ $osName }}')
@@ -235,6 +234,11 @@
                                 {{ $osName }}
                             </button>
                             @endforeach
+                            @foreach(['Windows','macOS','Other'] as $osName)
+                            <span class="px-3 py-1.5 text-xs font-semibold rounded-full border bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-75">
+                                {{ $osName }}
+                            </span>
+                            @endforeach
                         </div>
                     </div>
 
@@ -243,14 +247,9 @@
                         <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-3">Connection Type</p>
                         <div class="flex flex-wrap gap-2">
                             @foreach(['WiFi','Cellular'] as $conn)
-                            <button type="button"
-                                @click="connectionTypes.includes('{{ $conn }}') ? connectionTypes = connectionTypes.filter(c=>c!=='{{ $conn }}') : connectionTypes.push('{{ $conn }}')"
-                                :class="connectionTypes.includes('{{ $conn }}')
-                                    ? 'bg-[#F97316] text-white border-[#F97316]'
-                                    : 'bg-white text-gray-500 border-gray-200 hover:border-[#F97316] hover:text-[#F97316]'"
-                                class="px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors">
+                            <span class="px-3 py-1.5 text-xs font-semibold rounded-full border bg-[#F97316]/60 text-white border-[#F97316]/60 cursor-not-allowed opacity-75">
                                 {{ $conn }}
-                            </button>
+                            </span>
                             @endforeach
                         </div>
                     </div>
@@ -261,7 +260,7 @@
                     <div>
                         <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mb-3">Environments</p>
                         <div class="flex flex-wrap gap-2">
-                            @foreach(['In-App','Mobile Web','Desktop Web'] as $env)
+                            @foreach(['In-App','Mobile Web'] as $env)
                             <button type="button"
                                 @click="environments.includes('{{ $env }}') ? environments = environments.filter(e=>e!=='{{ $env }}') : environments.push('{{ $env }}')"
                                 :class="environments.includes('{{ $env }}')
@@ -271,6 +270,9 @@
                                 {{ $env }}
                             </button>
                             @endforeach
+                            <span class="px-3 py-1.5 text-xs font-semibold rounded-full border bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed opacity-75">
+                                Desktop
+                            </span>
                         </div>
                     </div>
                 </div>

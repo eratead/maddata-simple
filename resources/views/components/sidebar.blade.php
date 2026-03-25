@@ -148,7 +148,7 @@
                 </a>
             @endif
 
-            @if ($sidebarIsAdmin || $sidebarCanLogs)
+            @if ($sidebarIsAdmin)
                 {{-- Activity Logs --}}
                 <a href="{{ route('admin.activity-logs.index') }}"
                    class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('admin/activity-logs*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">
@@ -158,7 +158,9 @@
                     </svg>
                     Activity Logs
                 </a>
+            @endif
 
+            @if ($sidebarIsAdmin || $sidebarCanLogs)
                 {{-- Campaign Changes --}}
                 <a href="{{ route('admin.campaign_changes.index') }}"
                    class="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors {{ request()->is('admin/campaign-changes*') ? 'nav-active' : 'text-slate-400 hover:bg-white/[0.08] hover:text-white' }}">

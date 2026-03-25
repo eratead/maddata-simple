@@ -226,7 +226,7 @@
                                     <div class="flex flex-col gap-1 w-28">
                                         <span class="text-[10px] font-bold text-gray-700 tabular-nums">{{ number_format($p['percent_raw'], 0) }}%</span>
                                         <div class="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                                            <div class="h-full rounded-full bg-gradient-to-r from-[#F97316] to-[#FB923C]"
+                                            <div class="h-full rounded-full {{ $p['percent_raw'] >= 100 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-[#F97316] to-[#FB923C]' }}"
                                                  style="width: {{ min(100, $p['percent_raw']) }}%"></div>
                                         </div>
                                     </div>

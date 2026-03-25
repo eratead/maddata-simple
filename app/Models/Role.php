@@ -13,10 +13,12 @@ class Role extends Model
         'name',
         'permissions',
         'sort_order',
+        'is_protected',
     ];
 
     protected $casts = [
         'permissions' => 'array',
+        'is_protected' => 'boolean',
     ];
 
     public static function availablePermissions()

@@ -64,6 +64,18 @@
                                           :value="old('name')" placeholder="e.g. Account Manager" />
                             <x-input-error :messages="$errors->get('name')" />
                         </div>
+
+                        <label class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-200 cursor-pointer">
+                            <div class="relative inline-flex items-center shrink-0">
+                                <input type="checkbox" name="is_protected" value="1" class="sr-only peer"
+                                       {{ old('is_protected') ? 'checked' : '' }}>
+                                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#F97316]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#F97316] transition-colors"></div>
+                            </div>
+                            <div>
+                                <span class="text-xs font-semibold text-gray-600">Protected Role</span>
+                                <p class="text-[10px] text-gray-400 leading-tight mt-0.5">Hidden from agency managers</p>
+                            </div>
+                        </label>
                     </x-page-box>
                 </div>
             </div>

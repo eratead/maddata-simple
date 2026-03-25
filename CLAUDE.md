@@ -83,6 +83,7 @@ PestPHP v3 with Laravel plugin. Tests use SQLite in-memory (configured in `phpun
 To ensure smooth AI-assisted development and avoid repetitive errors, the following rules MUST be strictly followed:
 
 * **Auto-Testing:** ALWAYS run tests (or the specific test filter) immediately after creating or modifying migrations, models, or test files to catch syntax or DB errors before presenting the code as "done".
+* **Test Coverage for New Features:** Every new feature, bug fix, or behavioral change MUST include corresponding Pest tests. After implementing code, ALWAYS write or update tests in `tests/Feature/` before considering the task complete. Use the `tester` agent if needed. If validation rules change, test both valid and invalid input. If a controller method changes, test the endpoint. No feature is "done" without tests.
 * **Pivot Tables:** Follow Laravel's strict alphabetical, singular naming convention for pivot tables (e.g., `campaign_client`, never `clients_campaigns`).
 * **Blade & Alpine.js Security:** When outputting dynamic data into Alpine.js (`x-data`, `x-bind`) or Blade HTML attributes, ALWAYS escape JSON properly using `e(json_encode($data))` or `@js($data)` to prevent JS parse errors and console warnings.
 * **Proactive Refactoring:** When asked to simplify or refactor (e.g., via `/simplify`), you must proactively address related improvements like adding missing DB indexes, extracting Blade components, and cleaning up traits/permissions, unless explicitly told not to.

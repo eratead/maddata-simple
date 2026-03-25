@@ -232,6 +232,10 @@ class CampaignController extends Controller
 
         $validated = $request->validated();
 
+        if (isset($validated['budget'])) {
+            $validated['budget'] = (int) $validated['budget'];
+        }
+
         if (! Auth::user()->hasPermission('is_admin') && ! Auth::user()->accessibleClientIds()->contains($validated['client_id'])) {
             abort(403, 'You are not authorized to assign this campaign to that client.');
         }

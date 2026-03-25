@@ -24,15 +24,22 @@
             'email'      => $u->email,
             'role_id'    => $u->role_id,
             'role_name'  => $u->userRole?->name,
+            'agencies'   => $u->agencies->map(fn($a) => ['id' => $a->id, 'name' => $a->name])->values(),
             'clients'    => $u->clients->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values(),
             'edit_url'   => route('admin.users.edit', $u),
             'delete_url' => route('admin.users.destroy', $u),
             'is_current' => $u->id === auth()->id(),
         ])),
-        search: '',
-        filterRole: '',
-        filterClient: '',
-        clientSearch: '',
+        search: new URLSearchParams(window.location.search).get('search') || '',
+        filterRole: new URLSearchParams(window.location.search).get('role') || '',
+        filterAgency: new URLSearchParams(window.location.search).get('agency') || '',
+        filterClient: new URLSearchParams(window.location.search).get('client') || '',
+        clientSearch: (() => {
+            const cid = new URLSearchParams(window.location.search).get('client');
+            if (!cid) return '';
+            const found = @js($clients->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()).find(c => String(c.id) === cid);
+            return found ? found.name : '';
+        })(),
         showClientSug: false,
         clientsList: @js($clients->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()),
         get filteredClientSug() {
@@ -53,11 +60,22 @@
                 const q = this.search.toLowerCase();
                 const matchSearch = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
                 const matchRole   = !this.filterRole   || String(u.role_id) === this.filterRole;
+                const matchAgency = !this.filterAgency || u.agencies.some(a => String(a.id) === this.filterAgency);
                 const matchClient = !this.filterClient || u.clients.some(c => String(c.id) === this.filterClient);
-                return matchSearch && matchRole && matchClient;
+                return matchSearch && matchRole && matchAgency && matchClient;
             });
+        },
+        syncUrl() {
+            const params = new URLSearchParams();
+            if (this.search) params.set('search', this.search);
+            if (this.filterRole) params.set('role', this.filterRole);
+            if (this.filterAgency) params.set('agency', this.filterAgency);
+            if (this.filterClient) params.set('client', this.filterClient);
+            const url = params.toString() ? `${window.location.pathname}?${params}` : window.location.pathname;
+            window.history.replaceState({}, '', url);
         }
-    }">
+    }"
+    x-effect="syncUrl()">
 
         {{-- Filters --}}
         <div class="flex flex-col sm:flex-row gap-2 mb-4">
@@ -79,6 +97,16 @@
                     <option value="{{ $role->id }}">{{ $role->name }}</option>
                 @endforeach
                 <option value="null">No role</option>
+            </select>
+
+            {{-- Agency filter --}}
+            <select x-model="filterAgency"
+                    class="pl-3 pr-8 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 shadow-sm focus:outline-none focus:border-[#F97316] focus:ring-2 focus:ring-[#F97316]/30 transition-colors cursor-pointer appearance-none"
+                    style="background-image:url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%221.5%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E');background-position:right 0.25rem center;background-repeat:no-repeat;background-size:20px;">
+                <option value="">All Agencies</option>
+                @foreach ($agencies as $agency)
+                    <option value="{{ $agency->id }}">{{ $agency->name }}</option>
+                @endforeach
             </select>
 
             {{-- Client filter --}}
@@ -124,6 +152,7 @@
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Name</th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Email</th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Role</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Agency</th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Clients</th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
@@ -145,6 +174,9 @@
                                     <template x-if="!user.role_name">
                                         <span class="text-gray-300 text-xs">—</span>
                                     </template>
+                                </td>
+                                <td class="px-4 py-3 text-gray-500 text-xs"
+                                    x-text="user.agencies.map(a => a.name).join(', ') || '—'">
                                 </td>
                                 <td class="px-4 py-3 text-gray-500 text-xs"
                                     :title="user.clients.map(c => c.name).join(', ')"
@@ -177,7 +209,7 @@
                         {{-- Empty state --}}
                         <template x-if="filtered.length === 0">
                             <tr>
-                                <td colspan="5" class="px-4 py-12 text-center text-sm text-gray-400">
+                                <td colspan="6" class="px-4 py-12 text-center text-sm text-gray-400">
                                     No users match your filters.
                                 </td>
                             </tr>

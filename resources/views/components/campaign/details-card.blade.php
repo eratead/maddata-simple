@@ -128,21 +128,13 @@
             </div>
         </div>
 
-        {{-- Video Toggle --}}
-        <div class="flex items-center justify-between pt-4 border-t border-gray-100"
-            x-data="{ isVideo: {{ old('is_video', $campaign->is_video) ? 'true' : 'false' }} }">
-            <div>
-                <p class="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Video Campaign</p>
-                <p class="text-xs text-gray-500 mt-0.5">Enables video-specific metrics & sizes</p>
-            </div>
-            <input type="hidden" name="is_video" :value="isVideo ? 1 : 0">
-            <button type="button" @click="isVideo = !isVideo"
-                class="relative w-10 h-5.5 rounded-full transition-colors duration-200 focus:outline-none"
-                :class="isVideo ? 'bg-[#F97316]' : 'bg-gray-200'">
-                <span class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200"
-                    :class="isVideo ? 'translate-x-[18px]' : 'translate-x-0'"></span>
-            </button>
+        {{-- Video indicator (read-only, set automatically on report upload) --}}
+        @if($campaign->is_video)
+        <div class="flex items-center gap-2 pt-4 border-t border-gray-100">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">Video Campaign</span>
+            <span class="text-xs text-gray-400">Set automatically from uploaded report data</span>
         </div>
+        @endif
 
     </div>
 </div>

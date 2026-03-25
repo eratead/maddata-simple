@@ -24,7 +24,9 @@ class AgencyUserController extends Controller
     {
         $this->authorize('manage', $agency);
 
-        $users = $agency->users()->with('userRole')->get();
+        $users = $agency->users()->with('userRole')
+            ->whereDoesntHave('userRole', fn ($q) => $q->where('is_protected', true))
+            ->get();
 
         return view('agency.users.index', compact('agency', 'users'));
     }
@@ -88,6 +90,7 @@ class AgencyUserController extends Controller
     {
         $this->authorize('manage', $agency);
         $this->ensureUserBelongsToAgency($agency, $user);
+        $this->ensureUserNotProtected($user);
 
         $roles = $this->assignableRoles();
         $clients = $agency->clients()->orderBy('name')->get();
@@ -110,6 +113,7 @@ class AgencyUserController extends Controller
     {
         $this->authorize('manage', $agency);
         $this->ensureUserBelongsToAgency($agency, $user);
+        $this->ensureUserNotProtected($user);
 
         $role = Role::findOrFail($request->role_id);
         $this->validateRoleAssignment($role);
@@ -159,6 +163,7 @@ class AgencyUserController extends Controller
     {
         $this->authorize('manage', $agency);
         $this->ensureUserBelongsToAgency($agency, $user);
+        $this->ensureUserNotProtected($user);
 
         // Prevent disabling yourself
         if ($user->id === auth()->id()) {
@@ -204,6 +209,11 @@ class AgencyUserController extends Controller
         $currentUser = auth()->user();
 
         return Role::orderBy('sort_order')->get()->filter(function (Role $role) use ($currentUser) {
+            // Exclude protected roles
+            if ($role->is_protected) {
+                return false;
+            }
+
             // Exclude admin and manager roles
             if ($role->hasPermission('can_manage_users') || $role->hasPermission('is_admin')) {
                 return false;
@@ -218,6 +228,16 @@ class AgencyUserController extends Controller
 
             return true;
         })->values();
+    }
+
+    /**
+     * Block agency managers from managing users with a protected role.
+     */
+    private function ensureUserNotProtected(User $user): void
+    {
+        if ($user->userRole?->is_protected) {
+            abort(404);
+        }
     }
 
     /**

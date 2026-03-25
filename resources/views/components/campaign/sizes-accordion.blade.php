@@ -26,7 +26,7 @@
         }
     }">
 
-    <input type="hidden" name="required_sizes" :value="selectedSizes.join(',')">
+    <input type="hidden" name="required_sizes" x-ref="sizesInput" x-effect="$refs.sizesInput.value = selectedSizes.join(',')">
 
     {{-- Accordion Header --}}
     <div class="px-5 py-4 flex items-center justify-between cursor-pointer select-none transition-colors"
@@ -93,7 +93,7 @@
                 </label>
                 <input type="text"
                     placeholder="e.g. 728x90, 160x600"
-                    @input="selectedSizes = $event.target.value.split(',').map(s => s.trim()).filter(s => s !== '')"
+                    @change="selectedSizes = $event.target.value.split(',').map(s => s.trim()).filter(s => s !== '')"
                     :value="selectedSizes.join(', ')"
                     :disabled="!isAdmin"
                     :class="isAdmin ? '' : 'cursor-not-allowed opacity-60'"

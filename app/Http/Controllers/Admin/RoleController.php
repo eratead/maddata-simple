@@ -40,6 +40,7 @@ class RoleController extends Controller
         $role = Role::create([
             'name' => $request->name,
             'permissions' => $formattedPermissions,
+            'is_protected' => (bool) $request->input('is_protected', false),
         ]);
 
         app(ActivityLogger::class)->log('created', $role, "Created role \"{$role->name}\"", [
@@ -73,6 +74,7 @@ class RoleController extends Controller
         $role->update([
             'name' => $request->name,
             'permissions' => $formattedPermissions,
+            'is_protected' => (bool) $request->input('is_protected', false),
         ]);
 
         app(ActivityLogger::class)->log('updated', $role, "Updated role \"{$oldName}\"", [
