@@ -23,21 +23,18 @@
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-white/[0.01] pointer-events-none border border-white/5"></div>
 
     {{-- Logo --}}
-    <div class="flex items-center gap-3 relative z-10">
-      <div class="w-9 h-9 bg-[#F97316] rounded-lg flex items-center justify-center shadow-lg">
-        <span class="text-white font-black text-lg leading-none">M</span>
-      </div>
-      <span class="text-white font-bold text-lg tracking-tight">Mad<span class="text-[#F97316]">Data</span></span>
+    <div class="relative z-10">
+      <img src="{{ asset('images/madata_logo_white_orange.png') }}" alt="MadData" class="h-8">
     </div>
 
-    {{-- Hero copy + stats --}}
+    {{-- Hero copy + features --}}
     <div class="relative z-10">
-      <p class="text-[10px] font-semibold uppercase tracking-widest text-[#F97316] mb-3">Predictive AdTech Platform</p>
-      <h1 class="text-3xl font-black text-white leading-tight mb-4">
-        Beyond reporting.<br>True campaign<br>intelligence.
+      <p class="text-[10px] font-semibold uppercase tracking-widest text-[#F97316] mb-3">Predictive Precision Mobile Platform</p>
+      <h1 class="text-2xl font-black text-white leading-tight mb-4">
+        Precision Mobile DSP for Targeted Audience Engagement
       </h1>
-      <p class="text-sm text-slate-400 leading-relaxed max-w-xs">
-        Leverage AI-driven insights to uncover hidden audience patterns, optimize creative delivery, and scale your media buying automatically.
+      <p class="text-sm text-slate-400 leading-relaxed">
+        A specialized mobile advertising solution focused on Long Tail and Upper-Mid Funnel activities. By leveraging high-impact full-screen mobile interstitials across premium Israeli and global media (News, Finance, Sports, and Gaming), the platform delivers high-quality awareness and precise audience reach. The system utilizes advanced Device ID and GPS targeting to ensure maximum accuracy, providing cost-effective traffic with high engagement rates compared to traditional channels.
       </p>
 
       {{-- Feature bullets --}}
@@ -45,34 +42,35 @@
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 6c0 1.657-3.134 3-7 3S5 7.657 5 6m14 0c0-1.657-3.134-3-7-3S5 4.343 5 6m14 0v6M5 6v6m0 0c0 1.657 3.134 3 7 3s7-1.343 7-3M5 12v6c0 1.657 3.134 3 7 3s7-1.343 7-3v-6"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
           </div>
           <div>
-            <p class="text-white text-sm font-bold leading-none">First-Party Data</p>
-            <p class="text-slate-500 text-[11px] mt-0.5">Build and activate your private audience DMP.</p>
+            <p class="text-white text-sm font-bold leading-none">Hyper-Precise Targeting</p>
+            <p class="text-slate-500 text-[11px] mt-0.5">Precision-driven reach using Device ID and real-time GPS data to pinpoint users across hundreds of specific audience segments.</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-[#F97316]/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-[#F97316]" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18.5A2.493 2.493 0 0 1 7.51 20H7.5a2.468 2.468 0 0 1-2.4-3.154 2.98 2.98 0 0 1-.85-5.274 2.468 2.468 0 0 1 .92-3.182 2.477 2.477 0 0 1 1.876-3.344 2.5 2.5 0 0 1 3.41-1.856A2.5 2.5 0 0 1 12 5.5m0 13v-13m0 13a2.493 2.493 0 0 0 4.49 1.5h.01a2.468 2.468 0 0 0 2.403-3.154 2.98 2.98 0 0 0 .847-5.274 2.468 2.468 0 0 0-.921-3.182 2.477 2.477 0 0 0-1.875-3.344A2.5 2.5 0 0 0 14.5 3 2.5 2.5 0 0 0 12 5.5m-8 5a2.5 2.5 0 0 1 3.48-2.3m-.28 8.551a3 3 0 0 1-2.953-5.185M20 10.5a2.5 2.5 0 0 0-3.481-2.3m.28 8.551a3 3 0 0 0 2.954-5.185"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
             </svg>
           </div>
           <div>
-            <p class="text-white text-sm font-bold leading-none">Algorithmic Trading</p>
-            <p class="text-slate-500 text-[11px] mt-0.5">Automated anomaly detection & budget pruning.</p>
+            <p class="text-white text-sm font-bold leading-none">Premium Mobile Impact</p>
+            <p class="text-slate-500 text-[11px] mt-0.5">High-visibility placements through full-screen interstitials on top-tier news, finance, and leisure platforms.</p>
           </div>
         </div>
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
             <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.5 11.5 11 13l4-3.5M12 20a16.405 16.405 0 0 1-5.092-5.804A16.694 16.694 0 0 1 5 6.666L12 4l7 2.667a16.695 16.695 0 0 1-1.908 7.529A16.406 16.406 0 0 1 12 20Z"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
             </svg>
           </div>
           <div>
-            <p class="text-white text-sm font-bold leading-none">Deep Transparency</p>
-            <p class="text-slate-500 text-[11px] mt-0.5">Hourly performance data down to the line-item level.</p>
+            <p class="text-white text-sm font-bold leading-none">Optimized Performance</p>
+            <p class="text-slate-500 text-[11px] mt-0.5">Cost-effective engagement featuring high CTR and remarketing integration.</p>
           </div>
         </div>
       </div>
