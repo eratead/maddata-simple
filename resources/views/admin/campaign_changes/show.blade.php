@@ -65,7 +65,7 @@
                                            class="log-checkbox w-4 h-4 rounded border-gray-300 text-[#F97316] focus:ring-[#F97316]/20 cursor-pointer">
                                 </td>
                                 <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
-                                    {{ $log->created_at->format('M j, Y g:i A') }}
+                                    {{ $log->created_at->timezone('Asia/Jerusalem')->format('M j, Y g:i A') }}
                                 </td>
                                 <td class="px-4 py-3 font-medium">
                                     @if($log->subject_type === 'App\Models\CreativeFile' && $log->subject && $log->subject->creative)

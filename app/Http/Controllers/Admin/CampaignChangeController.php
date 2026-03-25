@@ -96,19 +96,8 @@ class CampaignChangeController extends Controller
             return 'log_'.$log->id;
         });
 
-        // Sort by Context Name
-        $logs = $logs->sortBy(function ($log) {
-            $contextName = '';
-            if ($log->subject_type === \App\Models\CreativeFile::class && $log->subject && $log->subject->creative) {
-                $contextName = 'Creative: '.$log->subject->creative->name;
-            } elseif ($log->subject_type === \App\Models\Creative::class && $log->subject) {
-                $contextName = 'Creative: '.$log->subject->name;
-            } elseif ($log->subject_type === \App\Models\Campaign::class && $log->subject) {
-                $contextName = 'Campaign: '.$log->subject->name;
-            }
-
-            return strtolower($contextName);
-        });
+        // Sort by time (newest first)
+        $logs = $logs->sortByDesc('created_at');
 
         return view('admin.campaign_changes.show', compact('campaign', 'logs'));
     }
