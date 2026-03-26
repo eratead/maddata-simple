@@ -458,7 +458,7 @@ it('shows only accessible client campaigns to non-admin on index', function () {
     $response->assertDontSee($otherCampaign->name);
 });
 
-it('paginates campaigns at 25 per page', function () {
+it('returns all campaigns to the view for client-side pagination', function () {
     $admin = makeAdmin();
     $client = Client::factory()->create();
 
@@ -471,9 +471,7 @@ it('paginates campaigns at 25 per page', function () {
     $response = $this->actingAs($admin)->get(route('campaigns.index'));
     $response->assertOk();
 
-    // The view should have a paginator with 25 items on the first page
+    // All campaigns returned (DataTable handles client-side pagination)
     $campaigns = $response->viewData('campaigns');
-    expect($campaigns->perPage())->toBe(25);
-    expect($campaigns->total())->toBe(30);
-    expect($campaigns->count())->toBe(25);
+    expect($campaigns->count())->toBe(30);
 });

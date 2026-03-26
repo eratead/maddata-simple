@@ -283,9 +283,6 @@
             </table>
         </x-ui.datatable>
 
-        <div class="px-5 py-3 border-t border-gray-100">
-            {{ $campaigns->links() }}
-        </div>
     </x-page-box>
 
 </x-app-layout>
