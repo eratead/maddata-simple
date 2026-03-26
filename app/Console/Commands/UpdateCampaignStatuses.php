@@ -25,16 +25,12 @@ class UpdateCampaignStatuses extends Command
      */
     public function handle()
     {
-        // 1. Activate campaigns that start precisely today and are currently paused
-        $activated = \App\Models\Campaign::whereDate('start_date', today())
-            ->where('status', 'paused')
-            ->update(['status' => 'active']);
-
-        // 2. Pause campaigns where the end date has passed and they are still active
+        // Pause campaigns where the end date has passed and they are still active
+        // Note: campaigns are never auto-activated — only a user can manually set back to active
         $paused = \App\Models\Campaign::whereDate('end_date', '<', today())
             ->where('status', 'active')
             ->update(['status' => 'paused']);
 
-        $this->info("Campaign Status Update Complete: {$activated} activated, {$paused} paused.");
+        $this->info("Campaign Status Update: {$paused} campaigns paused.");
     }
 }
