@@ -14,7 +14,6 @@
 @endpush
 
 @push('page-actions')
-    @if(auth()->user()->hasPermission('is_admin') || auth()->user()->userRole?->name === 'Third party communicator')
     <button type="button" @click="window.dispatchEvent(new CustomEvent('campaign:open-summary'))"
         class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all">
         <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,7 +22,6 @@
         </svg>
         Summary
     </button>
-    @endif
 
     <button type="button" @click="window.dispatchEvent(new CustomEvent('campaign:open-ai'))"
         class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-50 border border-violet-200 rounded-lg text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-all">
