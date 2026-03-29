@@ -152,7 +152,7 @@ function audienceManager(campaignId, initialConnected) {
                 try {
                     const res = await fetch(`/campaigns/${this.campaignId}/audiences`);
                     this.allAudiences = await res.json();
-                    if (this.mainCategories.length > 0) this.activeCategory = this.mainCategories[0].name;
+                    this.activeCategory = null;
                 } finally { this.loading = false; }
             }
         },

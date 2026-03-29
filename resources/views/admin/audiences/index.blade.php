@@ -43,9 +43,9 @@
                     @csrf
                     <div>
                         <x-input-label value="Excel File" />
-                        <input type="file" name="file" accept=".xlsx,.xls" required
+                        <input type="file" name="file" accept=".xlsx,.xls,.csv" required
                                class="w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#F97316]/10 file:text-[#F97316] hover:file:bg-[#F97316]/20 file:transition-colors border border-gray-300 rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-[#F97316]/30 focus:border-[#F97316]">
-                        <p class="mt-1.5 text-xs text-gray-400">Col A = Audience path, Col B = Active Unique Users.</p>
+                        <p class="mt-1.5 text-xs text-gray-400">Supports two formats: (A) Category + Segment Name + Users, or (B) Full path + Users.</p>
                     </div>
                     <div>
                         <x-input-label value="Provider" />
@@ -102,12 +102,46 @@
         </div>
     </x-page-box>
 
+    {{-- Hidden batch-delete form (outside table to avoid nested forms) --}}
+    <form id="batch-delete-form" action="{{ route('admin.audiences.batch-delete') }}" method="POST" style="display:none">
+        @csrf
+    </form>
+
     {{-- Table --}}
+    <div x-data="{ selected: [] }"
+         @change="selected = [...document.querySelectorAll('.aud-check:checked')].map(el => el.value)">
+
+        {{-- Batch delete bar --}}
+        <div x-show="selected.length > 0" x-cloak
+             class="mb-3 px-4 py-2.5 bg-red-50 border border-red-100 rounded-lg flex items-center justify-between">
+            <span class="text-sm text-red-700 font-medium" x-text="selected.length + ' audience(s) selected'"></span>
+            <button type="button"
+                    @click="
+                        const form = document.getElementById('batch-delete-form');
+                        form.querySelectorAll('input[name=\'ids[]\']').forEach(el => el.remove());
+                        selected.forEach(id => { const inp = document.createElement('input'); inp.type='hidden'; inp.name='ids[]'; inp.value=id; form.appendChild(inp); });
+                        $dispatch('confirm-action', {
+                            title: 'Delete selected audiences?',
+                            message: selected.length + ' audiences will be permanently removed.',
+                            confirmLabel: 'Delete All',
+                            form: form
+                        })
+                    "
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4h6v3M3 7h18"/></svg>
+                Delete Selected
+            </button>
+        </div>
+
     <x-page-box class="overflow-hidden">
         <x-ui.datatable table-id="audiences-table">
             <table id="audiences-table" class="min-w-full w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
+                        <th class="px-3 py-3 w-10">
+                            <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-[#F97316] focus:ring-[#F97316]/20 cursor-pointer"
+                                   @click="if($el.checked) { document.querySelectorAll('.aud-check').forEach(c => c.checked = true) } else { document.querySelectorAll('.aud-check').forEach(c => c.checked = false) }; selected = [...document.querySelectorAll('.aud-check:checked')].map(el => el.value)">
+                        </th>
                         <th class="px-4 py-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500 text-left sortable">
                             <div class="flex items-center gap-2">Main Category<span class="flex flex-col gap-px ml-auto"><svg class="w-2.5 h-2.5 sort-icon-asc" viewBox="0 0 10 6" fill="currentColor"><path d="M5 0L9.33 6H.67z"/></svg><svg class="w-2.5 h-2.5 sort-icon-desc" viewBox="0 0 10 6" fill="currentColor"><path d="M5 6L.67 0H9.33z"/></svg></span></div>
                         </th>
@@ -134,6 +168,9 @@
                         <tr class="hover:bg-gray-50 transition-colors"
                             data-active="{{ $audience->is_active ? 'active' : 'inactive' }}"
                             data-category="{{ $audience->main_category }}">
+                            <td class="px-3 py-3 w-10">
+                                <input type="checkbox" value="{{ $audience->id }}" class="aud-check w-4 h-4 rounded border-gray-300 text-[#F97316] focus:ring-[#F97316]/20 cursor-pointer">
+                            </td>
                             <td class="px-4 py-3 text-gray-700 font-medium whitespace-nowrap">{{ $audience->main_category }}</td>
                             <td class="px-4 py-3 text-gray-500 whitespace-nowrap">
                                 @if ($audience->sub_category && $audience->sub_category !== $audience->main_category)
@@ -185,7 +222,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-sm text-gray-400">
+                            <td colspan="8" class="px-4 py-12 text-center text-sm text-gray-400">
                                 No audiences yet. Upload an Excel file or add one manually.
                             </td>
                         </tr>
@@ -194,6 +231,7 @@
             </table>
         </x-ui.datatable>
     </x-page-box>
+    </div>
 
     {{-- =========================================================
          Create / Edit Modal

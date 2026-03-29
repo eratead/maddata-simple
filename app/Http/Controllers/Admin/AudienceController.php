@@ -114,36 +114,58 @@ class AudienceController extends Controller
         $newCount = 0;
         $updatedCount = 0;
 
+        // Detect format: new format has "Category" in col A header, old format has segment path
+        $header = $collection->first();
+        $isNewFormat = $header && isset($header[0]) && str_contains(strtolower(trim($header[0])), 'category');
+
         foreach ($collection as $index => $row) {
             // Skip header row
             if ($index === 0) {
                 continue;
             }
 
-            // Skip rows with empty col A
-            if (empty($row[0])) {
-                continue;
+            if ($isNewFormat) {
+                // New format: Col A = Category, Col B = Segment Name (full path), Col C = Active Unique Users
+                if (empty($row[1])) {
+                    continue;
+                }
+
+                $mainCategory = trim($row[0] ?? '');
+                $segmentName = trim($row[1]);
+                $estimatedUsers = isset($row[2]) && is_numeric($row[2]) ? (int) $row[2] : null;
+
+                // Full path is the segment name as-is
+                $fullPath = $segmentName;
+
+                // Parse the segment path to extract sub_category and name
+                $parts = array_map('trim', explode('>', $segmentName));
+
+                // Name = last segment, Sub category = second-to-last segment
+                $name = array_pop($parts);
+                $subCategory = count($parts) > 0 ? end($parts) : $mainCategory;
+            } else {
+                // Old format: Col A = full path like "Audience > Category > Sub > Name", Col B = Active Unique Users
+                if (empty($row[0])) {
+                    continue;
+                }
+
+                $fullPath = trim($row[0]);
+                $parts = array_map('trim', explode('>', $fullPath));
+
+                if (count($parts) < 3) {
+                    continue;
+                }
+
+                $name = array_pop($parts);
+                array_shift($parts); // discard "Audience"
+                $mainCategory = array_shift($parts);
+                $subCategory = count($parts) > 0 ? implode(' > ', $parts) : $mainCategory;
+                $estimatedUsers = isset($row[1]) && is_numeric($row[1]) ? (int) $row[1] : null;
             }
 
-            $fullPath = trim($row[0]);
-            $parts = array_map('trim', explode('>', $fullPath));
-
-            // parts[0] = "Audience" (always discard)
-            // Minimum: Audience > Category > Name (3 parts)
-            if (count($parts) < 3) {
+            if (empty($mainCategory) || empty($name)) {
                 continue;
             }
-
-            // Last part is always the name
-            $name = array_pop($parts);
-            // First part is "Audience" — discard
-            array_shift($parts);
-            // First remaining part is main_category
-            $mainCategory = array_shift($parts);
-            // Everything remaining (if any) joined as sub_category
-            $subCategory = count($parts) > 0 ? implode(' > ', $parts) : $mainCategory;
-
-            $estimatedUsers = isset($row[1]) && is_numeric($row[1]) ? (int) $row[1] : null;
 
             $existing = Audience::where('full_path', $fullPath)->first();
 
@@ -172,5 +194,19 @@ class AudienceController extends Controller
         Cache::forget('active_audiences');
 
         return redirect()->back()->with('success', "Imported {$total} audiences ({$updatedCount} updated, {$newCount} new).");
+    }
+
+    public function batchDelete(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:audiences,id',
+        ]);
+
+        $count = Audience::whereIn('id', $request->ids)->delete();
+
+        Cache::forget('active_audiences');
+
+        return redirect()->back()->with('success', "{$count} audiences deleted.");
     }
 }

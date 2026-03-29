@@ -80,6 +80,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/audiences/{audience}', [\App\Http\Controllers\Admin\AudienceController::class, 'update'])->name('audiences.update');
         Route::delete('/audiences/{audience}', [\App\Http\Controllers\Admin\AudienceController::class, 'destroy'])->name('audiences.destroy');
         Route::post('/audiences/upload', [\App\Http\Controllers\Admin\AudienceController::class, 'upload'])->name('audiences.upload');
+        Route::post('/audiences/batch-delete', [\App\Http\Controllers\Admin\AudienceController::class, 'batchDelete'])->name('audiences.batch-delete');
         Route::post('roles/reorder', [\App\Http\Controllers\Admin\RoleController::class, 'reorder'])->name('roles.reorder');
         Route::resource('roles', \App\Http\Controllers\Admin\RoleController::class);
 

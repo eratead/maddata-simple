@@ -46,7 +46,8 @@ class CampaignControllerTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertRedirect(route('campaigns.index'));
+        $campaign = \App\Models\Campaign::where('name', 'Test Campaign')->first();
+        $response->assertRedirect(route('campaigns.edit', $campaign));
         $this->assertDatabaseHas('campaigns', ['name' => 'Test Campaign']);
     }
 
@@ -63,7 +64,7 @@ class CampaignControllerTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertRedirect(route('campaigns.index'));
+        $response->assertRedirect(route('campaigns.edit', $campaign));
         $this->assertDatabaseHas('campaigns', ['id' => $campaign->id, 'name' => 'Updated Campaign']);
     }
 
@@ -129,7 +130,7 @@ class CampaignControllerTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertRedirect(route('campaigns.index'));
+        $response->assertRedirect(route('campaigns.edit', $campaign));
         $this->assertDatabaseHas('campaigns', ['id' => $campaign->id, 'name' => 'Updated by User']);
     }
 

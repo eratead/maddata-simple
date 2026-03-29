@@ -24,7 +24,8 @@ class CreativeSizeTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertRedirect(route('campaigns.index'));
+        $campaign = Campaign::where('name', 'Test Campaign')->first();
+        $response->assertRedirect(route('campaigns.edit', $campaign));
 
         $this->assertDatabaseHas('campaigns', [
             'name' => 'Test Campaign',
@@ -48,7 +49,7 @@ class CreativeSizeTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertRedirect(route('campaigns.index'));
+        $response->assertRedirect(route('campaigns.edit', $campaign));
 
         $this->assertDatabaseHas('campaigns', [
             'id' => $campaign->id,
@@ -68,7 +69,8 @@ class CreativeSizeTest extends TestCase
             'status' => 'active',
         ]);
 
-        $response->assertRedirect(route('campaigns.index'));
+        $campaign = Campaign::where('name', 'Test Campaign Null Sizes')->first();
+        $response->assertRedirect(route('campaigns.edit', $campaign));
 
         $this->assertDatabaseHas('campaigns', [
             'name' => 'Test Campaign Null Sizes',

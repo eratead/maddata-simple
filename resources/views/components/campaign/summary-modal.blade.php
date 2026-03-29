@@ -108,7 +108,23 @@
     class="fixed inset-0 flex items-center justify-center p-4"
     style="z-index:9003"
     @click.self="summaryOpen = false"
-    @keydown.window.escape="summaryOpen = false">
+    @keydown.window.escape="summaryOpen = false"
+    x-effect="if (summaryOpen) {
+        const ta = document.getElementById('summaryTextarea');
+        if (!ta) return;
+        const audienceEl = document.querySelector('[x-data^=&quot;audienceManager&quot;]');
+        if (audienceEl) {
+            const am = Alpine.$data(audienceEl);
+            let block = 'AUDIENCES (' + am.connected.length + ')';
+            if (am.connected.length === 0) {
+                block += '\n──────────────────────────────────\n  None connected';
+            } else {
+                block += '\n──────────────────────────────────';
+                am.connected.forEach(a => { block += '\n  • ' + a.name + '  [' + a.main_category + ']'; });
+            }
+            ta.value = ta.value.replace(/AUDIENCES \(\d+\)\n──────────────────────────────────[\s\S]*?(?=\n\n──────────────────────────────────\nCREATIVES)/, block);
+        }
+    }">
 
     <div x-data="{ copied: false }"
         class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col border border-gray-100 overflow-hidden">

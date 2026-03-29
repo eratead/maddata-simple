@@ -63,7 +63,8 @@ it('allows admin to create campaign with all fields', function () {
         'required_sizes' => '300x250,728x90',
     ]);
 
-    $response->assertRedirect(route('campaigns.index'));
+    $campaign = Campaign::where('name', 'Full Campaign')->first();
+    $response->assertRedirect(route('campaigns.edit', $campaign));
     $this->assertDatabaseHas('campaigns', [
         'name' => 'Full Campaign',
         'client_id' => $client->id,
@@ -109,7 +110,8 @@ it('allows non-admin editor to create campaign for their client', function () {
         'status' => 'active',
     ]);
 
-    $response->assertRedirect(route('campaigns.index'));
+    $campaign = Campaign::where('name', 'Editor Campaign')->first();
+    $response->assertRedirect(route('campaigns.edit', $campaign));
     $this->assertDatabaseHas('campaigns', ['name' => 'Editor Campaign']);
 });
 
@@ -158,7 +160,7 @@ it('allows admin to update all fields including required_sizes, budget, expected
         'end_date' => '2025-12-31',
     ]);
 
-    $response->assertRedirect(route('campaigns.index'));
+    $response->assertRedirect(route('campaigns.edit', $campaign));
     $campaign->refresh();
     expect($campaign->name)->toBe('Updated All Fields');
     expect($campaign->status)->toBe('paused');
@@ -402,7 +404,7 @@ it('allows admin to access any campaign regardless of client', function () {
         'client_id' => $client->id,
         'status' => 'active',
     ]);
-    $response->assertRedirect(route('campaigns.index'));
+    $response->assertRedirect(route('campaigns.edit', $campaign));
 
     $response = $this->actingAs($admin)->delete(route('campaigns.destroy', $campaign));
     $response->assertRedirect(route('campaigns.index'));
