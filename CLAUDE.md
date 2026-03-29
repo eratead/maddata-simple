@@ -179,3 +179,12 @@ This project uses a multi-agent system. Each agent has a defined role:
 | **performance** | "performance", "optimize", "slow", "N+1", "cache" | Audits for bottlenecks, N+1 queries, caching gaps |
 | **frontend** | "blade", "view", "UI", "component", "tailwind", "page", "form", "alpine" | Builds Blade templates, Tailwind styling, Alpine.js interactivity |
 | **server** | "deploy", "server", "nginx", "php version", "ssl", "staging", "ssh" | Server management, deployments, PHP/Nginx/MySQL config, package updates |
+
+## AI Agent Workflow & Behavioral Rules
+To ensure high-quality output and maintain context across long development sessions, you MUST adhere to the following behavioral standards:
+
+* **Plan First (Task Management):** For any non-trivial task (3+ steps), you must first write a detailed, checkable plan to a `docs/todo.md` file. Do not start writing application code until the user approves the plan. Mark items complete as you go.
+* **The Self-Improvement Loop:** We maintain a `docs/lessons.md` file. After ANY correction from the user regarding architecture, syntax, or business logic, you MUST update this file with a new rule to prevent the same mistake. You must review `docs/lessons.md` at the start of new tasks.
+* **Verification Before Done:** Never mark a task complete without proving it works. You must run the relevant tests, check logs, and demonstrate correctness. Ask yourself: "Would a Staff Engineer approve this?" before presenting it.
+* **Autonomous Bug Fixing (No Laziness):** When given a bug report, error log, or failing CI test: just fix it. Find the root cause and resolve it. Do not ask for hand-holding or permission to write the fix. 
+* **Demand Elegance (Simplicity First):** Make every change as simple as possible. Impact minimal code. For complex changes, pause and ask yourself if there is a more elegant, Laravel-native solution before over-engineering. No temporary fixes; adhere to senior developer standards.
