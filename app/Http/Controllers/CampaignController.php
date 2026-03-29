@@ -138,7 +138,7 @@ class CampaignController extends Controller
             $campaign->save();
         }
 
-        return redirect()->route('campaigns.index')->with('success', 'Campaign created successfully.');
+        return redirect()->route('campaigns.edit', $campaign)->with('success', 'Campaign created successfully.');
     }
 
     public function upload(Request $request, Campaign $campaign)
@@ -293,7 +293,7 @@ class CampaignController extends Controller
             $campaign->save();
         }
 
-        return redirect()->route('campaigns.index')->with('success', 'Campaign updated successfully.');
+        return redirect()->route('campaigns.edit', $campaign)->with('success', 'Campaign updated successfully.');
     }
 
     public function destroy($id)
