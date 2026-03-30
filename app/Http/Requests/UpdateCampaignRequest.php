@@ -11,6 +11,19 @@ class UpdateCampaignRequest extends FormRequest
         return true; // Controller handles authorization via $this->authorize()
     }
 
+    protected function prepareForValidation(): void
+    {
+        $genders = $this->input('targeting_rules.genders');
+        if (is_array($genders)) {
+            $map = ['male' => 'Male', 'female' => 'Female', 'unknown' => 'unknown'];
+            $this->merge([
+                'targeting_rules' => array_merge($this->input('targeting_rules', []), [
+                    'genders' => array_map(fn ($g) => $map[strtolower($g)] ?? $g, $genders),
+                ]),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [

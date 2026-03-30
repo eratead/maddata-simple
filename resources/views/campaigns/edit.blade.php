@@ -432,7 +432,7 @@ function campaignAssistant() {
             const targetingEl = document.querySelector('[x-data^="targetingData"]');
             if (targetingEl) {
                 const td = Alpine.$data(targetingEl);
-                targeting = { genders: td.genders, ages: td.ages, incomes: td.incomes, deviceTypes: td.deviceTypes, os: td.os, connectionTypes: td.connectionTypes, environments: td.environments, days: td.days, countries: td.countries, regions: td.regions, cities: td.cities };
+                targeting = { genders: td.genders, ages: td.ages, incomes: td.incomes, deviceTypes: td.deviceTypes, os: td.os, connectionTypes: td.connectionTypes, environments: td.environments, days: td.days, timeStart: td.timeStart, timeEnd: td.timeEnd, countries: td.countries, regions: td.regions, cities: td.cities };
             }
             let audience_ids = [];
             const audienceEl = document.querySelector('[x-data^="audienceManager"]');
@@ -456,6 +456,8 @@ function campaignAssistant() {
             if (targetingEl) {
                 const td = Alpine.$data(targetingEl);
                 ['genders','ages','incomes','environments','days','countries','regions','cities'].forEach(f => { if (updates[f] !== undefined) td[f] = updates[f]; });
+                if (updates.timeStart !== undefined) td.timeStart = updates.timeStart;
+                if (updates.timeEnd !== undefined) td.timeEnd = updates.timeEnd;
             }
             if (updates.audience_ids !== undefined && Array.isArray(updates.audience_ids)) {
                 const audienceEl = document.querySelector('[x-data^="audienceManager"]');
