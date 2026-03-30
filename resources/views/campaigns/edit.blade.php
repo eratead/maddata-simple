@@ -442,12 +442,21 @@ function campaignAssistant() {
 
         applyUpdates(updates) {
             if (!updates) return;
-            ['name', 'budget', 'expected_impressions', 'start_date', 'end_date'].forEach(field => {
+            ['name', 'budget', 'expected_impressions'].forEach(field => {
                 if (updates[field] !== undefined) {
                     const el = document.querySelector(`[name="${field}"]`);
                     if (el && !el.disabled) { el.value = updates[field]; el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true})); }
                 }
             });
+            // Dates: update Alpine Date objects on the schedule card
+            if (updates.start_date || updates.end_date) {
+                const scheduleEl = document.querySelector('[x-data] input[name="start_date"]');
+                if (scheduleEl) {
+                    const sd = Alpine.$data(scheduleEl.closest('[x-data]'));
+                    if (updates.start_date) sd.dateFrom = new Date(updates.start_date + 'T12:00:00');
+                    if (updates.end_date) sd.dateTo = new Date(updates.end_date + 'T12:00:00');
+                }
+            }
             if (updates.status !== undefined) {
                 const statusInput = document.querySelector('[name="status"]');
                 if (statusInput) { const root = statusInput.closest('[x-data]'); if (root) Alpine.$data(root).state = updates.status; }

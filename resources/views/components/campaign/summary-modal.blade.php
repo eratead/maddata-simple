@@ -112,18 +112,54 @@
     x-effect="if (summaryOpen) {
         const ta = document.getElementById('summaryTextarea');
         if (!ta) return;
+        const val = (n) => document.querySelector('[name=&quot;' + n + '&quot;]')?.value ?? '';
+        const sep = '──────────────────────────────────';
+        const fmt = (arr, def) => (!arr || arr.length === 0) ? (def || 'All') : arr.join(', ');
+        const fmtNum = (v) => v ? Number(v).toLocaleString() : '—';
+        const fmtDate = (v) => { if (!v) return '—'; const d = new Date(v + 'T12:00:00'); return d.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}); };
+
+        let td = {}; const te = document.querySelector('[x-data^=&quot;targetingData&quot;]');
+        if (te) td = Alpine.$data(te);
+
+        const canViewBudget = {{ auth()->user()->hasPermission('can_view_budget') ? 'true' : 'false' }};
+        let lines = [];
+        lines.push('Campaign:    ' + (val('name') || '—'));
+        lines.push('Client:      ' + {{ Js::from($campaign->client->name ?? '—') }});
+        const statusEl = document.querySelector('[name=&quot;status&quot;]');
+        lines.push('Status:      ' + (statusEl ? statusEl.value.charAt(0).toUpperCase() + statusEl.value.slice(1) : '—'));
+        lines.push('Period:      ' + fmtDate(val('start_date')) + ' – ' + fmtDate(val('end_date')));
+        if (canViewBudget) lines.push('Budget:      ' + (val('budget') ? fmtNum(val('budget')) + ' NIS' : '—'));
+        lines.push('Impressions: ' + (val('expected_impressions') ? fmtNum(val('expected_impressions')) : '—'));
+        lines.push('', sep, 'TARGETING', sep);
+        lines.push('Demographics');
+        lines.push('  Gender:       ' + fmt(td.genders));
+        lines.push('  Age:          ' + fmt(td.ages));
+        lines.push('  Income:       ' + fmt(td.incomes));
+        lines.push('', 'Devices \x26 Technology');
+        lines.push('  Device Types: ' + fmt(td.deviceTypes, 'Mobile,Tablet'));
+        lines.push('  OS:           ' + fmt(td.os, 'iOS,Android,Windows,macOS'));
+        lines.push('  Connection:   ' + fmt(td.connectionTypes, 'WiFi,Cellular'));
+        lines.push('', 'Inventory');
+        lines.push('  Environment:  ' + fmt(td.environments));
+        lines.push('', 'Schedule');
+        lines.push('  Days:         ' + fmt(td.days));
+        if (td.timeStart || td.timeEnd) lines.push('  Time:         ' + (td.timeStart || '—') + ' – ' + (td.timeEnd || '—'));
+        lines.push('', 'Geo Targeting');
+        lines.push('  Countries:    ' + fmt(td.countries, 'Israel'));
+        if (td.regions &amp;&amp; td.regions.length) lines.push('  Regions:      ' + td.regions.join(', '));
+        if (td.cities &amp;&amp; td.cities.length) lines.push('  Cities:       ' + td.cities.join(', '));
+
         const audienceEl = document.querySelector('[x-data^=&quot;audienceManager&quot;]');
-        if (audienceEl) {
-            const am = Alpine.$data(audienceEl);
-            let block = 'AUDIENCES (' + am.connected.length + ')';
-            if (am.connected.length === 0) {
-                block += '\n──────────────────────────────────\n  None connected';
-            } else {
-                block += '\n──────────────────────────────────';
-                am.connected.forEach(a => { block += '\n  • ' + a.name + '  [' + a.main_category + ']'; });
-            }
-            ta.value = ta.value.replace(/AUDIENCES \(\d+\)\n──────────────────────────────────[\s\S]*?(?=\n\n──────────────────────────────────\nCREATIVES)/, block);
-        }
+        const audiences = audienceEl ? Alpine.$data(audienceEl).connected : [];
+        lines.push('', sep, 'AUDIENCES (' + audiences.length + ')', sep);
+        if (audiences.length === 0) { lines.push('  None connected'); }
+        else { audiences.forEach(a => lines.push('  • ' + a.name + '  [' + a.main_category + ']')); }
+
+        // Keep server-rendered creatives section from original
+        const orig = ta.value;
+        const creativesMatch = orig.match(/\n──────────────────────────────────\nCREATIVES[\s\S]*$/);
+        lines.push('', sep);
+        ta.value = lines.join('\n') + (creativesMatch ? creativesMatch[0].replace(/^\n──────────────────────────────────\n/, '') : 'CREATIVES (0)\n' + sep + '\n  None added');
     }">
 
     <div x-data="{ copied: false }"
