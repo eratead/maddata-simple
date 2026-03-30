@@ -25,7 +25,7 @@
 
         <x-flash-messages />
 
-        <form id="campaignForm" action="{{ route('campaigns.store') }}" method="POST" class="max-w-3xl space-y-4">
+        <form id="campaignForm" action="{{ route('campaigns.store') }}" method="POST" class="space-y-4">
                 @csrf
 
                 {{-- ── Campaign Details ──────────────────────────────────────── --}}
