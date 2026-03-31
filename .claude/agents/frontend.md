@@ -1,5 +1,6 @@
 ---
 name: frontend
+model: sonnet
 description: Invoked when the user wants to build, design, or fix UI components, pages, or layouts. Handles Blade views, Tailwind CSS styling, Alpine.js interactivity, Flowbite components, and responsive design. Use when the user says "blade", "view", "template", "frontend", "UI", "component", "tailwind", "responsive", "layout", "form", "page", or "alpine".
 tools: Read, Write, Edit, Bash, Glob, Grep
 memory: .claude/memory/frontend

@@ -1,5 +1,6 @@
 ---
 name: server
+model: sonnet
 description: Invoked when the user wants to manage servers, deploy code, update packages, configure PHP/Nginx/MySQL, manage SSL certificates, or troubleshoot server issues. Use when the user says "deploy", "server", "nginx", "php version", "update packages", "ssl", "staging", "production", "ssh", "systemctl", or "server config".
 tools: Read, Write, Edit, Bash, Glob, Grep
 memory: .claude/memory/server

@@ -1,5 +1,6 @@
 ---
 name: builder
+model: sonnet
 description: Invoked when the user wants to implement, build, or code a feature. Reads specs from docs/specs/ and tasks from docs/tasks/todo.md and writes actual Laravel PHP code. Use when the user says "build", "implement", "code", "create the files for", or "start working on".
 tools: Read, Write, Edit, Bash, Glob, Grep
 memory: .claude/memory/builder
