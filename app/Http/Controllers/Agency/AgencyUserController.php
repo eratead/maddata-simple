@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Agency;
 
+use App\Http\Controllers\Concerns\PreventsPrivilegeEscalation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Agency\StoreAgencyUserRequest;
 use App\Http\Requests\Agency\UpdateAgencyUserRequest;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Hash;
 
 class AgencyUserController extends Controller
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, PreventsPrivilegeEscalation;
 
     /**
      * List users belonging to this agency.
@@ -117,6 +118,12 @@ class AgencyUserController extends Controller
 
         $role = Role::findOrFail($request->role_id);
         $this->validateRoleAssignment($role);
+
+        // Gate role changes: a user cannot change their own role
+        $roleIsChanging = (string) $role->id !== (string) $user->role_id;
+        if ($roleIsChanging) {
+            $this->authorize('changeRole', $user);
+        }
 
         $user->name = $request->name;
         $user->email = $request->email;

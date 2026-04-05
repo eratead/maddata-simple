@@ -82,6 +82,11 @@ class User extends Authenticatable
 
     public function hasPermission($permissionKey): bool
     {
+        // Disabled users have no permissions regardless of role or legacy flags
+        if ($this->is_active === false) {
+            return false;
+        }
+
         // Legacy fallback
         if ($this->is_admin) {
             return true;

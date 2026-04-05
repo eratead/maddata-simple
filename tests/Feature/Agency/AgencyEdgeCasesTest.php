@@ -211,8 +211,10 @@ it('prevents agency manager from disabling themselves', function () {
 it('prevents agency manager from changing their own role to non-manager role', function () {
     [$manager, $agency, $role] = createManager();
     $viewerRole = createViewerRole();
+    $originalRoleId = $manager->role_id;
 
-    // Attempt to update self with a viewer role
+    // Attempt to update self with a viewer role.
+    // UserPolicy::changeRole now blocks self-role-changes — must return 403.
     $response = test()->actingAs($manager)
         ->put(route('agency.users.update', [$agency, $manager]), [
             'name' => $manager->name,
@@ -221,13 +223,11 @@ it('prevents agency manager from changing their own role to non-manager role', f
             'access_all_clients' => true,
         ]);
 
-    // After updating to viewer role, the manager would lose manage permission.
-    // The controller allows this (no explicit block), but verify what happens.
-    // The role_id change goes through — the manager loses their manager status.
-    // This is acceptable because the update happens, and next request would fail authorization.
-    // We verify the role was actually changed to confirm the behavior.
+    $response->assertForbidden();
+
+    // Role must NOT have changed — self-demotion is blocked.
     $manager->refresh();
-    expect($manager->role_id)->toBe($viewerRole->id);
+    expect($manager->role_id)->toBe($originalRoleId);
 });
 
 it('shows manager user listing includes themselves in the agency', function () {

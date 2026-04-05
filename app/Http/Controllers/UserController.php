@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\PreventsPrivilegeEscalation;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Agency;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    use AuthorizesRequests;
+    use AuthorizesRequests, PreventsPrivilegeEscalation;
 
     public function index()
     {
@@ -46,22 +47,18 @@ class UserController extends Controller
 
         $validated = $request->validated();
 
-        // Anti-escalation: prevent assigning a role with is_admin unless current user has is_admin
         $roleId = $validated['role_id'] ?? null;
-        if ($roleId) {
-            $targetRole = Role::find($roleId);
-            if ($targetRole && $targetRole->hasPermission('is_admin') && ! auth()->user()->hasPermission('is_admin')) {
-                abort(403, 'You cannot assign an admin role.');
-            }
+        $targetRole = $roleId ? Role::find($roleId) : null;
+
+        // Anti-escalation: acting user cannot grant permissions they do not hold
+        if ($targetRole) {
+            $this->preventPrivilegeEscalation(auth()->user(), $targetRole);
         }
 
         // Single-agency manager constraint
         $agencyData = $validated['agencies'] ?? [];
-        if ($roleId) {
-            $targetRole = $targetRole ?? Role::find($roleId);
-            if ($targetRole?->hasPermission('can_manage_users') && count($agencyData) > 1) {
-                return back()->withErrors(['agencies' => 'Users with management permissions can only belong to one agency.'])->withInput();
-            }
+        if ($targetRole?->hasPermission('can_manage_users') && count($agencyData) > 1) {
+            return back()->withErrors(['agencies' => 'Users with management permissions can only belong to one agency.'])->withInput();
         }
 
         $user = User::create([
@@ -106,6 +103,7 @@ class UserController extends Controller
         app(ActivityLogger::class)->log('deleted', $user, "Deleted user \"{$user->name}\" ({$user->email})");
 
         $user->clients()->detach();
+        $user->agencies()->detach();
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('success', 'User deleted successfully.');
@@ -139,22 +137,23 @@ class UserController extends Controller
 
         $validated = $request->validated();
 
-        // Anti-escalation: prevent assigning a role with is_admin unless current user has is_admin
         $roleId = $validated['role_id'] ?? null;
-        if ($roleId) {
-            $targetRole = Role::find($roleId);
-            if ($targetRole && $targetRole->hasPermission('is_admin') && ! auth()->user()->hasPermission('is_admin')) {
-                abort(403, 'You cannot assign an admin role.');
+        $targetRole = $roleId ? Role::find($roleId) : null;
+
+        // Gate role changes: a user cannot change their own role, and acting
+        // user cannot grant permissions they do not hold.
+        $roleIsChanging = $roleId !== null && (string) $roleId !== (string) $user->role_id;
+        if ($roleIsChanging) {
+            $this->authorize('changeRole', $user);
+            if ($targetRole) {
+                $this->preventPrivilegeEscalation(auth()->user(), $targetRole);
             }
         }
 
         // Single-agency manager constraint
         $agencyData = $validated['agencies'] ?? [];
-        if ($roleId) {
-            $targetRole = $targetRole ?? Role::find($roleId);
-            if ($targetRole?->hasPermission('can_manage_users') && count($agencyData) > 1) {
-                return back()->withErrors(['agencies' => 'Users with management permissions can only belong to one agency.'])->withInput();
-            }
+        if ($targetRole?->hasPermission('can_manage_users') && count($agencyData) > 1) {
+            return back()->withErrors(['agencies' => 'Users with management permissions can only belong to one agency.'])->withInput();
         }
 
         // Update user info
@@ -170,7 +169,7 @@ class UserController extends Controller
         $user->save();
 
         // Sync agency assignments and collect specific client IDs
-        $isManager = ($targetRole ?? Role::find($roleId))?->hasPermission('can_manage_users') ?? false;
+        $isManager = $targetRole?->hasPermission('can_manage_users') ?? false;
         $syncData = [];
         $allClientIds = [];
         foreach ($agencyData as $entry) {
