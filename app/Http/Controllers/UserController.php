@@ -17,14 +17,42 @@ class UserController extends Controller
 {
     use AuthorizesRequests, PreventsPrivilegeEscalation;
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $this->authorize('viewAny', User::class);
 
-        $users = User::with(['clients', 'userRole', 'agencies'])->get();
+        $query = User::with(['userRole', 'agencies:id,name', 'clients:id,name'])
+            ->select('id', 'name', 'email', 'role_id', 'is_active', 'is_admin', 'can_view_budget', 'is_report');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%');
+            });
+        }
+
+        if ($request->filled('role')) {
+            $roleVal = $request->role;
+            if ($roleVal === 'null') {
+                $query->whereNull('role_id');
+            } else {
+                $query->where('role_id', $roleVal);
+            }
+        }
+
+        if ($request->filled('agency')) {
+            $query->whereHas('agencies', fn ($q) => $q->where('agencies.id', $request->agency));
+        }
+
+        if ($request->filled('client')) {
+            $query->whereHas('clients', fn ($q) => $q->where('clients.id', $request->client));
+        }
+
+        $users = $query->paginate(25)->withQueryString();
         $roles = Role::orderBy('sort_order')->get();
-        $clients = Client::orderBy('name')->get();
-        $agencies = Agency::orderBy('name')->get();
+        $clients = Client::orderBy('name')->select('id', 'name')->get();
+        $agencies = Agency::orderBy('name')->select('id', 'name')->get();
 
         return view('users.index', compact('users', 'roles', 'clients', 'agencies'));
     }

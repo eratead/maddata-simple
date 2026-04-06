@@ -109,4 +109,10 @@
         </x-ui.datatable>
     </x-page-box>
 
+    @if ($agencies->hasPages())
+        <div class="mt-4 flex justify-end">
+            {{ $agencies->links() }}
+        </div>
+    @endif
+
 </x-app-layout>

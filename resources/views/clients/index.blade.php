@@ -31,7 +31,7 @@
                     @endforeach
                 </select>
                 @if($currentAgency)
-                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ $clients->count() }} {{ Str::plural('client', $clients->count()) }}</span>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">{{ $clients->total() }} {{ Str::plural('client', $clients->total()) }}</span>
                     <a href="{{ route('admin.clients.index') }}" class="text-xs text-[#F97316] hover:text-[#EA580C] font-medium whitespace-nowrap">Clear</a>
                 @endif
             </x-slot:filters>
@@ -124,5 +124,11 @@
             </table>
         </x-ui.datatable>
     </x-page-box>
+
+    @if ($clients->hasPages())
+        <div class="mt-4 flex justify-end">
+            {{ $clients->links() }}
+        </div>
+    @endif
 
 </x-app-layout>

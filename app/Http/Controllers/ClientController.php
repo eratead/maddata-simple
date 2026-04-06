@@ -29,7 +29,7 @@ class ClientController extends Controller
             $query->where('agency_id', $agencyId);
         }
 
-        $clients = $query->get();
+        $clients = $query->paginate(25)->withQueryString();
         $agencies = Agency::orderBy('name')->get();
         $currentAgency = $agencyId ? Agency::find($agencyId) : null;
 

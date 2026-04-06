@@ -50,7 +50,7 @@ class CampaignChangeController extends Controller
             $query->whereIn('id', $allowedIds);
         }
 
-        $campaigns = $query->get();
+        $campaigns = $query->with('client')->paginate(25)->withQueryString();
 
         return view('admin.campaign_changes.index', compact('campaigns'));
     }

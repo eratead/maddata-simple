@@ -18,15 +18,25 @@ class AudienceController extends Controller
 {
     use AuthorizesRequests;
 
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $this->authorize('viewAny', Audience::class);
 
-        $audiences = Audience::orderBy('main_category')
+        $query = Audience::orderBy('main_category')
             ->orderBy('sub_category')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
 
+        // Server-side filters
+        if ($request->filled('status') && in_array($request->status, ['active', 'inactive'])) {
+            $query->where('is_active', $request->status === 'active');
+        }
+        if ($request->filled('category')) {
+            $query->where('main_category', $request->category);
+        }
+
+        $audiences = $query->paginate(50)->withQueryString();
+
+        // Filter dropdowns — separate queries, small result sets
         $categories = Audience::select('main_category')
             ->distinct()
             ->orderBy('main_category')

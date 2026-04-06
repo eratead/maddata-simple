@@ -49,4 +49,10 @@
         @endif
     </x-page-box>
 
+    @if ($campaigns->hasPages())
+        <div class="mt-4 flex justify-end">
+            {{ $campaigns->links() }}
+        </div>
+    @endif
+
 </x-app-layout>

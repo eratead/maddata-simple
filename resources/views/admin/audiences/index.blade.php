@@ -4,7 +4,7 @@
     <div class="flex items-center gap-2">
         <h1 class="text-sm font-semibold text-gray-800">Audiences</h1>
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#F97316]/10 text-[#F97316] border border-[#F97316]/20">
-            {{ $audiences->count() }}
+            {{ $audiences->total() }}
         </span>
     </div>
 @endpush
@@ -82,24 +82,35 @@
 
     {{-- Filter bar --}}
     <x-page-box class="p-3 mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
-        <div class="flex items-center gap-2">
-            <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 shrink-0">Status</span>
-            <button onclick="audienceFilter.setStatus('all')" id="af-btn-all"
-                    class="px-3 py-1 text-xs font-semibold rounded-full border transition-all bg-[#F97316] text-white border-[#F97316] shadow-sm">All</button>
-            <button onclick="audienceFilter.setStatus('active')" id="af-btn-active"
-                    class="px-3 py-1 text-xs font-semibold rounded-full border transition-all bg-white text-gray-600 border-gray-200 hover:border-gray-300">Active</button>
-            <button onclick="audienceFilter.setStatus('inactive')" id="af-btn-inactive"
-                    class="px-3 py-1 text-xs font-semibold rounded-full border transition-all bg-white text-gray-600 border-gray-200 hover:border-gray-300">Inactive</button>
-        </div>
-        <div class="sm:border-l sm:border-gray-200 sm:pl-3">
-            <select id="af-category" onchange="audienceFilter.setCategory(this.value)"
-                    class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F97316]/30 focus:border-[#F97316] transition-colors cursor-pointer">
-                <option value="">All Categories</option>
-                @foreach ($categories as $category)
-                    <option value="{{ $category }}">{{ $category }}</option>
-                @endforeach
-            </select>
-        </div>
+        <form method="GET" action="{{ route('admin.audiences.index') }}"
+              class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 shrink-0">Status</span>
+                @php $currentStatus = request('status', ''); @endphp
+                <a href="{{ route('admin.audiences.index', array_merge(request()->query(), ['status' => ''])) }}"
+                   class="px-3 py-1 text-xs font-semibold rounded-full border transition-all {{ $currentStatus === '' ? 'bg-[#F97316] text-white border-[#F97316] shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300' }}">All</a>
+                <a href="{{ route('admin.audiences.index', array_merge(request()->query(), ['status' => 'active'])) }}"
+                   class="px-3 py-1 text-xs font-semibold rounded-full border transition-all {{ $currentStatus === 'active' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300' }}">Active</a>
+                <a href="{{ route('admin.audiences.index', array_merge(request()->query(), ['status' => 'inactive'])) }}"
+                   class="px-3 py-1 text-xs font-semibold rounded-full border transition-all {{ $currentStatus === 'inactive' ? 'bg-gray-500 text-white border-gray-500 shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300' }}">Inactive</a>
+            </div>
+
+            <div class="sm:border-l sm:border-gray-200 sm:pl-3">
+                <select name="category" onchange="this.form.submit()"
+                        class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F97316]/30 focus:border-[#F97316] transition-colors cursor-pointer">
+                    <option value="">All Categories</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category }}" {{ request('category') === $category ? 'selected' : '' }}>{{ $category }}</option>
+                    @endforeach
+                </select>
+                {{-- Preserve status filter when submitting category --}}
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+            </div>
+
+        </form>
     </x-page-box>
 
     {{-- Hidden batch-delete form (outside table to avoid nested forms) --}}
@@ -232,6 +243,12 @@
         </x-ui.datatable>
     </x-page-box>
     </div>
+
+    @if ($audiences->hasPages())
+        <div class="mt-4 flex justify-end">
+            {{ $audiences->links() }}
+        </div>
+    @endif
 
     {{-- =========================================================
          Create / Edit Modal
@@ -451,55 +468,6 @@
         };
     }
 
-    // Datatable external filter (status pills + category dropdown)
-    const audienceFilter = (() => {
-        let statusFilter = 'all';
-        let categoryFilter = '';
-        let masterRows = null;
-
-        function init() {
-            const dt = window.MadDataTables?.['audiences-table'];
-            if (!dt) return;
-            masterRows = dt.originalRows.map(r => ({ ...r }));
-        }
-
-        function apply() {
-            const dt = window.MadDataTables?.['audiences-table'];
-            if (!dt || !masterRows) return;
-            dt.originalRows = masterRows.filter(row => {
-                const tr = row.tr;
-                const activeMatch = statusFilter === 'all' || tr.dataset.active === statusFilter;
-                const catMatch = !categoryFilter || tr.dataset.category === categoryFilter;
-                return activeMatch && catMatch;
-            });
-            dt.state.query = dt.searchInput.value.trim().toLowerCase();
-            dt.state.page = 1;
-            dt.updateData();
-        }
-
-        function setStatus(val) {
-            statusFilter = val;
-            const styles = {
-                all:      'bg-[#F97316] text-white border-[#F97316] shadow-sm',
-                active:   'bg-emerald-600 text-white border-emerald-600 shadow-sm',
-                inactive: 'bg-gray-500 text-white border-gray-500 shadow-sm',
-            };
-            const off = 'bg-white text-gray-600 border-gray-200 hover:border-gray-300';
-            ['all', 'active', 'inactive'].forEach(s => {
-                const btn = document.getElementById('af-btn-' + s);
-                if (btn) btn.className = `px-3 py-1 text-xs font-semibold rounded-full border transition-all ${s === val ? styles[s] : off}`;
-            });
-            apply();
-        }
-
-        function setCategory(val) {
-            categoryFilter = val;
-            apply();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
-        return { setStatus, setCategory };
-    })();
     </script>
     @endpush
 
