@@ -464,7 +464,7 @@ it('returns all campaigns to the view for client-side pagination', function () {
     $admin = makeAdmin();
     $client = Client::factory()->create();
 
-    // Create 30 campaigns
+    // Create 30 campaigns — the controller paginates at 25 per page.
     Campaign::factory()->count(30)->create([
         'client_id' => $client->id,
         'status' => 'active',
@@ -473,7 +473,8 @@ it('returns all campaigns to the view for client-side pagination', function () {
     $response = $this->actingAs($admin)->get(route('campaigns.index'));
     $response->assertOk();
 
-    // All campaigns returned (DataTable handles client-side pagination)
+    // The view receives a paginator; first page contains 25 of the 30 campaigns.
     $campaigns = $response->viewData('campaigns');
-    expect($campaigns->count())->toBe(30);
+    expect($campaigns->count())->toBe(25);
+    expect($campaigns->total())->toBe(30);
 });

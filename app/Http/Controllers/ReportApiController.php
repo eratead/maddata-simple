@@ -28,13 +28,20 @@ class ReportApiController extends Controller
         $cacheKey = "report_summary_{$campaign->id}_v{$version}_{$start}_{$end}_".($canViewBudget ? '1' : '0');
 
         $summary = Cache::remember($cacheKey, 3600, function () use ($campaign, $start, $end, $canViewBudget) {
-            $data = $campaign->data()
-                ->when($start && $end, fn ($q) => $q->whereBetween('report_date', [$start, $end]));
+            $agg = $campaign->data()
+                ->when($start && $end, fn ($q) => $q->whereBetween('report_date', [$start, $end]))
+                ->selectRaw('
+                    SUM(impressions)         AS total_impressions,
+                    SUM(clicks)              AS total_clicks,
+                    SUM(video_100)           AS total_video_100,
+                    MAX(report_date)         AS latest_date,
+                    MAX(CASE WHEN report_date = (SELECT MAX(report_date) FROM campaign_data cd2 WHERE cd2.campaign_id = campaign_data.campaign_id) THEN uniques END) AS latest_uniques
+                ')
+                ->first();
 
-            $sumImpressions = (int) $data->sum('impressions');
-            $sumClicks = (int) $data->sum('clicks');
-            $latestRow = $data->orderByDesc('report_date')->first();
-            $latestUniques = $latestRow?->uniques ?? 0;
+            $sumImpressions = (int) ($agg->total_impressions ?? 0);
+            $sumClicks = (int) ($agg->total_clicks ?? 0);
+            $latestUniques = (int) ($agg->latest_uniques ?? 0);
 
             $summary = [
                 'campaign_id' => $campaign->id,
@@ -69,7 +76,7 @@ class ReportApiController extends Controller
             }
 
             if ($campaign->is_video) {
-                $videoComplete = (int) $data->sum('video_100');
+                $videoComplete = (int) ($agg->total_video_100 ?? 0);
                 $summary['video_complete'] = $videoComplete;
                 if ($canViewBudget) {
                     $summary['cpv'] = $videoComplete > 0 ? round($spentForCalc / $videoComplete, 4) : 0;
@@ -157,17 +164,7 @@ class ReportApiController extends Controller
         $version = $this->campaignCacheVersion($campaign);
         $cacheKey = "report_by_placement_{$campaign->id}_v{$version}_{$start}_{$end}_".($canViewBudget ? '1' : '0');
 
-        $result = Cache::remember($cacheKey, 3600, function () use ($campaign, $start, $end, $canViewBudget) {
-            $cpm = 0;
-            if ($canViewBudget) {
-                $periodQuery = $campaign->data()
-                    ->when($start && $end, fn ($q) => $q->whereBetween('report_date', [$start, $end]));
-                $totalImpsForPeriod = (clone $periodQuery)->sum('impressions');
-                if ($campaign->expected_impressions > 0) {
-                    $cpm = ($campaign->budget / max($campaign->expected_impressions, $totalImpsForPeriod)) * 1000;
-                }
-            }
-
+        $result = Cache::remember($cacheKey, 3600, function () use ($campaign, $start, $end) {
             $rows = \App\Models\PlacementData::selectRaw('MAX(report_date) as report_date, name, SUM(impressions) as impressions, SUM(clicks) as clicks, SUM(visible_impressions) as visible_impressions, sum(video_25) as video_25, sum(video_50) as video_50, sum(video_75) as video_75, sum(video_100) as video_100')
                 ->where('campaign_id', $campaign->id)
                 ->when($start && $end, fn ($q) => $q->whereBetween('report_date', [$start, $end]))

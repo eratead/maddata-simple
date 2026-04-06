@@ -37,16 +37,14 @@ class User extends Authenticatable
             // Direct client access (from client_user pivot)
             $directIds = $this->clients()->pluck('clients.id');
 
-            // Agency-based access — only where access_all_clients is true
-            $agencyClientIds = collect();
-            foreach ($this->agencies as $agency) {
-                if ($agency->pivot->access_all_clients) {
-                    $ids = Client::where('agency_id', $agency->id)->pluck('id');
-                    $agencyClientIds = $agencyClientIds->merge($ids);
-                }
-                // If access_all_clients is false, only client_user entries count
-                // (those are already in $directIds)
-            }
+            // Agency-based access — one query for all qualifying agencies
+            $agencyIds = $this->agencies
+                ->filter(fn ($agency) => $agency->pivot->access_all_clients)
+                ->pluck('id');
+
+            $agencyClientIds = $agencyIds->isNotEmpty()
+                ? Client::whereIn('agency_id', $agencyIds)->pluck('id')
+                : collect();
 
             return $directIds->merge($agencyClientIds)->unique()->values();
         });

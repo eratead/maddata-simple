@@ -26,22 +26,24 @@ class CampaignController extends Controller
 
         $user = Auth::user();
 
-        $campaigns = Campaign::with('client');
+        $query = Campaign::with('client.agency');
 
         if ($client_id != 0) {
             if (! $user->hasPermission('is_admin') && ! $user->accessibleClientIds()->contains($client_id)) {
                 abort(403, 'Unauthorized access to this client\'s campaigns.');
             }
-            $campaigns->where('client_id', $client_id);
+            $query->where('client_id', $client_id);
         } elseif (! $user->hasPermission('is_admin')) {
             // Non-admin, show only campaigns for accessible clients
             $clientIds = $user->accessibleClientIds();
-            $campaigns->whereIn('client_id', $clientIds);
+            $query->whereIn('client_id', $clientIds);
         }
 
-        $campaigns = $campaigns->orderByRaw('COALESCE(start_date, created_at) DESC')->get();
+        $query->orderByDesc('start_date')->orderByDesc('created_at');
 
-        // Calculate pacing data for campaigns (impressions vs expected impressions)
+        $campaigns = $query->paginate(25)->withQueryString();
+
+        // Calculate pacing data for campaigns on the current page only
         $pacingData = [];
         $campaignIds = $campaigns->pluck('id');
 
@@ -82,13 +84,20 @@ class CampaignController extends Controller
         }
         $clients = $user->hasPermission('is_admin') ? Cache::remember('clients_list', 300, fn () => Client::all()) : $user->accessibleClients()->get();
 
-        // Calculate Overview Summary Metrics for the top boxes
-        $totalClients = $campaigns->pluck('client_id')->unique()->count();
-        $activeCampaignsCount = $campaigns->where('status', 'active')->count();
+        // Calculate Overview Summary Metrics for the top boxes — use total counts, not paginated slice
+        $statsQuery = Campaign::query();
+        if ($client_id != 0) {
+            $statsQuery->where('client_id', $client_id);
+        } elseif (! $user->hasPermission('is_admin')) {
+            $statsQuery->whereIn('client_id', $user->accessibleClientIds());
+        }
+        $totalClients = (clone $statsQuery)->distinct()->count('client_id');
+        $activeCampaignsCount = (clone $statsQuery)->where('status', 'active')->count();
 
         $yesterday = Carbon::yesterday()->toDateString();
-        // Get yesterday's data for the visible campaigns
-        $yesterdayData = CampaignData::whereIn('campaign_id', $campaignIds)
+        // Get yesterday's data across all accessible campaigns (not just the current page)
+        $allCampaignIds = (clone $statsQuery)->pluck('id');
+        $yesterdayData = CampaignData::whereIn('campaign_id', $allCampaignIds)
             ->where('report_date', $yesterday)
             ->selectRaw('SUM(impressions) as total_impressions, SUM(clicks) as total_clicks')
             ->first();
