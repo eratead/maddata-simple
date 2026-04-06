@@ -28,6 +28,10 @@ class CampaignAssistantController extends Controller
             ->values()
             ->toArray();
 
+        // Release the session lock before the long-running Anthropic HTTP call (P10 fix).
+        // Session data is already written; this unblocks other tabs/requests from the same user.
+        session()->save();
+
         $response = Http::timeout(15)->withHeaders([
             'x-api-key' => config('services.anthropic.api_key'),
             'anthropic-version' => '2023-06-01',

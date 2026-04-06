@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\ImageManager;
+use Symfony\Component\Process\Process;
 
 class CreativeController extends Controller
 {
@@ -108,10 +109,18 @@ class CreativeController extends Controller
                 }
             } elseif ($mimeType === 'video/mp4' || $mimeType === 'video/webm') {
                 try {
-                    $output = shell_exec(
-                        'ffprobe -v error -select_streams v:0 -show_entries stream=width,height'
-                        .' -of csv=s=x:p=0 '.escapeshellarg($file->getPathname())
-                    );
+                    // Use Symfony Process with a hard 5-second timeout to prevent
+                    // indefinite PHP-FPM worker blocking (P9 fix).
+                    $process = new Process([
+                        'ffprobe', '-v', 'error',
+                        '-select_streams', 'v:0',
+                        '-show_entries', 'stream=width,height',
+                        '-of', 'csv=s=x:p=0',
+                        $file->getPathname(),
+                    ]);
+                    $process->setTimeout(5);
+                    $process->run();
+                    $output = $process->getOutput();
                     if ($output) {
                         $parts = explode('x', trim($output));
                         if (count($parts) === 2) {

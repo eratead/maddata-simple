@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Jobs\SendPasswordResetNotificationJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -199,5 +200,14 @@ class User extends Authenticatable
         if ($role->hasPermission('can_manage_users') && $user->agencies()->count() > 1) {
             abort(422, 'This user belongs to multiple agencies and cannot be assigned a manager role.');
         }
+    }
+
+    /**
+     * Send the password reset notification via the queue so SMTP does not
+     * block the HTTP response.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        SendPasswordResetNotificationJob::dispatch($this, $token);
     }
 }
