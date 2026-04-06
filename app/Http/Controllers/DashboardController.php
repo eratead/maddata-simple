@@ -6,6 +6,7 @@ use App\Exports\CampaignExport;
 use App\Models\Campaign;
 use App\Services\CampaignMetricsService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class DashboardController extends Controller
@@ -64,7 +65,7 @@ class DashboardController extends Controller
                 $startDate,
                 $endDate
             ),
-            'MadData_'.$campaign->name.'.xlsx'
+            'MadData_'.Str::slug($campaign->name).'.xlsx'
         );
     }
 }

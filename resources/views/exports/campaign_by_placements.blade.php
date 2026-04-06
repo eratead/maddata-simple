@@ -16,7 +16,7 @@
         <tbody>
                 @foreach ($campaignDataByPlacement as $row)
                         <tr>
-                                <td>{{ $row['name'] }}</td>
+                                <td>{{ excel_safe($row['name'] ?? '') }}</td>
                                 <td>{{ $row['impressions'] }}</td>
                                 <td>{{ $row['clicks'] }}</td>
                                 <td>{{ $row['impressions'] > 0 ? round(($row['clicks'] / $row['impressions']) * 100, 2) : 0 }}

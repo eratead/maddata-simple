@@ -229,7 +229,9 @@ class CreativeController extends Controller
             abort(404);
         }
 
-        return Storage::disk('creatives')->download($file->path, $file->name);
+        $safeName = basename($file->name);
+
+        return Storage::disk('creatives')->download($file->path, $safeName);
     }
 
     public function downloadAll(Creative $creative)
@@ -259,7 +261,7 @@ class CreativeController extends Controller
 
         foreach ($files as $file) {
             if (Storage::disk('creatives')->exists($file->path)) {
-                $zip->addFromString($file->name, Storage::disk('creatives')->get($file->path));
+                $zip->addFromString(basename($file->name), Storage::disk('creatives')->get($file->path));
             }
         }
 

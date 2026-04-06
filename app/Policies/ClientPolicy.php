@@ -20,7 +20,15 @@ class ClientPolicy
      */
     public function view(User $user, Client $client): bool
     {
-        return false;
+        if ($user->hasPermission('is_admin')) {
+            return true;
+        }
+
+        if ($user->hasPermission('can_manage_clients')) {
+            return true;
+        }
+
+        return $user->accessibleClientIds()->contains($client->id);
     }
 
     /**
