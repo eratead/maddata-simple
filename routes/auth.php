@@ -26,6 +26,7 @@ Route::middleware('guest')->group(function () {
         ->name('password.request');
 
     Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+        ->middleware('throttle:3,1')
         ->name('password.email');
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
@@ -39,7 +40,7 @@ Route::middleware('auth')->group(function () {
     // ── Two-Factor Authentication ────────────────────────────────────────
     // These routes are exempt from RequireTwoFactor (see middleware EXEMPT_ROUTES)
     Route::get('2fa/setup', [TwoFactorController::class, 'showSetup'])->name('2fa.setup');
-    Route::post('2fa/setup', [TwoFactorController::class, 'confirmSetup'])->name('2fa.confirm');
+    Route::post('2fa/setup', [TwoFactorController::class, 'confirmSetup'])->name('2fa.confirm')->middleware('throttle:5,1');
     Route::get('2fa/challenge', [TwoFactorController::class, 'showChallenge'])->name('2fa.challenge');
     Route::post('2fa/challenge', [TwoFactorController::class, 'verify'])->name('2fa.verify')->middleware('throttle:5,1');
     // ────────────────────────────────────────────────────────────────────
