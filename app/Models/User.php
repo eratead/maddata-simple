@@ -15,6 +15,34 @@ class User extends Authenticatable
 
     protected $with = ['userRole'];
 
+    /**
+     * Per-instance cache for hasPermission() results.
+     * Populated on first call; invalidated on model update via boot().
+     */
+    protected array $permissionCache = [];
+
+    /**
+     * Flush the permission cache (e.g. when role/active state changes).
+     */
+    public function flushPermissionCache(): void
+    {
+        $this->permissionCache = [];
+    }
+
+    /**
+     * Register model event listeners.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // Invalidate permission cache whenever the model is about to be saved
+        // so any in-process hasPermission() calls reflect the new state.
+        static::updating(function (User $user): void {
+            $user->flushPermissionCache();
+        });
+    }
+
     public function agencies()
     {
         return $this->belongsToMany(Agency::class)
@@ -81,29 +109,35 @@ class User extends Authenticatable
 
     public function hasPermission($permissionKey): bool
     {
+        if (array_key_exists($permissionKey, $this->permissionCache)) {
+            return $this->permissionCache[$permissionKey];
+        }
+
         // Disabled users have no permissions regardless of role or legacy flags
         if ($this->is_active === false) {
-            return false;
+            return $this->permissionCache[$permissionKey] = false;
         }
 
         // Legacy fallback
         if ($this->is_admin) {
-            return true;
+            return $this->permissionCache[$permissionKey] = true;
         }
 
         if (! $this->userRole) {
             if ($permissionKey === 'can_view_budget') {
-                return (bool) $this->can_view_budget;
+                return $this->permissionCache[$permissionKey] = (bool) $this->can_view_budget;
             }
             if ($permissionKey === 'can_upload_reports') {
-                return (bool) $this->is_report;
+                return $this->permissionCache[$permissionKey] = (bool) $this->is_report;
             }
 
-            return false;
+            return $this->permissionCache[$permissionKey] = false;
         }
 
         // Admin override or specific permission check
-        return (bool) ($this->userRole->hasPermission('is_admin') || $this->userRole->hasPermission($permissionKey));
+        $result = (bool) ($this->userRole->hasPermission('is_admin') || $this->userRole->hasPermission($permissionKey));
+
+        return $this->permissionCache[$permissionKey] = $result;
     }
 
     /**

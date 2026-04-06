@@ -97,7 +97,7 @@
             </div>
 
             <div class="sm:border-l sm:border-gray-200 sm:pl-3">
-                <select name="category" onchange="this.form.submit()"
+                <select name="category" @change="$el.closest('form').submit()"
                         class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-700 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#F97316]/30 focus:border-[#F97316] transition-colors cursor-pointer">
                     <option value="">All Categories</option>
                     @foreach ($categories as $category)

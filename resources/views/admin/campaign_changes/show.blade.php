@@ -46,7 +46,7 @@
                     <thead class="bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th class="w-10 px-4 py-3 text-center">
-                                <input type="checkbox" onclick="toggleAll(this)"
+                                <input type="checkbox" @click="toggleAll($el)"
                                        class="w-4 h-4 rounded border-gray-300 text-[#F97316] focus:ring-[#F97316]/20 cursor-pointer">
                             </th>
                             <th class="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Date</th>

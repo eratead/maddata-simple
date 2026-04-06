@@ -243,7 +243,7 @@
                                                 @csrf
                                                 <label class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer inline-block" title="Upload Report">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                                                    <input type="file" name="report" required onchange="this.form.submit();" class="hidden"/>
+                                                    <input type="file" name="report" required @change="$el.closest('form').submit()" class="hidden"/>
                                                 </label>
                                             </form>
                                         @endif
