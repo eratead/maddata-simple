@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Concerns\PreventsPrivilegeEscalation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAgencyRequest;
 use App\Http\Requests\UpdateAgencyRequest;
@@ -13,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 
 class AgencyController extends Controller
 {
+    use PreventsPrivilegeEscalation;
+
     public function index()
     {
         $agencies = Agency::withCount('clients')->orderBy('name')->get();
@@ -34,17 +37,22 @@ class AgencyController extends Controller
 
             // Auto-create agency manager if manager fields are provided
             if ($request->filled('manager_name')) {
+                // Build an in-memory Role with the intended permissions so the
+                // escalation guard can verify the acting user holds every permission
+                // that will be granted, before we persist anything.
+                $intendedPermissions = [
+                    'can_manage_users' => true,
+                    'can_manage_clients' => true,
+                    'can_view_campaigns' => true,
+                    'can_edit_campaigns' => true,
+                    'can_view_budget' => true,
+                ];
+                $guardRole = new Role(['permissions' => $intendedPermissions]);
+                $this->preventPrivilegeEscalation(auth()->user(), $guardRole);
+
                 $role = Role::firstOrCreate(
                     ['name' => 'Agency Manager'],
-                    [
-                        'permissions' => [
-                            'can_manage_users' => true,
-                            'can_manage_clients' => true,
-                            'can_view_campaigns' => true,
-                            'can_edit_campaigns' => true,
-                            'can_view_budget' => true,
-                        ],
-                    ]
+                    ['permissions' => $intendedPermissions]
                 );
 
                 $user = User::create([

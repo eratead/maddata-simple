@@ -46,11 +46,12 @@ class ClientControllerTest extends TestCase
     public function test_admin_can_store_client()
     {
         $admin = User::factory()->create(['is_admin' => true]);
+        $agency = \App\Models\Agency::factory()->create();
 
         $this->actingAs($admin);
         $response = $this->post(route('admin.clients.store'), [
             'name' => 'Test Client',
-            'agency' => 'Test Agency',
+            'agency_id' => $agency->id,
         ]);
 
         $response->assertRedirect(route('admin.clients.index'));
@@ -65,6 +66,7 @@ class ClientControllerTest extends TestCase
         $this->actingAs($admin);
         $response = $this->put(route('admin.clients.update', $client), [
             'name' => 'Updated Name',
+            'agency_id' => $client->agency_id,
         ]);
 
         $response->assertRedirect(route('admin.clients.index'));
