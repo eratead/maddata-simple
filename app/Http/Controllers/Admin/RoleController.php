@@ -59,6 +59,10 @@ class RoleController extends Controller
 
     public function update(UpdateRoleRequest $request, Role $role)
     {
+        if ($role->is_protected) {
+            abort(403, 'This role is protected and cannot be modified.');
+        }
+
         $permissions = $request->input('permissions', []);
         $formattedPermissions = [];
         foreach ($permissions as $key => $value) {
@@ -89,6 +93,10 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
+        if ($role->is_protected) {
+            abort(403, 'This role is protected and cannot be deleted.');
+        }
+
         if ($role->users()->count() > 0) {
             return redirect()->route('admin.roles.index')->with('error', 'Cannot delete role because it is assigned to users.');
         }

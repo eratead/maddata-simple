@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -69,7 +68,10 @@ class SystemStatusController extends Controller
 
     public function terminateAll()
     {
-        $adminIds = User::where('is_admin', true)->pluck('id');
+        $adminIds = User::where(fn ($q) => $q
+            ->where('is_admin', true)
+            ->orWhereHas('userRole', fn ($r) => $r->whereJsonContains('permissions->is_admin', true))
+        )->pluck('id');
 
         DB::table('sessions')
             ->whereNotNull('user_id')
