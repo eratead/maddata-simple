@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\CreativeFile;
 use App\Services\ActivityLogger;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
+use Illuminate\Support\Facades\Storage;
 
 class CreativeFileObserver implements ShouldHandleEventsAfterCommit
 {
@@ -43,6 +44,11 @@ class CreativeFileObserver implements ShouldHandleEventsAfterCommit
 
     public function deleted(CreativeFile $creativeFile): void
     {
+        // Remove the physical file from disk whenever a CreativeFile record is deleted,
+        // regardless of whether the deletion originated from a controller, observer, or
+        // any other code path.
+        Storage::disk('creatives')->delete($creativeFile->path);
+
         $data = [
             'width' => $creativeFile->width,
             'height' => $creativeFile->height,

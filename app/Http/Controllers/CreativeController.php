@@ -123,10 +123,9 @@ class CreativeController extends Controller
                 }
             }
 
-            // Remove existing file with same dimensions
+            // Remove existing file with same dimensions; disk cleanup handled by CreativeFileObserver::deleted.
             if ($width > 0 && $height > 0) {
                 foreach ($creative->files()->where('width', $width)->where('height', $height)->get() as $old) {
-                    Storage::disk('creatives')->delete($old->path);
                     $old->delete();
                 }
             }
@@ -165,9 +164,16 @@ class CreativeController extends Controller
 
     public function deleteFile(\App\Models\CreativeFile $file)
     {
-        $this->authorize('update', $file->creative->campaign);
+        $creative = $file->creative;
 
-        Storage::disk('creatives')->delete($file->path);
+        // Verify the file belongs to the creative and the creative belongs to a campaign
+        // the user is authorised to update — defense-in-depth against cross-campaign file access.
+        if ($creative === null) {
+            abort(404);
+        }
+
+        $this->authorize('update', $creative->campaign);
+
         $file->delete();
 
         return back()->with('success', 'File deleted successfully.');
@@ -175,7 +181,13 @@ class CreativeController extends Controller
 
     public function preview(\App\Models\CreativeFile $file)
     {
-        $this->authorize('view', $file->creative->campaign);
+        $creative = $file->creative;
+
+        if ($creative === null) {
+            abort(404);
+        }
+
+        $this->authorize('view', $creative->campaign);
 
         if (! Storage::disk('creatives')->exists($file->path)) {
             abort(404);
@@ -196,7 +208,13 @@ class CreativeController extends Controller
 
     public function downloadFile(\App\Models\CreativeFile $file)
     {
-        $this->authorize('view', $file->creative->campaign);
+        $creative = $file->creative;
+
+        if ($creative === null) {
+            abort(404);
+        }
+
+        $this->authorize('view', $creative->campaign);
 
         if (! Storage::disk('creatives')->exists($file->path)) {
             abort(404);

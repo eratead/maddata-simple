@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Creative;
+use App\Models\CreativeFile;
 use App\Services\ActivityLogger;
 use Illuminate\Contracts\Events\ShouldHandleEventsAfterCommit;
 
@@ -16,6 +17,14 @@ class CreativeObserver implements ShouldHandleEventsAfterCommit
     public function __construct(ActivityLogger $logger)
     {
         $this->logger = $logger;
+    }
+
+    public function deleting(Creative $creative): void
+    {
+        // Manually delete each file via Eloquent so that CreativeFileObserver::deleted
+        // fires for every file — ensuring physical disk cleanup. The DB-level cascade on
+        // creative_files.creative_id is now redundant but remains as a safety net.
+        $creative->files->each(fn (CreativeFile $file) => $file->delete());
     }
 
     public function created(Creative $creative): void
