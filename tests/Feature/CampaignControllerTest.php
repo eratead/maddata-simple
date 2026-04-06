@@ -104,7 +104,6 @@ class CampaignControllerTest extends TestCase
         $response = $this->post(route('campaigns.store'), [
             'name' => 'Test Campaign',
             'client_id' => $client->id,
-            'expected_impressions' => 10000,
             'status' => 'active',
         ]);
 
@@ -126,7 +125,6 @@ class CampaignControllerTest extends TestCase
         $response = $this->put(route('campaigns.update', $campaign), [
             'name' => 'Updated by User',
             'client_id' => $campaign->client_id,
-            'expected_impressions' => $campaign->expected_impressions,
             'status' => 'active',
         ]);
 
@@ -150,7 +148,6 @@ class CampaignControllerTest extends TestCase
         $response = $this->put(route('campaigns.update', $campaign), [
             'name' => 'Blocked Update',
             'client_id' => $campaign->client_id,
-            'expected_impressions' => $campaign->expected_impressions,
             'status' => 'active',
         ]);
 

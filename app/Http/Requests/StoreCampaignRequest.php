@@ -16,7 +16,7 @@ class StoreCampaignRequest extends FormRequest
         return [
             'name' => 'required|string|min:2|max:255',
             'client_id' => 'required|exists:clients,id',
-            'expected_impressions' => 'nullable|integer|min:0|max:1000000000',
+            'expected_impressions' => $this->user()->hasPermission('is_admin') ? ['nullable', 'integer', 'min:0', 'max:1000000000'] : ['prohibited'],
             'budget' => 'nullable|numeric|min:0|max:1000000000',
             'start_date' => 'nullable|date|after_or_equal:today',
             'end_date' => 'nullable|date|after_or_equal:start_date',

@@ -9,6 +9,8 @@ class AiLocationController extends Controller
 {
     public function generate(Request $request)
     {
+        abort_unless(auth()->user()->hasPermission('can_edit_campaigns'), 403);
+
         $request->validate(['prompt' => 'required|string|max:500']);
 
         $response = Http::timeout(15)->withHeaders([

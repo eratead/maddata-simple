@@ -12,7 +12,9 @@ class CampaignAssistantController extends Controller
         abort_unless(auth()->user()->hasPermission('can_edit_campaigns'), 403);
 
         $request->validate([
-            'chatHistory' => 'required|array',
+            'chatHistory' => ['required', 'array', 'max:50'],
+            'chatHistory.*.role' => ['required', 'string', 'in:user,assistant'],
+            'chatHistory.*.content' => ['required', 'string', 'max:5000'],
             'currentFormData' => 'required|array',
         ]);
 
