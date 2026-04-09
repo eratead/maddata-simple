@@ -79,7 +79,6 @@ class CampaignMetricsService
             'date' => Carbon::parse($r->report_date)->format('Y-m-d'),
             'impr' => (int) $r->impressions,
             'clicks' => (int) $r->clicks,
-            'visible' => (int) $r->visible_impressions,
             'v25' => (int) $r->video_25,
             'v50' => (int) $r->video_50,
             'v75' => (int) $r->video_75,
