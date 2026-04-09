@@ -179,7 +179,7 @@
                     @forelse ($logs as $log)
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-3 text-gray-400 text-xs">
-                                {{ $log->created_at->format('M j, Y g:i A') }}
+                                {{ $log->created_at->timezone(config('app.display_timezone'))->format('M j, Y g:i A') }}
                             </td>
                             <td class="px-4 py-3 font-medium text-gray-700">
                                 {{ $log->user->name ?? 'System' }}

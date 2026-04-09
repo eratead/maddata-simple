@@ -45,7 +45,7 @@
                                 @endif
                                 
                                 - {{ $log->description }}
-                                <small style="color: #718096;">(by {{ $log->user->name ?? 'System' }} at {{ $log->created_at->format('H:i') }})</small>
+                                <small style="color: #718096;">(by {{ $log->user->name ?? 'System' }} at {{ $log->created_at->timezone(config('app.display_timezone'))->format('H:i') }})</small>
                             </li>
                         @endforeach
                     </ul>
