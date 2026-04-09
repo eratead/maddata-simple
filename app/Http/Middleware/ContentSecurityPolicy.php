@@ -24,11 +24,11 @@ class ContentSecurityPolicy
 
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "img-src 'self' data: blob:",
-            "font-src 'self' https://fonts.gstatic.com",
-            "connect-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdn.datatables.net https://code.jquery.com https://unpkg.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.datatables.net https://unpkg.com",
+            "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
+            "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net",
+            "connect-src 'self' https://nominatim.openstreetmap.org",
             "frame-ancestors 'none'",
         ]);
 
