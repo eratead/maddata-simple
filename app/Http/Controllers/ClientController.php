@@ -29,7 +29,8 @@ class ClientController extends Controller
             $query->where('agency_id', $agencyId);
         }
 
-        $clients = $query->paginate(25)->withQueryString();
+        // ->get() not ->paginate() — view uses MadDataTable for client-side pagination
+        $clients = $query->orderBy('name')->get();
         $agencies = Agency::orderBy('name')->get();
         $currentAgency = $agencyId ? Agency::find($agencyId) : null;
 

@@ -4,7 +4,7 @@
     <div class="flex items-center gap-2">
         <h1 class="text-sm font-semibold text-gray-800">Audiences</h1>
         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-[#F97316]/10 text-[#F97316] border border-[#F97316]/20">
-            {{ $audiences->total() }}
+            {{ $audiences->count() }}
         </span>
     </div>
 @endpush
@@ -243,12 +243,6 @@
         </x-ui.datatable>
     </x-page-box>
     </div>
-
-    @if ($audiences->hasPages())
-        <div class="mt-4 flex justify-end">
-            {{ $audiences->links() }}
-        </div>
-    @endif
 
     {{-- =========================================================
          Create / Edit Modal

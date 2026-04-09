@@ -18,7 +18,8 @@ class AgencyController extends Controller
 
     public function index()
     {
-        $agencies = Agency::withCount('clients')->orderBy('name')->paginate(25)->withQueryString();
+        // ->get() not ->paginate() — view uses MadDataTable for client-side pagination
+        $agencies = Agency::withCount('clients')->orderBy('name')->get();
 
         return view('admin.agencies.index', compact('agencies'));
     }

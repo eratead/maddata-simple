@@ -41,9 +41,11 @@ class CampaignController extends Controller
 
         $query->orderByDesc('start_date')->orderByDesc('created_at');
 
-        $campaigns = $query->paginate(25)->withQueryString();
+        // Use ->get() instead of ->paginate() — the index view uses MadDataTable
+        // for client-side search/sort/pagination, which requires all rows in DOM.
+        $campaigns = $query->get();
 
-        // Calculate pacing data for campaigns on the current page only
+        // Calculate pacing data for all campaigns
         $pacingData = [];
         $campaignIds = $campaigns->pluck('id');
 

@@ -34,7 +34,8 @@ class AudienceController extends Controller
             $query->where('main_category', $request->category);
         }
 
-        $audiences = $query->paginate(50)->withQueryString();
+        // ->get() not ->paginate() — view uses MadDataTable for client-side pagination
+        $audiences = $query->get();
 
         // Filter dropdowns — separate queries, small result sets
         $categories = Audience::select('main_category')
