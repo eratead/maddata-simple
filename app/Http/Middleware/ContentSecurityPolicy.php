@@ -28,7 +28,7 @@ class ContentSecurityPolicy
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://cdn.datatables.net https://unpkg.com",
             "img-src 'self' data: blob: https://*.tile.openstreetmap.org",
             "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net",
-            "connect-src 'self' https://nominatim.openstreetmap.org",
+            "connect-src 'self' https://nominatim.openstreetmap.org https://cdn.jsdelivr.net https://cdn.datatables.net https://unpkg.com",
             "frame-ancestors 'none'",
         ]);
 
