@@ -33,4 +33,9 @@ class AudiencePolicy
     {
         return $user->hasPermission('is_admin') || $user->hasPermission('can_manage_clients');
     }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermission('is_admin') || $user->hasPermission('can_manage_clients');
+    }
 }

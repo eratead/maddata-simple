@@ -22,7 +22,7 @@ class TokenControllerTest extends TestCase
 
     private function makeCampaignManager(): User
     {
-        $role = Role::create(['name' => 'Campaign Manager', 'permissions' => []]);
+        $role = Role::create(['name' => 'Campaign Manager', 'permissions' => ['can_edit_campaigns' => true]]);
 
         return User::factory()->create(['role_id' => $role->id]);
     }

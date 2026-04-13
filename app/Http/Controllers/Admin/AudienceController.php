@@ -221,7 +221,7 @@ class AudienceController extends Controller
 
     public function batchDelete(Request $request)
     {
-        $this->authorize('delete', Audience::class);
+        $this->authorize('deleteAny', Audience::class);
 
         $request->validate([
             'ids' => ['required', 'array'],

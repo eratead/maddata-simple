@@ -21,10 +21,7 @@ class EnsureUserIsCampaignManager
             abort(403, 'Unauthorized action.');
         }
 
-        $isAdmin = $user->hasPermission('is_admin');
-        $isCampaignManager = $user->userRole && $user->userRole->name === 'Campaign Manager';
-
-        if (! $isAdmin && ! $isCampaignManager) {
+        if (! $user->hasPermission('is_admin') && ! $user->hasPermission('can_edit_campaigns')) {
             abort(403, 'Unauthorized action.');
         }
 
