@@ -201,8 +201,13 @@ class ReportApiController extends Controller
 
     public function campaigns()
     {
-        $start = request('start');
-        $end = request('end');
+        $validated = request()->validate([
+            'start' => ['nullable', 'date'],
+            'end' => ['nullable', 'date'],
+        ]);
+
+        $start = $validated['start'] ?? null;
+        $end = $validated['end'] ?? null;
 
         $paginated = \App\Models\Campaign::with('client')
             ->when($start && $end, function ($query) use ($start, $end) {
