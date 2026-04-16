@@ -435,7 +435,10 @@ function campaignAssistant() {
                 const td = Alpine.$data(targetingEl);
                 targeting = { genders: td.genders, ages: td.ages, incomes: td.incomes, deviceTypes: td.deviceTypes, os: td.os, connectionTypes: td.connectionTypes, environments: td.environments, days: td.days, timeStart: td.timeStart, timeEnd: td.timeEnd, countries: td.countries, regions: td.regions, cities: td.cities };
             }
-            return { name: val('name'), budget: val('budget'), expected_impressions: val('expected_impressions'), start_date: val('start_date'), end_date: val('end_date'), status: val('status'), targeting };
+            let audience_ids = [];
+            const audienceEl = document.querySelector('[x-data^="audienceManager"]');
+            if (audienceEl) audience_ids = Alpine.$data(audienceEl).connected.map(a => a.id).filter(Boolean);
+            return { name: val('name'), budget: val('budget'), expected_impressions: val('expected_impressions'), start_date: val('start_date'), end_date: val('end_date'), status: val('status'), targeting, audience_ids };
         },
 
         applyUpdates(updates) {
@@ -465,6 +468,17 @@ function campaignAssistant() {
                 ['genders','ages','incomes','environments','days','countries','regions','cities'].forEach(f => { if (updates[f] !== undefined) td[f] = updates[f]; });
                 if (updates.timeStart !== undefined) td.timeStart = updates.timeStart;
                 if (updates.timeEnd !== undefined) td.timeEnd = updates.timeEnd;
+            }
+            if (updates.audience_ids !== undefined && Array.isArray(updates.audience_ids)) {
+                const audienceEl = document.querySelector('[x-data^="audienceManager"]');
+                if (audienceEl) {
+                    const am = Alpine.$data(audienceEl);
+                    fetch(`/campaigns/${am.campaignId}/audiences/sync`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                        body: JSON.stringify({ audience_ids: updates.audience_ids }),
+                    }).then(r => r.json()).then(data => { am.connected = data.connected; });
+                }
             }
         },
 

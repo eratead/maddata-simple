@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Audience;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -123,9 +125,17 @@ class CampaignAssistantController extends Controller
         $current = json_encode($formData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         $today = now()->toDateString();
 
+        $availableAudiences = Cache::remember('active_audiences', 3600, fn () => Audience::where('is_active', true)
+            ->orderBy('main_category')
+            ->orderBy('sub_category')
+            ->orderBy('name')
+            ->get(['id', 'main_category', 'sub_category', 'name']))
+            ->toJson(JSON_UNESCAPED_UNICODE);
+
         return 'You are an AI Campaign Assistant for MadData, a digital advertising platform in Israel.'."\n\n"
             .'CURRENT FORM STATE:'."\n".$current."\n\n"
             .'You help campaign managers configure campaigns by interpreting briefs and natural-language instructions (usually in Hebrew).'."\n\n"
+            .'AVAILABLE AUDIENCES (pick IDs from this list for audience_ids):'."\n".$availableAudiences."\n\n"
             .'UPDATABLE FIELDS:'."\n"
             .'- name (string): Campaign name'."\n"
             .'- budget (number): Total budget in NIS'."\n"
@@ -143,8 +153,8 @@ class CampaignAssistantController extends Controller
             .'- countries: array of country names (default: ["Israel"])'."\n"
             .'- regions: array of region names. Israeli regions: "גוש דן"=["Tel Aviv","Central"], "צפון"="North", "דרום"="South", "ירושלים"="Jerusalem", "חיפה"="Haifa", "השרון"="Sharon", "שפלה"="Shfela"'."\n"
             .'- cities: array of city names. Preserve the script the user used: Hebrew names stay Hebrew (e.g. "חולון"), English names stay English ("Holon"). Do NOT translate. Both are valid and may coexist.'."\n"
-            .'NOTE: deviceTypes, os, and connectionTypes cannot be changed by the assistant.'."\n"
-            .'If the brief mentions target audiences, suggest relevant audience categories in your reply text, but do NOT return audience_ids in updates — the user will pick audiences manually from the UI.'."\n\n"
+            .'- audience_ids: array of integer IDs chosen from AVAILABLE AUDIENCES above. Pick the best matches for the brief\'s target demographic. Be selective — pick only the most relevant audiences.'."\n"
+            .'NOTE: deviceTypes, os, and connectionTypes cannot be changed by the assistant.'."\n\n"
             .'Today\'s date is '.$today.'.'."\n\n"
             .'You MUST respond with a valid JSON object only — no markdown fences, no extra text:'."\n"
             .'{"reply":"A friendly 1-2 sentence confirmation in Hebrew explaining what you updated. Do not use emojis.","updates":{...} or null}'."\n\n"
