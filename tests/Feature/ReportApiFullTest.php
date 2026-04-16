@@ -363,7 +363,7 @@ it('by-placement each entry has placement, impressions, clicks, ctr, visible_imp
 // Campaigns list endpoint
 // ---------------------------------------------------------------------------
 
-it('campaigns returns paginated list of accessible campaigns', function () {
+it('campaigns returns flat list of accessible campaigns', function () {
     [$user, $client, $plainToken] = createTokenUser();
     Campaign::factory()->count(3)->create(['client_id' => $client->id, 'status' => 'active']);
 
@@ -371,7 +371,7 @@ it('campaigns returns paginated list of accessible campaigns', function () {
         ->getJson('/api/reports/campaigns')
         ->assertOk();
 
-    expect($response->json('data'))->toHaveCount(3);
+    expect($response->json())->toHaveCount(3);
 });
 
 it('campaigns non-admin only sees their clients campaigns', function () {
@@ -386,26 +386,28 @@ it('campaigns non-admin only sees their clients campaigns', function () {
         ->getJson('/api/reports/campaigns')
         ->assertOk();
 
-    $names = collect($response->json('data'))->pluck('name');
+    $names = collect($response->json())->pluck('name');
     expect($names)->toContain('My Campaign');
     expect($names)->not->toContain('Other Campaign');
 });
 
-it('campaigns response has pagination structure', function () {
+it('campaigns response is a flat array with no paginator envelope', function () {
     [$user, $client, $plainToken] = createTokenUser();
     Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
 
-    $this->withHeader('Authorization', 'Bearer '.$plainToken)
+    $response = $this->withHeader('Authorization', 'Bearer '.$plainToken)
         ->getJson('/api/reports/campaigns')
         ->assertOk()
         ->assertJsonStructure([
-            'data',
-            'links',
-            'current_page',
-            'last_page',
-            'per_page',
-            'total',
+            ['id', 'name', 'client_name', 'client_id', 'created_at'],
         ]);
+
+    // Defend against the regression where Laravel's paginator envelope
+    // leaked a `links` array of page-navigation objects that downstream
+    // ingestion tools parsed as null rows.
+    $body = $response->json();
+    expect($body)->toBeArray();
+    expect(array_keys($body))->toEqual(range(0, count($body) - 1));
 });
 
 // ---------------------------------------------------------------------------

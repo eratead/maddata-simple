@@ -209,7 +209,7 @@ class ReportApiController extends Controller
         $start = $validated['start'] ?? null;
         $end = $validated['end'] ?? null;
 
-        $paginated = \App\Models\Campaign::with('client')
+        $campaigns = \App\Models\Campaign::with('client')
             ->when($start && $end, function ($query) use ($start, $end) {
                 $query->whereBetween('created_at', [$start, $end]);
             })
@@ -219,18 +219,18 @@ class ReportApiController extends Controller
                 }
             })
             ->orderByDesc('created_at')
-            ->paginate(50);
+            ->limit(1000)
+            ->get()
+            ->map(function ($campaign) {
+                return [
+                    'id' => $campaign->id,
+                    'name' => $campaign->name,
+                    'client_name' => $campaign->client->name ?? '',
+                    'client_id' => $campaign->client->id ?? '',
+                    'created_at' => $campaign->created_at->toDateTimeString(),
+                ];
+            });
 
-        $paginated->getCollection()->transform(function ($campaign) {
-            return [
-                'id' => $campaign->id,
-                'name' => $campaign->name,
-                'client_name' => $campaign->client->name ?? '',
-                'client_id' => $campaign->client->id ?? '',
-                'created_at' => $campaign->created_at->toDateTimeString(),
-            ];
-        });
-
-        return response()->json($paginated, 200, [], JSON_UNESCAPED_UNICODE);
+        return response()->json($campaigns, 200, [], JSON_UNESCAPED_UNICODE);
     }
 }

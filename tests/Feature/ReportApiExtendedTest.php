@@ -257,7 +257,7 @@ class ReportApiExtendedTest extends TestCase
 
         $response = $this->actingAs($user)->getJson(route('reports.campaigns'));
 
-        $names = collect($response->json('data'))->pluck('name');
+        $names = collect($response->json())->pluck('name');
         $this->assertContains('My Campaign', $names->all());
         $this->assertNotContains('Other Campaign', $names->all());
     }
@@ -270,7 +270,7 @@ class ReportApiExtendedTest extends TestCase
 
         $response = $this->actingAs($admin)->getJson(route('reports.campaigns'));
 
-        $names = collect($response->json('data'))->pluck('name');
+        $names = collect($response->json())->pluck('name');
         $this->assertContains('Campaign Alpha', $names->all());
         $this->assertContains('Campaign Beta', $names->all());
     }
@@ -282,7 +282,7 @@ class ReportApiExtendedTest extends TestCase
 
         $response = $this->actingAs($admin)->getJson(route('reports.campaigns'));
 
-        $response->assertJsonStructure(['data' => [['id', 'name', 'client_name', 'client_id', 'created_at']]]);
+        $response->assertJsonStructure([['id', 'name', 'client_name', 'client_id', 'created_at']]);
     }
 
     public function test_campaigns_filters_by_date_range(): void
@@ -295,7 +295,7 @@ class ReportApiExtendedTest extends TestCase
             route('reports.campaigns').'?start=2024-01-01&end=2024-12-31'
         );
 
-        $names = collect($response->json('data'))->pluck('name');
+        $names = collect($response->json())->pluck('name');
         $this->assertContains('Current Campaign', $names->all());
         $this->assertNotContains('Old Campaign', $names->all());
     }

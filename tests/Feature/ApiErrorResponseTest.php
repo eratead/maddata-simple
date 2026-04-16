@@ -143,7 +143,7 @@ it('returns 200 JSON for a valid authenticated request', function () {
 
     $response->assertOk();
     $response->assertHeader('Content-Type', 'application/json');
-    $response->assertJsonStructure(['data', 'current_page', 'total']);
+    $response->assertJsonStructure([['id', 'name', 'client_name', 'client_id', 'created_at']]);
     $response->assertDontSee('<!DOCTYPE html', false);
 });
 
