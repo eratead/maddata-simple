@@ -181,6 +181,50 @@ it('logs user_id and message_count in the assistant.request entry', function () 
 // Response with null updates — updates_keys is an empty array
 // ---------------------------------------------------------------------------
 
+it('flattens updates wrapped under "targeting" so applyUpdates() sees the fields at the top level', function () {
+    // Reproduces the production bug found via the new ai log channel:
+    // Claude returned {"updates":{"targeting":{"cities":["חולון","בת ים"]}}}
+    // The frontend looks for updates.cities at the top level, so the cities
+    // were silently dropped. The controller now defensively lifts wrapper keys.
+    $cannedResponse = json_encode([
+        'reply' => 'הוספתי את הערים.',
+        'updates' => [
+            'targeting' => [
+                'cities' => ['חולון', 'בת ים', 'ראשון לציון'],
+                'regions' => ['Tel Aviv'],
+            ],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [['text' => $cannedResponse]],
+        ], 200),
+    ]);
+
+    $messages = [];
+    Log::listen(function (\Illuminate\Log\Events\MessageLogged $event) use (&$messages) {
+        $messages[] = ['message' => $event->message, 'context' => $event->context];
+    });
+
+    $user = assistantEditorUser();
+
+    $response = $this->actingAs($user)
+        ->postJson(route('ai.campaign-assistant'), validChatPayload())
+        ->assertOk();
+
+    // Top-level cities and regions appear in the JSON returned to the frontend.
+    expect($response->json('updates.cities'))->toBe(['חולון', 'בת ים', 'ראשון לציון']);
+    expect($response->json('updates.regions'))->toBe(['Tel Aviv']);
+    expect($response->json('updates.targeting'))->toBeNull();
+
+    // Logging captures both the raw nested shape and the flattened keys, so a
+    // future operator can see at a glance whether the LLM is still wrapping.
+    $responseLog = collect($messages)->firstWhere('message', 'assistant.response');
+    expect($responseLog['context']['updates_keys'])->toContain('cities')->toContain('regions');
+    expect($responseLog['context']['raw_updates_keys'])->toBe(['targeting']);
+});
+
 it('logs an empty updates_keys array when the LLM returns updates: null', function () {
     $cannedResponse = json_encode([
         'reply' => 'אני לא מבין. נסה שוב.',

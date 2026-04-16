@@ -91,10 +91,24 @@ class CampaignAssistantController extends Controller
 
         $updates = $data['updates'] ?? null;
 
+        // Defensive flatten: some LLM responses wrap fields under "targeting"
+        // (or other groupers) despite the prompt forbidding it. Lift any
+        // recognised wrapper's keys to the top level so applyUpdates() sees them.
+        if (is_array($updates)) {
+            foreach (['targeting', 'geo', 'demographics', 'location', 'audience'] as $wrapper) {
+                if (isset($updates[$wrapper]) && is_array($updates[$wrapper])) {
+                    $wrapped = $updates[$wrapper];
+                    unset($updates[$wrapper]);
+                    $updates = array_merge($updates, $wrapped);
+                }
+            }
+        }
+
         Log::channel('ai')->info('assistant.response', [
             'user_id' => auth()->id(),
             'reply_length' => strlen($data['reply']),
             'updates_keys' => is_array($updates) ? array_keys($updates) : [],
+            'raw_updates_keys' => is_array($data['updates'] ?? null) ? array_keys($data['updates']) : [],
             'raw_text_length' => strlen($rawText),
         ]);
 
@@ -128,12 +142,15 @@ class CampaignAssistantController extends Controller
             .'- timeEnd: time in HH:MM format (e.g. "20:00"). Empty string means no restriction.'."\n"
             .'- countries: array of country names (default: ["Israel"])'."\n"
             .'- regions: array of region names. Israeli regions: "גוש דן"=["Tel Aviv","Central"], "צפון"="North", "דרום"="South", "ירושלים"="Jerusalem", "חיפה"="Haifa", "השרון"="Sharon", "שפלה"="Shfela"'."\n"
-            .'- cities: array of city names in English'."\n"
+            .'- cities: array of city names. Preserve the script the user used: Hebrew names stay Hebrew (e.g. "חולון"), English names stay English ("Holon"). Do NOT translate. Both are valid and may coexist.'."\n"
             .'NOTE: deviceTypes, os, and connectionTypes cannot be changed by the assistant.'."\n"
             .'If the brief mentions target audiences, suggest relevant audience categories in your reply text, but do NOT return audience_ids in updates — the user will pick audiences manually from the UI.'."\n\n"
             .'Today\'s date is '.$today.'.'."\n\n"
             .'You MUST respond with a valid JSON object only — no markdown fences, no extra text:'."\n"
             .'{"reply":"A friendly 1-2 sentence confirmation in Hebrew explaining what you updated. Do not use emojis.","updates":{...} or null}'."\n\n"
+            .'CRITICAL JSON STRUCTURE RULES:'."\n"
+            .'- Place updatable fields DIRECTLY inside "updates" at the top level. Example: {"updates":{"cities":["חולון","בת ים"],"budget":5000}}'."\n"
+            .'- DO NOT wrap fields in any sub-object. NEVER use "targeting", "geo", "demographics", "location", "audience", or any other wrapper key. Wrong: {"updates":{"targeting":{"cities":[...]}}}. Right: {"updates":{"cities":[...]}}.'."\n\n"
             .'Rules:'."\n"
             .'- Only include fields you are actually changing in "updates"'."\n"
             .'- For array fields, always return the complete desired array (not a diff)'."\n"
