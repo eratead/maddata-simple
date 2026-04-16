@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CampaignAssistantController extends Controller
 {
@@ -11,16 +12,26 @@ class CampaignAssistantController extends Controller
     {
         abort_unless(auth()->user()->hasPermission('can_edit_campaigns'), 403);
 
-        $request->validate([
+        $validated = $request->validate([
             'chatHistory' => ['required', 'array', 'max:50'],
             'chatHistory.*.role' => ['required', 'string', 'in:user,assistant'],
             'chatHistory.*.content' => ['required', 'string', 'max:5000'],
             'currentFormData' => 'required|array',
         ]);
 
-        $systemPrompt = $this->buildSystemPrompt($request->currentFormData);
+        $lastUserMessage = collect($validated['chatHistory'])
+            ->where('role', 'user')
+            ->last();
 
-        $messages = collect($request->chatHistory)
+        Log::channel('ai')->info('assistant.request', [
+            'user_id' => auth()->id(),
+            'message_count' => count($validated['chatHistory']),
+            'last_user_message_length' => $lastUserMessage ? strlen($lastUserMessage['content']) : 0,
+        ]);
+
+        $systemPrompt = $this->buildSystemPrompt($validated['currentFormData']);
+
+        $messages = collect($validated['chatHistory'])
             ->map(fn ($m) => [
                 'role' => ($m['role'] ?? '') === 'user' ? 'user' : 'assistant',
                 'content' => (string) ($m['content'] ?? ''),
@@ -32,39 +43,64 @@ class CampaignAssistantController extends Controller
         // Session data is already written; this unblocks other tabs/requests from the same user.
         session()->save();
 
-        $response = Http::timeout(15)->withHeaders([
-            'x-api-key' => config('services.anthropic.api_key'),
-            'anthropic-version' => '2023-06-01',
-            'content-type' => 'application/json',
-        ])->post('https://api.anthropic.com/v1/messages', [
-            'model' => 'claude-sonnet-4-6',
-            'max_tokens' => 1024,
-            'system' => $systemPrompt,
-            'messages' => $messages,
-        ]);
+        try {
+            $response = Http::timeout(15)->withHeaders([
+                'x-api-key' => config('services.anthropic.api_key'),
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])->post('https://api.anthropic.com/v1/messages', [
+                'model' => 'claude-sonnet-4-6',
+                'max_tokens' => 1024,
+                'system' => $systemPrompt,
+                'messages' => $messages,
+            ]);
+        } catch (\Throwable $e) {
+            Log::channel('ai')->error('assistant.upstream_error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
 
-        if ($response->failed()) {
             return response()->json(['error' => 'AI request failed.'], 502);
         }
 
-        $raw = $response->json('content.0.text', '{}');
+        if ($response->failed()) {
+            Log::channel('ai')->error('assistant.upstream_error', [
+                'user_id' => auth()->id(),
+                'http_status' => $response->status(),
+            ]);
+
+            return response()->json(['error' => 'AI request failed.'], 502);
+        }
+
+        $rawText = $response->json('content.0.text', '{}');
 
         // Strip markdown code fences if the model included them
-        $raw = preg_replace('/^```(?:json)?\s*/i', '', trim($raw));
+        $raw = preg_replace('/^```(?:json)?\s*/i', '', trim($rawText));
         $raw = preg_replace('/\s*```$/', '', $raw);
 
         $data = json_decode(trim($raw), true);
 
         if (! is_array($data) || ! isset($data['reply'])) {
-            return response()->json([
-                'reply' => 'I had trouble processing that. Please try again.',
-                'updates' => null,
+            Log::channel('ai')->warning('assistant.parse_failure', [
+                'user_id' => auth()->id(),
+                'raw_text_length' => strlen($rawText),
             ]);
+
+            return response()->json(['error' => 'AI returned an unexpected response format.'], 502);
         }
+
+        $updates = $data['updates'] ?? null;
+
+        Log::channel('ai')->info('assistant.response', [
+            'user_id' => auth()->id(),
+            'reply_length' => strlen($data['reply']),
+            'updates_keys' => is_array($updates) ? array_keys($updates) : [],
+            'raw_text_length' => strlen($rawText),
+        ]);
 
         return response()->json([
             'reply' => $data['reply'],
-            'updates' => $data['updates'] ?? null,
+            'updates' => $updates,
         ]);
     }
 

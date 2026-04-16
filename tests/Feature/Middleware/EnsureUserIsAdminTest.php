@@ -51,7 +51,7 @@ it('returns 403 for disabled legacy admin on admin route', function () {
 it('middleware handles null user gracefully throwing 403 HttpException not a TypeError', function () {
     // Directly invoke the middleware with a null-user request.
     // The null guard (if $user === null) must abort(403), NOT throw a TypeError/NPE.
-    $middleware = new \App\Http\Middleware\EnsureUserIsAdmin();
+    $middleware = new \App\Http\Middleware\EnsureUserIsAdmin;
     $request = \Illuminate\Http\Request::create('/admin/users', 'GET');
     // request->user() returns null since no auth guard is bootstrapped in this test
 

@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\ActivityLog;
 use App\Models\Campaign;
 use App\Models\Client;
 use App\Models\Role;

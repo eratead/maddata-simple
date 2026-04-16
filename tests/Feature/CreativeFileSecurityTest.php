@@ -21,21 +21,21 @@ uses(RefreshDatabase::class);
  */
 function makeCreativeSetup(string $filename = 'banner.jpg'): array
 {
-    $client   = Client::factory()->create();
+    $client = Client::factory()->create();
     $campaign = Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
     $creative = Creative::factory()->create(['campaign_id' => $campaign->id]);
 
-    $path = $creative->id . '/' . $filename;
+    $path = $creative->id.'/'.$filename;
     Storage::disk('creatives')->put($path, 'fake-image-bytes');
 
     $file = CreativeFile::create([
         'creative_id' => $creative->id,
-        'name'        => $filename,
-        'path'        => $path,
-        'mime_type'   => 'image/jpeg',
-        'width'       => 300,
-        'height'      => 250,
-        'size'        => 16,
+        'name' => $filename,
+        'path' => $path,
+        'mime_type' => 'image/jpeg',
+        'width' => 300,
+        'height' => 250,
+        'size' => 16,
     ]);
 
     return [$client, $campaign, $creative, $file];

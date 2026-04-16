@@ -244,7 +244,7 @@ it('admin can view any user profile', function () {
     $admin = User::factory()->create(['is_admin' => true, 'is_active' => true]);
     $other = User::factory()->create(['is_admin' => false, 'is_active' => true]);
 
-    $policy = new \App\Policies\UserPolicy();
+    $policy = new \App\Policies\UserPolicy;
     expect($policy->view($admin, $other))->toBeTrue();
 });
 
@@ -261,14 +261,14 @@ it('user with can_manage_users can view any user', function () {
 
     $other = User::factory()->create(['is_admin' => false, 'is_active' => true]);
 
-    $policy = new \App\Policies\UserPolicy();
+    $policy = new \App\Policies\UserPolicy;
     expect($policy->view($manager, $other))->toBeTrue();
 });
 
 it('user can view themselves', function () {
     $user = User::factory()->create(['is_admin' => false, 'is_active' => true]);
 
-    $policy = new \App\Policies\UserPolicy();
+    $policy = new \App\Policies\UserPolicy;
     expect($policy->view($user, $user))->toBeTrue();
 });
 
@@ -284,6 +284,6 @@ it('unrelated user without admin cannot view another user', function () {
 
     $other = User::factory()->create(['is_admin' => false, 'is_active' => true]);
 
-    $policy = new \App\Policies\UserPolicy();
+    $policy = new \App\Policies\UserPolicy;
     expect($policy->view($user, $other))->toBeFalse();
 });

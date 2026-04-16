@@ -25,7 +25,7 @@ function audienceTestNonAdmin(): User
 function audienceTestUserWithPermission(string $permission): User
 {
     $role = Role::create([
-        'name' => "Role-{$permission}-" . uniqid(),
+        'name' => "Role-{$permission}-".uniqid(),
         'permissions' => [$permission => true],
     ]);
     $user = User::factory()->create(['is_admin' => false]);
@@ -41,7 +41,7 @@ function audiencePayload(array $overrides = []): array
     return array_merge([
         'main_category' => 'Interests',
         'sub_category' => 'Tech',
-        'name' => 'Early Adopters ' . uniqid(),
+        'name' => 'Early Adopters '.uniqid(),
         'estimated_users' => 50000,
     ], $overrides);
 }

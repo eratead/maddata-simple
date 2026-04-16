@@ -314,9 +314,9 @@ function targetingData(initial) {
         },
         async loadCountriesList() {
             try {
-                const res = await fetch('https://countriesnow.space/api/v0.1/countries/iso');
+                const res = await fetch('/api/geo/countries');
                 const data = await res.json();
-                if (!data.error) this.geoCountriesList = data.data.map(c => c.name).sort();
+                if (data.data) this.geoCountriesList = data.data;
             } catch {}
         },
         async loadGeoData() {
@@ -325,13 +325,14 @@ function targetingData(initial) {
             this.geoLoadingRegions = true;
             this.geoLoadingCities = true;
             try {
+                const enc = encodeURIComponent(country);
                 const [rRes, cRes] = await Promise.all([
-                    fetch('https://countriesnow.space/api/v0.1/countries/states', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({country}) }),
-                    fetch('https://countriesnow.space/api/v0.1/countries/cities', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({country}) }),
+                    fetch(`/api/geo/regions?country=${enc}`),
+                    fetch(`/api/geo/cities?country=${enc}`),
                 ]);
                 const [rData, cData] = await Promise.all([rRes.json(), cRes.json()]);
-                if (!rData.error) this.geoRegionsList = rData.data.states.map(s => s.name);
-                if (!cData.error) this.geoCitiesList = cData.data;
+                if (rData.data) this.geoRegionsList = rData.data;
+                if (cData.data) this.geoCitiesList = cData.data;
             } catch {}
             this.geoLoadingRegions = false;
             this.geoLoadingCities = false;

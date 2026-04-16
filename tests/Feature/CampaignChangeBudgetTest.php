@@ -17,7 +17,7 @@ function makeUserWithLogsPermission(array $extraPermissions = []): User
 {
     $permissions = array_merge(['can_see_logs' => true], $extraPermissions);
     $role = Role::create([
-        'name' => 'LogViewer-' . uniqid(),
+        'name' => 'LogViewer-'.uniqid(),
         'permissions' => $permissions,
     ]);
     $user = User::factory()->create(['is_admin' => false]);

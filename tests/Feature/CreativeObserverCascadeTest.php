@@ -48,7 +48,7 @@ function fireFileDeletedObserver(CreativeFile $file): void
  */
 function fireCreativeDeletingCascade(Creative $creative): void
 {
-    $logger   = app(ActivityLogger::class);
+    $logger = app(ActivityLogger::class);
     $observer = new CreativeObserver($logger);
 
     // deleting() iterates files and calls $file->delete() on each.
@@ -71,13 +71,13 @@ function fireCreativeDeletingCascade(Creative $creative): void
 it('removes all physical files from disk when a Creative is deleted', function () {
     Storage::fake('creatives');
 
-    $client   = Client::factory()->create();
+    $client = Client::factory()->create();
     $campaign = Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
     $creative = Creative::factory()->create(['campaign_id' => $campaign->id]);
 
     // Create two files on disk
-    $pathA = $creative->id . '/size-300x250.jpg';
-    $pathB = $creative->id . '/size-728x90.jpg';
+    $pathA = $creative->id.'/size-300x250.jpg';
+    $pathB = $creative->id.'/size-728x90.jpg';
     Storage::disk('creatives')->put($pathA, 'fake-bytes-A');
     Storage::disk('creatives')->put($pathB, 'fake-bytes-B');
 
@@ -117,17 +117,17 @@ it('removes all physical files from disk when a Creative is deleted', function (
 it('removes all creative_files rows from the database when a Creative is deleted', function () {
     Storage::fake('creatives');
 
-    $client   = Client::factory()->create();
+    $client = Client::factory()->create();
     $campaign = Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
     $creative = Creative::factory()->create(['campaign_id' => $campaign->id]);
 
-    Storage::disk('creatives')->put($creative->id . '/a.jpg', 'x');
-    Storage::disk('creatives')->put($creative->id . '/b.jpg', 'x');
+    Storage::disk('creatives')->put($creative->id.'/a.jpg', 'x');
+    Storage::disk('creatives')->put($creative->id.'/b.jpg', 'x');
 
     $fileA = CreativeFile::create([
         'creative_id' => $creative->id,
         'name' => 'a.jpg',
-        'path' => $creative->id . '/a.jpg',
+        'path' => $creative->id.'/a.jpg',
         'mime_type' => 'image/jpeg',
         'width' => 300, 'height' => 250, 'size' => 1,
     ]);
@@ -135,7 +135,7 @@ it('removes all creative_files rows from the database when a Creative is deleted
     $fileB = CreativeFile::create([
         'creative_id' => $creative->id,
         'name' => 'b.jpg',
-        'path' => $creative->id . '/b.jpg',
+        'path' => $creative->id.'/b.jpg',
         'mime_type' => 'image/jpeg',
         'width' => 728, 'height' => 90, 'size' => 1,
     ]);
@@ -154,17 +154,17 @@ it('removes all creative_files rows from the database when a Creative is deleted
 it('writes a deleted activity log for each file when a Creative is deleted', function () {
     Storage::fake('creatives');
 
-    $client   = Client::factory()->create();
+    $client = Client::factory()->create();
     $campaign = Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
     $creative = Creative::factory()->create(['campaign_id' => $campaign->id]);
 
-    Storage::disk('creatives')->put($creative->id . '/log-a.jpg', 'x');
-    Storage::disk('creatives')->put($creative->id . '/log-b.jpg', 'x');
+    Storage::disk('creatives')->put($creative->id.'/log-a.jpg', 'x');
+    Storage::disk('creatives')->put($creative->id.'/log-b.jpg', 'x');
 
     $fileA = CreativeFile::create([
         'creative_id' => $creative->id,
         'name' => 'log-a.jpg',
-        'path' => $creative->id . '/log-a.jpg',
+        'path' => $creative->id.'/log-a.jpg',
         'mime_type' => 'image/jpeg',
         'width' => 300, 'height' => 250, 'size' => 1,
     ]);
@@ -172,7 +172,7 @@ it('writes a deleted activity log for each file when a Creative is deleted', fun
     $fileB = CreativeFile::create([
         'creative_id' => $creative->id,
         'name' => 'log-b.jpg',
-        'path' => $creative->id . '/log-b.jpg',
+        'path' => $creative->id.'/log-b.jpg',
         'mime_type' => 'image/jpeg',
         'width' => 728, 'height' => 90, 'size' => 1,
     ]);
@@ -185,22 +185,22 @@ it('writes a deleted activity log for each file when a Creative is deleted', fun
 
     // One 'deleted' log per file
     $this->assertDatabaseHas('activity_logs', [
-        'action'       => 'deleted',
+        'action' => 'deleted',
         'subject_type' => CreativeFile::class,
-        'subject_id'   => $fileA->id,
+        'subject_id' => $fileA->id,
     ]);
 
     $this->assertDatabaseHas('activity_logs', [
-        'action'       => 'deleted',
+        'action' => 'deleted',
         'subject_type' => CreativeFile::class,
-        'subject_id'   => $fileB->id,
+        'subject_id' => $fileB->id,
     ]);
 
     // Also expect a 'deleted' log for the Creative itself
     $this->assertDatabaseHas('activity_logs', [
-        'action'       => 'deleted',
+        'action' => 'deleted',
         'subject_type' => Creative::class,
-        'subject_id'   => $creative->id,
+        'subject_id' => $creative->id,
     ]);
 });
 
@@ -211,7 +211,7 @@ it('writes a deleted activity log for each file when a Creative is deleted', fun
 it('deletes a Creative with no files without error', function () {
     Storage::fake('creatives');
 
-    $client   = Client::factory()->create();
+    $client = Client::factory()->create();
     $campaign = Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
     $creative = Creative::factory()->create(['campaign_id' => $campaign->id]);
 
@@ -228,8 +228,8 @@ it('deletes a Creative with no files without error', function () {
 it('removes the creatives DB row when the destroy endpoint is called by an admin', function () {
     Storage::fake('creatives');
 
-    $admin    = User::factory()->create(['is_admin' => true]);
-    $client   = Client::factory()->create();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $client = Client::factory()->create();
     $campaign = Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
     $creative = Creative::factory()->create(['campaign_id' => $campaign->id]);
 
@@ -247,18 +247,18 @@ it('removes the creatives DB row when the destroy endpoint is called by an admin
 it('removes all child creative_files DB rows when destroy endpoint is called', function () {
     Storage::fake('creatives');
 
-    $admin    = User::factory()->create(['is_admin' => true]);
-    $client   = Client::factory()->create();
+    $admin = User::factory()->create(['is_admin' => true]);
+    $client = Client::factory()->create();
     $campaign = Campaign::factory()->create(['client_id' => $client->id, 'status' => 'active']);
     $creative = Creative::factory()->create(['campaign_id' => $campaign->id]);
 
-    Storage::disk('creatives')->put($creative->id . '/c1.jpg', 'x');
-    Storage::disk('creatives')->put($creative->id . '/c2.jpg', 'x');
+    Storage::disk('creatives')->put($creative->id.'/c1.jpg', 'x');
+    Storage::disk('creatives')->put($creative->id.'/c2.jpg', 'x');
 
     $file1 = CreativeFile::create([
         'creative_id' => $creative->id,
         'name' => 'c1.jpg',
-        'path' => $creative->id . '/c1.jpg',
+        'path' => $creative->id.'/c1.jpg',
         'mime_type' => 'image/jpeg',
         'width' => 300, 'height' => 250, 'size' => 1,
     ]);
@@ -266,7 +266,7 @@ it('removes all child creative_files DB rows when destroy endpoint is called', f
     $file2 = CreativeFile::create([
         'creative_id' => $creative->id,
         'name' => 'c2.jpg',
-        'path' => $creative->id . '/c2.jpg',
+        'path' => $creative->id.'/c2.jpg',
         'mime_type' => 'image/jpeg',
         'width' => 728, 'height' => 90, 'size' => 1,
     ]);

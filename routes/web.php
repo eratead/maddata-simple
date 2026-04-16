@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth'])->group(function () {
     Route::post('/ai/generate-locations', [App\Http\Controllers\AiLocationController::class, 'generate'])->middleware('throttle:10,1')->name('ai.locations');
     Route::post('/ai/campaign-assistant', [App\Http\Controllers\CampaignAssistantController::class, 'chat'])->middleware('throttle:10,1')->name('ai.campaign-assistant');
+
+    // Geo reference lists — proxied server-side so browser CSP stays tight (no countriesnow.space in connect-src)
+    Route::get('/api/geo/countries', [App\Http\Controllers\GeoReferenceController::class, 'countries'])->name('geo.countries');
+    Route::get('/api/geo/regions', [App\Http\Controllers\GeoReferenceController::class, 'regions'])->name('geo.regions');
+    Route::get('/api/geo/cities', [App\Http\Controllers\GeoReferenceController::class, 'cities'])->name('geo.cities');
     Route::get('/', fn () => redirect('/dashboard'));
     Route::get('/dashboard', function () {
         $lastId = session('last_campaign_id');
