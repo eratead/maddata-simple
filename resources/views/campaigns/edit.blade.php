@@ -497,10 +497,10 @@ function campaignAssistant() {
                 });
                 if (!res.ok) throw new Error('Request failed');
                 const data = await res.json();
-                this.messages.push({ role: 'ai', content: data.reply ?? 'Could not process that request.' });
+                this.messages.push({ role: 'assistant', content: data.reply ?? 'Could not process that request.' });
                 if (data.updates) this.applyUpdates(data.updates);
             } catch (e) {
-                this.messages.push({ role: 'ai', content: 'Something went wrong. Please try again.' });
+                this.messages.push({ role: 'assistant', content: 'Something went wrong. Please try again.' });
             } finally { this.isTyping = false; this.scrollToBottom(); }
         },
 

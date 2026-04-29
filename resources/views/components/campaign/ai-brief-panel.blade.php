@@ -77,7 +77,7 @@
         {{-- Chat Messages --}}
         <template x-for="(msg, i) in messages" :key="i">
             <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex items-start gap-2'">
-                <div x-show="msg.role === 'ai'"
+                <div x-show="msg.role === 'assistant'"
                     class="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <svg class="w-3.5 h-3.5 text-violet-600" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>

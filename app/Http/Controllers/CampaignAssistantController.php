@@ -69,6 +69,7 @@ class CampaignAssistantController extends Controller
             Log::channel('ai')->error('assistant.upstream_error', [
                 'user_id' => auth()->id(),
                 'http_status' => $response->status(),
+                'body_excerpt' => mb_substr((string) $response->body(), 0, 500),
             ]);
 
             return response()->json(['error' => 'AI request failed.'], 502);
