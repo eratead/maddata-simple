@@ -253,3 +253,44 @@ it('logs an empty updates_keys array when the LLM returns updates: null', functi
     expect($responseLog)->not->toBeNull();
     expect($responseLog['context']['updates_keys'])->toBe([]);
 });
+
+// ---------------------------------------------------------------------------
+// Prose-wrapped JSON — model emits chain-of-thought before the JSON object
+// ---------------------------------------------------------------------------
+
+it('extracts the JSON object even when the model prepends prose before it', function () {
+    // Reproduces a production parse_failure (2026-04-29):
+    // For complex Hebrew briefs the model occasionally emits markdown
+    // chain-of-thought ("I need to map this brief carefully:\n\n**Demographics:**...")
+    // and only THEN the JSON object, despite the system prompt forbidding it.
+    // The parser must locate the outermost {...} block and decode it.
+    $jsonPayload = json_encode([
+        'reply' => 'עדכנתי את הפרטים.',
+        'updates' => [
+            'ages' => ['18-24', '25-34', '35-44'],
+            'cities' => ['חולון', 'בת ים', 'באר שבע'],
+            'audience_ids' => [333, 334, 335],
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+
+    $proseWrapped = "I need to map this brief carefully:\n\n"
+        ."**Demographics:** Male + Female, ages 21-40 → [\"18-24\",\"25-34\",\"35-44\"]\n\n"
+        ."**Audiences:** Education + Technology + Life Sciences\n\n"
+        .$jsonPayload;
+
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [['text' => $proseWrapped]],
+        ], 200),
+    ]);
+
+    $user = assistantEditorUser();
+
+    $response = $this->actingAs($user)
+        ->postJson(route('ai.campaign-assistant'), validChatPayload())
+        ->assertOk();
+
+    expect($response->json('reply'))->toBe('עדכנתי את הפרטים.');
+    expect($response->json('updates.cities'))->toContain('חולון');
+    expect($response->json('updates.audience_ids'))->toBe([333, 334, 335]);
+});

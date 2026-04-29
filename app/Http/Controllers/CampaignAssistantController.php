@@ -87,8 +87,20 @@ class CampaignAssistantController extends Controller
         // Strip markdown code fences if the model included them
         $raw = preg_replace('/^```(?:json)?\s*/i', '', trim($rawText));
         $raw = preg_replace('/\s*```$/', '', $raw);
+        $raw = trim($raw);
 
-        $data = json_decode(trim($raw), true);
+        $data = json_decode($raw, true);
+
+        // Fallback: the model occasionally prepends chain-of-thought prose
+        // before the JSON object despite being told not to. Extract the
+        // outermost {...} block and try again.
+        if (! is_array($data)) {
+            $start = strpos($raw, '{');
+            $end = strrpos($raw, '}');
+            if ($start !== false && $end !== false && $end > $start) {
+                $data = json_decode(substr($raw, $start, $end - $start + 1), true);
+            }
+        }
 
         if (! is_array($data) || ! isset($data['reply'])) {
             $stopReason = $response->json('stop_reason');
