@@ -56,7 +56,7 @@ class CampaignAssistantController extends Controller
                 'user-agent' => 'MadData-CampaignAssistant/1.0 (+https://ad.maddata.media)',
             ])->post('https://api.anthropic.com/v1/messages', [
                 'model' => 'claude-sonnet-4-6',
-                'max_tokens' => 1024,
+                'max_tokens' => 2048,
                 'system' => $systemPrompt,
                 'messages' => $messages,
             ]);
@@ -88,9 +88,13 @@ class CampaignAssistantController extends Controller
         $data = json_decode(trim($raw), true);
 
         if (! is_array($data) || ! isset($data['reply'])) {
+            $stopReason = $response->json('stop_reason');
             Log::channel('ai')->warning('assistant.parse_failure', [
                 'user_id' => auth()->id(),
                 'raw_text_length' => strlen($rawText),
+                'stop_reason' => $stopReason,
+                'raw_text_head' => mb_substr($rawText, 0, 300),
+                'raw_text_tail' => mb_substr($rawText, -300),
             ]);
 
             return response()->json(['error' => 'AI returned an unexpected response format.'], 502);
