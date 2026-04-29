@@ -124,6 +124,9 @@ class CampaignAssistantController extends Controller
             'updates_keys' => is_array($updates) ? array_keys($updates) : [],
             'raw_updates_keys' => is_array($data['updates'] ?? null) ? array_keys($data['updates']) : [],
             'raw_text_length' => strlen($rawText),
+            'input_tokens' => $response->json('usage.input_tokens'),
+            'output_tokens' => $response->json('usage.output_tokens'),
+            'cache_read_tokens' => $response->json('usage.cache_read_input_tokens'),
         ]);
 
         return response()->json([
