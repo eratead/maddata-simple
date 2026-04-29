@@ -49,7 +49,10 @@ class CampaignAssistantController extends Controller
             // Explicit User-Agent: api.anthropic.com is fronted by Cloudflare, which
             // returns a 403 "Just a moment..." JS challenge to clients with the
             // default GuzzleHttp UA. A real product UA passes the bot check.
-            $response = Http::timeout(15)->withHeaders([
+            // 60s timeout: long Hebrew briefs with the full audience list in the
+            // system prompt + a 2048-token reply can take >15s end-to-end. Nginx
+            // fastcgi_read_timeout default is 60s, so we stay within it.
+            $response = Http::timeout(60)->withHeaders([
                 'x-api-key' => config('services.anthropic.api_key'),
                 'anthropic-version' => '2023-06-01',
                 'content-type' => 'application/json',
