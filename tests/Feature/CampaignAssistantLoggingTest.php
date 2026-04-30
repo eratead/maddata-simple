@@ -294,3 +294,76 @@ it('extracts the JSON object even when the model prepends prose before it', func
     expect($response->json('updates.cities'))->toContain('חולון');
     expect($response->json('updates.audience_ids'))->toBe([333, 334, 335]);
 });
+
+// ---------------------------------------------------------------------------
+// Prompt caching: cacheable system block sent with 1h TTL cache_control,
+// dynamic block (form state + date) sent without it, beta header set.
+// ---------------------------------------------------------------------------
+
+it('sends the static system block with 1h cache_control and the dynamic block without it', function () {
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [['text' => '{"reply":"ok","updates":null}']],
+        ], 200),
+    ]);
+
+    $user = assistantEditorUser();
+
+    $this->actingAs($user)
+        ->postJson(route('ai.campaign-assistant'), validChatPayload())
+        ->assertOk();
+
+    Http::assertSent(function ($request) {
+        if ($request->header('anthropic-beta')[0] !== 'extended-cache-ttl-2025-04-11') {
+            return false;
+        }
+
+        $body = $request->data();
+
+        if (! is_array($body['system'] ?? null) || count($body['system']) !== 2) {
+            return false;
+        }
+
+        [$cacheable, $dynamic] = $body['system'];
+
+        return ($cacheable['type'] ?? null) === 'text'
+            && ($cacheable['cache_control']['type'] ?? null) === 'ephemeral'
+            && ($cacheable['cache_control']['ttl'] ?? null) === '1h'
+            && str_contains($cacheable['text'] ?? '', 'AVAILABLE AUDIENCES')
+            && ($dynamic['type'] ?? null) === 'text'
+            && ! isset($dynamic['cache_control'])
+            && str_contains($dynamic['text'] ?? '', 'CURRENT FORM STATE');
+    });
+});
+
+it('logs cache_creation_tokens and cache_read_tokens from the Anthropic usage block', function () {
+    Http::fake([
+        'api.anthropic.com/*' => Http::response([
+            'content' => [['text' => '{"reply":"ok","updates":null}']],
+            'usage' => [
+                'input_tokens' => 250,
+                'output_tokens' => 30,
+                'cache_creation_input_tokens' => 7800,
+                'cache_read_input_tokens' => 0,
+            ],
+        ], 200),
+    ]);
+
+    $messages = [];
+    Log::listen(function (\Illuminate\Log\Events\MessageLogged $event) use (&$messages) {
+        $messages[] = ['message' => $event->message, 'context' => $event->context];
+    });
+
+    $user = assistantEditorUser();
+
+    $this->actingAs($user)
+        ->postJson(route('ai.campaign-assistant'), validChatPayload())
+        ->assertOk();
+
+    $responseLog = collect($messages)->firstWhere('message', 'assistant.response');
+
+    expect($responseLog['context']['cache_creation_tokens'])->toBe(7800);
+    expect($responseLog['context']['cache_read_tokens'])->toBe(0);
+    expect($responseLog['context']['input_tokens'])->toBe(250);
+    expect($responseLog['context']['output_tokens'])->toBe(30);
+});

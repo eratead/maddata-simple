@@ -52,9 +52,13 @@ class CampaignAssistantController extends Controller
             // 60s timeout: long Hebrew briefs with the full audience list in the
             // system prompt + a 2048-token reply can take >15s end-to-end. Nginx
             // fastcgi_read_timeout default is 60s, so we stay within it.
+            // extended-cache-ttl-2025-04-11 beta: enables 1-hour TTL on the
+            // cacheable system block so the audience list (~7-8K tokens) is
+            // billed at the cache-read rate after the first call within the hour.
             $response = Http::timeout(60)->withHeaders([
                 'x-api-key' => config('services.anthropic.api_key'),
                 'anthropic-version' => '2023-06-01',
+                'anthropic-beta' => 'extended-cache-ttl-2025-04-11',
                 'content-type' => 'application/json',
                 'user-agent' => 'MadData-CampaignAssistant/1.0 (+https://ad.maddata.media)',
             ])->post('https://api.anthropic.com/v1/messages', [
@@ -138,6 +142,7 @@ class CampaignAssistantController extends Controller
             'raw_text_length' => strlen($rawText),
             'input_tokens' => $response->json('usage.input_tokens'),
             'output_tokens' => $response->json('usage.output_tokens'),
+            'cache_creation_tokens' => $response->json('usage.cache_creation_input_tokens'),
             'cache_read_tokens' => $response->json('usage.cache_read_input_tokens'),
         ]);
 
@@ -147,7 +152,19 @@ class CampaignAssistantController extends Controller
         ]);
     }
 
-    private function buildSystemPrompt(array $formData): string
+    /**
+     * Build the system prompt as two content blocks:
+     *   [0] Cacheable: instructions, audience list, field spec, JSON rules
+     *       — marked cache_control ephemeral with 1h TTL. Static across users
+     *       and sessions; only invalidated when the audiences table changes
+     *       (Cache::remember 3600s on the audience list also clamps to ~1h).
+     *   [1] Dynamic: CURRENT FORM STATE + today's date — different every call.
+     *
+     * Anthropic caches a contiguous prefix, so the cacheable block must come
+     * first. After the first call within an hour the static block is billed
+     * at the cache-read rate (~$0.30/M for Sonnet 4.6 vs $3/M base).
+     */
+    private function buildSystemPrompt(array $formData): array
     {
         $current = json_encode($formData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         $today = now()->toDateString();
@@ -159,8 +176,7 @@ class CampaignAssistantController extends Controller
             ->get(['id', 'main_category', 'sub_category', 'name']))
             ->toJson(JSON_UNESCAPED_UNICODE);
 
-        return 'You are an AI Campaign Assistant for MadData, a digital advertising platform in Israel.'."\n\n"
-            .'CURRENT FORM STATE:'."\n".$current."\n\n"
+        $cacheable = 'You are an AI Campaign Assistant for MadData, a digital advertising platform in Israel.'."\n\n"
             .'You help campaign managers configure campaigns by interpreting briefs and natural-language instructions (usually in Hebrew).'."\n\n"
             .'AVAILABLE AUDIENCES (pick IDs from this list for audience_ids):'."\n".$availableAudiences."\n\n"
             .'UPDATABLE FIELDS:'."\n"
@@ -182,7 +198,6 @@ class CampaignAssistantController extends Controller
             .'- cities: array of city names. Preserve the script the user used: Hebrew names stay Hebrew (e.g. "חולון"), English names stay English ("Holon"). Do NOT translate. Both are valid and may coexist.'."\n"
             .'- audience_ids: array of integer IDs chosen from AVAILABLE AUDIENCES above. Pick the best matches for the brief\'s target demographic. Be selective — pick only the most relevant audiences.'."\n"
             .'NOTE: deviceTypes, os, and connectionTypes cannot be changed by the assistant.'."\n\n"
-            .'Today\'s date is '.$today.'.'."\n\n"
             .'You MUST respond with a valid JSON object only — no markdown fences, no extra text:'."\n"
             .'{"reply":"A friendly 1-2 sentence confirmation in Hebrew explaining what you updated. Do not use emojis.","updates":{...} or null}'."\n\n"
             .'CRITICAL JSON STRUCTURE RULES:'."\n"
@@ -194,5 +209,20 @@ class CampaignAssistantController extends Controller
             .'- If nothing needs changing or the request is ambiguous, set "updates" to null and ask for clarification in "reply"'."\n"
             .'- Translate Hebrew briefs accurately to the allowed English values'."\n"
             .'- IMPORTANT: Always include ALL requested changes. If the user asks to update budget, dates, targeting AND audiences in one message, include ALL of them in updates. Never skip a field.';
+
+        $dynamic = 'CURRENT FORM STATE:'."\n".$current."\n\n"
+            ."Today's date is ".$today.'.';
+
+        return [
+            [
+                'type' => 'text',
+                'text' => $cacheable,
+                'cache_control' => ['type' => 'ephemeral', 'ttl' => '1h'],
+            ],
+            [
+                'type' => 'text',
+                'text' => $dynamic,
+            ],
+        ];
     }
 }
