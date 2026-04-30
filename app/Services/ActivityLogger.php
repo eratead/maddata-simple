@@ -2,14 +2,9 @@
 
 namespace App\Services;
 
-use App\Mail\ActivityDigestMail;
 use App\Models\ActivityLog;
-use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 
 class ActivityLogger
 {
@@ -35,33 +30,5 @@ class ActivityLogger
             'description' => $description,
             'changes' => $changes,
         ]);
-
-        $this->checkAndSendDigest();
-    }
-
-    protected function checkAndSendDigest()
-    {
-        $lastSent = Cache::get('last_activity_digest_sent_at');
-
-        if (! $lastSent || Carbon::parse($lastSent)->diffInHours(now()) >= 2) {
-
-            // Fetch activities since last sent or last 2 hours
-            $since = $lastSent ? Carbon::parse($lastSent) : now()->subHours(2);
-            $logs = ActivityLog::with(['user', 'campaign.client', 'subject'])
-                ->where('created_at', '>', $since)
-                ->get();
-
-            if ($logs->isNotEmpty()) {
-                // Get users who opted in
-                $recipients = User::where('receive_activity_notifications', true)
-                    ->pluck('email');
-
-                if ($recipients->isNotEmpty()) {
-                    Mail::to($recipients)->send(new ActivityDigestMail($logs));
-                }
-            }
-
-            Cache::put('last_activity_digest_sent_at', now());
-        }
     }
 }

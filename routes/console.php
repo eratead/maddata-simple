@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('campaigns:generate-status')->daily();
+Schedule::command('digest:send-activity')->everyTwoHours();
