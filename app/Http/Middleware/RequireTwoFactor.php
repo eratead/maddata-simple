@@ -42,6 +42,11 @@ class RequireTwoFactor
             return $next($request);
         }
 
+        // SSO sessions: Google's authentication is the second factor — skip TOTP entirely
+        if (session('login_method') === 'sso') {
+            return $next($request);
+        }
+
         // Already verified in this session — fast path
         if (session('2fa_verified')) {
             return $next($request);

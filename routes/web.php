@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Agency\AgencyUserController;
+use App\Http\Controllers\Auth\GoogleSsoController;
+use App\Http\Controllers\Auth\SignInMethodsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportApiController;
@@ -127,6 +129,28 @@ Route::middleware(['auth', 'campaign_manager'])->group(function () {
     Route::post('/tokens', [TokenController::class, 'store'])->name('tokens.create');
     Route::delete('/tokens/{id}', [TokenController::class, 'destroy'])->name('tokens.destroy');
     Route::post('/tokens/{id}/extend', [TokenController::class, 'extend'])->name('tokens.extend');
+});
+
+// ── Google SSO ─────────────────────────────────────────────────────────────
+if (config('auth.google_sso_enabled')) {
+    Route::get('/auth/google/redirect', [GoogleSsoController::class, 'redirect'])
+        ->middleware('guest')
+        ->name('auth.google.redirect');
+}
+
+// Callback must accept both guest (login) and authenticated (link) requests,
+// so we register it outside the `guest` constraint. The controller itself
+// checks Auth::check() when handling the link flow.
+Route::get('/auth/google/callback', [GoogleSsoController::class, 'callback'])
+    ->middleware(['web'])
+    ->name('auth.google.callback');
+
+// ── Sign-in Methods settings ────────────────────────────────────────────────
+Route::middleware(['auth'])->prefix('settings/sign-in-methods')->name('settings.sign-in-methods.')->group(function () {
+    Route::get('/', [SignInMethodsController::class, 'index'])->name('index');
+    Route::post('/start-connect-google', [SignInMethodsController::class, 'startConnectGoogle'])->name('start-connect-google');
+    Route::post('/disconnect-google', [SignInMethodsController::class, 'disconnectGoogle'])->name('disconnect-google');
+    Route::post('/disable-totp', [SignInMethodsController::class, 'disableTotp'])->name('disable-totp');
 });
 
 require __DIR__.'/auth.php';

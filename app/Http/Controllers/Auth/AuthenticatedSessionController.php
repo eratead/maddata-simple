@@ -29,6 +29,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Tag this session as password-based so RequireTwoFactor applies the TOTP gate.
+        session(['login_method' => 'password']);
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
