@@ -100,6 +100,9 @@ class User extends Authenticatable
         'is_report',
         'receive_activity_notifications',
         'google2fa_secret',
+        'google_sub',
+        'google_email',
+        'google_linked_at',
     ];
 
     public function userRole()
@@ -165,7 +168,24 @@ class User extends Authenticatable
             'is_admin' => 'boolean',
             'is_report' => 'boolean',
             'google2fa_secret' => 'encrypted', // auto encrypt/decrypt; column is text
+            'google_linked_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Whether the user has TOTP (Authenticator app) enrolled.
+     */
+    public function hasTotpEnrolled(): bool
+    {
+        return ! empty($this->google2fa_secret);
+    }
+
+    /**
+     * Whether the user has a Google account linked for SSO.
+     */
+    public function hasGoogleLinked(): bool
+    {
+        return ! empty($this->google_sub);
     }
 
     /**

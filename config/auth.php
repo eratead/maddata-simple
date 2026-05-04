@@ -116,4 +116,17 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google SSO Feature Flag
+    |--------------------------------------------------------------------------
+    |
+    | When false (default), the "Sign in with Google" button is hidden and
+    | the SSO callback routes are not registered. Set to true per-environment
+    | at rollout time via GOOGLE_SSO_ENABLED=true in .env.
+    |
+    */
+
+    'google_sso_enabled' => env('GOOGLE_SSO_ENABLED', false),
+
 ];
