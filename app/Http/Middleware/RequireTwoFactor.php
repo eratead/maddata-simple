@@ -42,38 +42,37 @@ class RequireTwoFactor
             return $next($request);
         }
 
-        // SSO sessions: Google's authentication is the second factor — skip TOTP entirely
-        if (session('login_method') === 'sso') {
-            return $next($request);
-        }
-
-        // Already verified in this session — fast path
+        // Already verified in this session (via TOTP or Google) — fast path
         if (session('2fa_verified')) {
             return $next($request);
         }
 
-        // No secret yet — must go through setup first
-        if (! $user->google2fa_secret) {
-            Redirect::setIntendedUrl(url()->current());
-
-            return redirect()->route('2fa.setup');
-        }
-
         // Has secret — check remember-device cookie (auto-decrypted by EncryptCookies)
-        $cookieToken = $request->cookie('2fa_remember');
-        if ($cookieToken) {
-            // HMAC ties the token to this specific user + their current secret
-            $expected = hash_hmac('sha256', $user->id.$user->google2fa_secret, config('app.key'));
-            if (hash_equals($expected, $cookieToken)) {
-                session(['2fa_verified' => true]);
+        if ($user->google2fa_secret) {
+            $cookieToken = $request->cookie('2fa_remember');
+            if ($cookieToken) {
+                // HMAC ties the token to this specific user + their current secret
+                $expected = hash_hmac('sha256', $user->id.$user->google2fa_secret, config('app.key'));
+                if (hash_equals($expected, $cookieToken)) {
+                    session(['2fa_verified' => true]);
 
-                return $next($request);
+                    return $next($request);
+                }
             }
         }
 
-        // Must complete the challenge
+        // Decide where to send the user:
+        // - TOTP enrolled → challenge screen (may also have Google — either works)
+        // - Google linked but no TOTP → challenge screen (Google-only variant)
+        // - Neither → forced setup screen
+        if ($user->google2fa_secret || $user->hasGoogleLinked()) {
+            Redirect::setIntendedUrl(url()->current());
+
+            return redirect()->route('2fa.challenge');
+        }
+
         Redirect::setIntendedUrl(url()->current());
 
-        return redirect()->route('2fa.challenge');
+        return redirect()->route('2fa.setup');
     }
 }

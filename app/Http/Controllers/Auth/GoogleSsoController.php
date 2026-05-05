@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Exceptions\SsoLoginException;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\SsoLinkService;
@@ -18,68 +17,118 @@ class GoogleSsoController extends Controller
     ) {}
 
     /**
-     * Redirect the user to Google's OAuth authorization page.
-     */
-    public function redirect(Request $request): RedirectResponse
-    {
-        return Socialite::driver('google')->redirect();
-    }
-
-    /**
      * Handle the OAuth callback from Google.
      *
-     * Distinguishes two flows via the `state` parameter:
-     * - Login flow:  state is the CSRF token set by Socialite (no "link:" prefix)
-     * - Link flow:   state = "link:{userId}:{hmac}" — set by SignInMethodsController
+     * Recognises three state prefixes:
+     * - "link:{userId}:{hmac}"       → settings-page link flow (existing)
+     * - "2fa_setup:{userId}:{hmac}"  → first-time Google-as-2FA setup
+     * - "2fa_verify:{userId}:{hmac}" → Google second-factor verification
+     *
+     * Any other state (including the old Socialite CSRF token used by the
+     * removed anonymous login button) is rejected with a flash error.
      */
     public function callback(Request $request): RedirectResponse
     {
-        // Detect the link flow via our custom state prefix
-        $state = $request->query('state', '');
+        $state = (string) $request->query('state', '');
 
-        if ($this->isLinkState($state)) {
-            return $this->handleLinkCallback($request, $state);
+        if (str_starts_with($state, 'link:')) {
+            return $this->handleLinkCallback($state);
         }
 
-        return $this->handleLoginCallback();
+        if (str_starts_with($state, '2fa_setup:')) {
+            return $this->handleSetupCallback($state);
+        }
+
+        if (str_starts_with($state, '2fa_verify:')) {
+            return $this->handleVerifyCallback($state);
+        }
+
+        // Unknown state — could be an old bookmark or a forged request.
+        return redirect()->route('login')
+            ->with('error', 'Invalid or expired Google request. Please sign in with email and password.');
     }
 
     // -------------------------------------------------------------------------
-    // Private helpers
+    // 2FA setup: link Google and immediately mark 2fa_verified
     // -------------------------------------------------------------------------
 
-    private function handleLoginCallback(): RedirectResponse
+    private function handleSetupCallback(string $state): RedirectResponse
     {
+        [$userId, $hmac] = $this->parseHmacState($state, '2fa_setup');
+
+        if ($userId === null || ! $this->verifyHmac('2fa_setup:'.$userId, $hmac)) {
+            return redirect()->route('2fa.setup')
+                ->with('error', 'Invalid or expired request. Please try again.');
+        }
+
+        $user = $this->resolveAuthenticatedUser((int) $userId);
+        if ($user instanceof RedirectResponse) {
+            return $user;
+        }
+
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (\Throwable) {
-            return redirect()->route('login')
-                ->with('error', 'Google sign-in failed. Please try again.');
+            return redirect()->route('2fa.setup')
+                ->with('error', 'Google authorization failed. Please try again.');
         }
 
-        try {
-            $user = $this->ssoLinkService->resolveLogin($googleUser);
-        } catch (SsoLoginException $e) {
-            return redirect()->route('login')->with('error', $e->getMessage());
+        // Prevent hijacking: ensure this Google sub isn't linked to a different account
+        if (User::where('google_sub', $googleUser->getId())->where('id', '!=', $user->id)->exists()) {
+            return redirect()->route('2fa.setup')
+                ->with('error', 'This Google account is already linked to another MadData account.');
         }
 
-        Auth::login($user, remember: false);
+        $this->ssoLinkService->link($user, $googleUser);
 
-        session()->regenerate();
-
-        // Mark this session as SSO-authenticated. The RequireTwoFactor middleware
-        // fast-paths any request with login_method=sso, skipping the TOTP gate.
-        session([
-            'login_method' => 'sso',
-            '2fa_verified' => true,
-        ]);
+        session(['2fa_verified' => true]);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
-    private function handleLinkCallback(Request $request, string $state): RedirectResponse
+    // -------------------------------------------------------------------------
+    // 2FA verify: assert Google sub matches, then grant access
+    // -------------------------------------------------------------------------
+
+    private function handleVerifyCallback(string $state): RedirectResponse
     {
-        // Parse "link:{userId}:{hmac}"
+        [$userId, $hmac] = $this->parseHmacState($state, '2fa_verify');
+
+        if ($userId === null || ! $this->verifyHmac('2fa_verify:'.$userId, $hmac)) {
+            return redirect()->route('2fa.challenge')
+                ->with('error', 'Invalid or expired request. Please try again.');
+        }
+
+        $user = $this->resolveAuthenticatedUser((int) $userId);
+        if ($user instanceof RedirectResponse) {
+            return $user;
+        }
+
+        try {
+            $googleUser = Socialite::driver('google')->user();
+        } catch (\Throwable) {
+            return redirect()->route('2fa.challenge')
+                ->with('error', 'Google authorization failed. Please try again.');
+        }
+
+        // Critical: the Google sub MUST match what we stored — reject if the user
+        // authenticated to Google with a different account.
+        if ($googleUser->getId() !== $user->google_sub) {
+            return redirect()->route('2fa.challenge')
+                ->with('error', 'The Google account used does not match the one linked to your MadData account.');
+        }
+
+        session(['2fa_verified' => true]);
+
+        return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    // -------------------------------------------------------------------------
+    // Settings-page link flow (unchanged)
+    // -------------------------------------------------------------------------
+
+    private function handleLinkCallback(string $state): RedirectResponse
+    {
         $parts = explode(':', $state, 3);
 
         if (count($parts) !== 3 || $parts[0] !== 'link') {
@@ -89,10 +138,7 @@ class GoogleSsoController extends Controller
 
         [, $userId, $hmac] = $parts;
 
-        // Verify HMAC: prevents forged link-state parameters
-        $expected = hash_hmac('sha256', 'link:'.$userId, config('app.key'));
-
-        if (! hash_equals($expected, $hmac)) {
+        if (! $this->verifyHmac('link:'.$userId, $hmac)) {
             return redirect()->route('settings.sign-in-methods.index')
                 ->with('error', 'Invalid or expired link request. Please try again.');
         }
@@ -104,7 +150,6 @@ class GoogleSsoController extends Controller
                 ->with('error', 'User not found.');
         }
 
-        // The user must be logged in and match the state userId (prevents CSRF-style hijack)
         if (! Auth::check() || Auth::id() !== $user->id) {
             return redirect()->route('login')
                 ->with('error', 'Please sign in before connecting a Google account.');
@@ -117,7 +162,6 @@ class GoogleSsoController extends Controller
                 ->with('error', 'Google authorization failed. Please try again.');
         }
 
-        // Check the Google sub is not already used by a different user
         if (User::where('google_sub', $googleUser->getId())->where('id', '!=', $user->id)->exists()) {
             return redirect()->route('settings.sign-in-methods.index')
                 ->with('error', 'This Google account is already linked to another MadData account.');
@@ -129,11 +173,52 @@ class GoogleSsoController extends Controller
             ->with('success', 'Google account connected successfully.');
     }
 
+    // -------------------------------------------------------------------------
+    // Shared helpers
+    // -------------------------------------------------------------------------
+
     /**
-     * Determine whether the OAuth state parameter carries our custom link marker.
+     * Parse a "{prefix}:{userId}:{hmac}" state string.
+     * Returns [userId, hmac] or [null, null] on malformed input.
+     *
+     * @return array{string|null, string|null}
      */
-    private function isLinkState(string $state): bool
+    private function parseHmacState(string $state, string $prefix): array
     {
-        return str_starts_with($state, 'link:');
+        $parts = explode(':', $state, 3);
+
+        if (count($parts) !== 3 || $parts[0] !== $prefix) {
+            return [null, null];
+        }
+
+        return [$parts[1], $parts[2]];
+    }
+
+    private function verifyHmac(string $payload, string $hmac): bool
+    {
+        $expected = hash_hmac('sha256', $payload, config('app.key'));
+
+        return hash_equals($expected, $hmac);
+    }
+
+    /**
+     * Resolve the authenticated user from a userId embedded in the state token.
+     * Returns the User on success, or a RedirectResponse on failure.
+     */
+    private function resolveAuthenticatedUser(int $userId): User|RedirectResponse
+    {
+        if (! Auth::check() || Auth::id() !== $userId) {
+            return redirect()->route('login')
+                ->with('error', 'Session expired. Please sign in again.');
+        }
+
+        $user = User::find($userId);
+
+        if (! $user) {
+            return redirect()->route('login')
+                ->with('error', 'User not found.');
+        }
+
+        return $user;
     }
 }

@@ -10,6 +10,7 @@ use BaconQrCode\Writer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Laravel\Socialite\Facades\Socialite;
 use PragmaRX\Google2FA\Google2FA;
 
 class TwoFactorController extends Controller
@@ -78,7 +79,10 @@ class TwoFactorController extends Controller
     // ── Challenge ─────────────────────────────────────────────────────────
 
     /**
-     * Show the 6-digit challenge screen.
+     * Show the 2FA challenge screen.
+     *
+     * Accepts both TOTP-enrolled users and Google-only users. If the user has
+     * neither factor configured, redirects to setup.
      */
     public function showChallenge(Request $request): View|RedirectResponse
     {
@@ -86,12 +90,15 @@ class TwoFactorController extends Controller
             return redirect()->intended(route('dashboard'));
         }
 
-        // No secret set up yet — redirect to setup
-        if (! $request->user()->google2fa_secret) {
-            return redirect()->route('2fa.setup');
+        $user = $request->user();
+
+        // If the user has at least one factor (TOTP or Google), show the challenge.
+        if ($user->google2fa_secret || $user->hasGoogleLinked()) {
+            return view('auth.2fa-challenge');
         }
 
-        return view('auth.2fa-challenge');
+        // No factor at all — must enroll first
+        return redirect()->route('2fa.setup');
     }
 
     /**
@@ -129,6 +136,42 @@ class TwoFactorController extends Controller
         }
 
         return redirect()->intended(route('dashboard'));
+    }
+
+    // ── Google-as-2FA ─────────────────────────────────────────────────────
+
+    /**
+     * Begin the "use Google as your second factor" setup flow.
+     * User is already authenticated (password validated); we send them to
+     * Google with a signed state token so the callback can recognise this
+     * as a setup (link + verify in one step), not a plain settings link.
+     */
+    public function startGoogleSetup(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $hmac = hash_hmac('sha256', '2fa_setup:'.$user->id, config('app.key'));
+        $state = '2fa_setup:'.$user->id.':'.$hmac;
+
+        return Socialite::driver('google')
+            ->with(['state' => $state])
+            ->redirect();
+    }
+
+    /**
+     * Begin the Google verification step (user already has Google linked).
+     * Sends them to Google with a signed state token; the callback will
+     * assert the returned sub matches their stored google_sub before
+     * setting 2fa_verified=true.
+     */
+    public function startGoogleVerify(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $hmac = hash_hmac('sha256', '2fa_verify:'.$user->id, config('app.key'));
+        $state = '2fa_verify:'.$user->id.':'.$hmac;
+
+        return Socialite::driver('google')
+            ->with(['state' => $state])
+            ->redirect();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

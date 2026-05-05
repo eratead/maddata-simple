@@ -4,9 +4,7 @@
     <h1 class="text-sm font-semibold text-gray-800 truncate">Sign-in Methods</h1>
 @endpush
 
-<div class="p-6 max-w-2xl mx-auto space-y-6">
-
-    <x-page-header title="Sign-in Methods" description="Manage how you log in to MadData."></x-page-header>
+<div class="space-y-6">
 
     {{-- Flash messages --}}
     @if (session('success'))
@@ -76,7 +74,8 @@
                 @if ($user->hasTotpEnrolled())
                     {{-- Disable TOTP — only allowed when Google is linked --}}
                     @if ($user->hasGoogleLinked())
-                        <form x-data="{ open: false }" @submit.prevent>
+                        {{-- Alpine state wrapper is a <div>, NOT a <form>, to avoid nesting --}}
+                        <div x-data="{ open: false }">
                             <button type="button" @click="open = true"
                                     class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors">
                                 Disable
@@ -88,7 +87,7 @@
                                 <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl" @click.stop>
                                     <h3 class="text-base font-semibold text-gray-900 mb-1">Disable Authenticator App</h3>
                                     <p class="text-sm text-gray-500 mb-4">Confirm your password to disable TOTP. You can still sign in with Google.</p>
-                                    <form method="POST" action="{{ route('settings.sign-in-methods.disable-totp') }}" class="space-y-4">
+                                    <form method="POST" action="{{ route('settings.sign-in-methods.disable-totp') }}" class="space-y-5">
                                         @csrf
                                         <div>
                                             <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
@@ -100,7 +99,7 @@
                                                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                                             @enderror
                                         </div>
-                                        <div class="flex justify-end gap-2">
+                                        <div class="flex justify-end gap-2 mt-4">
                                             <button type="button" @click="open = false"
                                                     class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                                                 Cancel
@@ -113,7 +112,7 @@
                                     </form>
                                 </div>
                             </div>
-                        </form>
+                        </div>
                     @else
                         {{-- Greyed out with tooltip --}}
                         <div x-data="{ tip: false }" class="relative">
@@ -168,7 +167,8 @@
                     @if ($user->hasGoogleLinked())
                         {{-- Disconnect — only allowed when TOTP is enrolled --}}
                         @if ($user->hasTotpEnrolled())
-                            <form x-data="{ open: false }" @submit.prevent>
+                            {{-- Alpine state wrapper is a <div>, NOT a <form>, to avoid nesting --}}
+                            <div x-data="{ open: false }">
                                 <button type="button" @click="open = true"
                                         class="inline-flex items-center rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 transition-colors">
                                     Disconnect
@@ -180,7 +180,7 @@
                                     <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl" @click.stop>
                                         <h3 class="text-base font-semibold text-gray-900 mb-1">Disconnect Google</h3>
                                         <p class="text-sm text-gray-500 mb-4">Confirm your password to disconnect your Google account.</p>
-                                        <form method="POST" action="{{ route('settings.sign-in-methods.disconnect-google') }}" class="space-y-4">
+                                        <form method="POST" action="{{ route('settings.sign-in-methods.disconnect-google') }}" class="space-y-5">
                                             @csrf
                                             <div>
                                                 <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
@@ -192,7 +192,7 @@
                                                     <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                                                 @enderror
                                             </div>
-                                            <div class="flex justify-end gap-2">
+                                            <div class="flex justify-end gap-2 mt-4">
                                                 <button type="button" @click="open = false"
                                                         class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                                                     Cancel
@@ -205,7 +205,7 @@
                                         </form>
                                     </div>
                                 </div>
-                            </form>
+                            </div>
                         @else
                             {{-- Greyed out with tooltip --}}
                             <div x-data="{ tip: false }" class="relative">
@@ -222,8 +222,8 @@
                             </div>
                         @endif
                     @else
-                        {{-- Connect Google --}}
-                        <form x-data="{ open: false }" @submit.prevent>
+                        {{-- Connect Google — Alpine state wrapper is a <div>, NOT a <form> --}}
+                        <div x-data="{ open: false }">
                             <button type="button" @click="open = true"
                                     class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                                 Connect
@@ -235,7 +235,7 @@
                                 <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl" @click.stop>
                                     <h3 class="text-base font-semibold text-gray-900 mb-1">Connect Google Account</h3>
                                     <p class="text-sm text-gray-500 mb-4">Confirm your password, then you'll be redirected to Google to complete the connection.</p>
-                                    <form method="POST" action="{{ route('settings.sign-in-methods.start-connect-google') }}" class="space-y-4">
+                                    <form method="POST" action="{{ route('settings.sign-in-methods.start-connect-google') }}" class="space-y-5">
                                         @csrf
                                         <div>
                                             <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
@@ -247,7 +247,7 @@
                                                 <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
                                             @enderror
                                         </div>
-                                        <div class="flex justify-end gap-2">
+                                        <div class="flex justify-end gap-2 mt-4">
                                             <button type="button" @click="open = false"
                                                     class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
                                                 Cancel
@@ -260,7 +260,7 @@
                                     </form>
                                 </div>
                             </div>
-                        </form>
+                        </div>
                     @endif
                 </div>
             </div>

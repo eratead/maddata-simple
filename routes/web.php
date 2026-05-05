@@ -132,18 +132,21 @@ Route::middleware(['auth', 'campaign_manager'])->group(function () {
 });
 
 // ── Google SSO ─────────────────────────────────────────────────────────────
-if (config('auth.google_sso_enabled')) {
-    Route::get('/auth/google/redirect', [GoogleSsoController::class, 'redirect'])
-        ->middleware('guest')
-        ->name('auth.google.redirect');
-}
 
-// Callback must accept both guest (login) and authenticated (link) requests,
-// so we register it outside the `guest` constraint. The controller itself
-// checks Auth::check() when handling the link flow.
+// Callback handles authenticated flows only (link, 2fa_setup, 2fa_verify).
+// Any unrecognised state is rejected with a flash error.
 Route::get('/auth/google/callback', [GoogleSsoController::class, 'callback'])
     ->middleware(['web'])
     ->name('auth.google.callback');
+
+// Google-as-2FA entry points — user must be authenticated (password already
+// validated) before they can initiate either of these flows.
+Route::middleware(['auth'])->group(function () {
+    Route::post('/2fa/google/start-setup', [App\Http\Controllers\Auth\TwoFactorController::class, 'startGoogleSetup'])
+        ->name('2fa.google.start-setup');
+    Route::post('/2fa/google/start-verify', [App\Http\Controllers\Auth\TwoFactorController::class, 'startGoogleVerify'])
+        ->name('2fa.google.start-verify');
+});
 
 // ── Sign-in Methods settings ────────────────────────────────────────────────
 Route::middleware(['auth'])->prefix('settings/sign-in-methods')->name('settings.sign-in-methods.')->group(function () {
