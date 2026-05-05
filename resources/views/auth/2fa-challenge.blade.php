@@ -1,5 +1,8 @@
 <x-auth-split-layout title="Two-Factor Verification">
 
+  {{-- Single hidden logout form, shared by both branches --}}
+  <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
+
   <div>
     {{-- Throttle / rate-limit banner (shown when HTTP 429 hits) --}}
     @if($errors->has('throttle'))
@@ -90,8 +93,6 @@
           </a>
         </p>
 
-        <form id="logout-form" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
-
       </form>
 
       {{-- Google as alternative 2FA -- shown only when Google is also linked --}}
@@ -147,13 +148,11 @@
         <p class="text-center text-xs text-gray-400">
           Not you?
           <a href="{{ route('logout') }}"
-             onclick="event.preventDefault(); document.getElementById('logout-form-google').submit();"
+             onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
              class="text-[#F97316] hover:text-[#EA580C] font-medium transition-colors">
             Sign out
           </a>
         </p>
-
-        <form id="logout-form-google" method="POST" action="{{ route('logout') }}" class="hidden">@csrf</form>
 
       </form>
     @endif

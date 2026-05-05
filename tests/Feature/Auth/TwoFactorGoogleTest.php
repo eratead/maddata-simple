@@ -53,7 +53,7 @@ test('2fa setup page shows both authenticator and Google options when SSO enable
     $this->actingAs($user)
         ->get(route('2fa.setup'))
         ->assertOk()
-        ->assertSee('Use Google account')
+        ->assertSee('Continue with Google')
         ->assertSee(route('2fa.google.start-setup'));
 });
 
@@ -179,7 +179,30 @@ test('2fa challenge shows TOTP input and Google button when both enrolled', func
         ->assertSee('Verify with Google');
 });
 
-test('2fa challenge shows only Google button when no TOTP enrolled', function () {
+test('2fa challenge auto-redirects SSO-only user to Google without clicking', function () {
+    config(['auth.google_sso_enabled' => true]);
+
+    $user = User::factory()->create([
+        'google2fa_secret' => null,
+        'google_sub' => 'linked-only-sub',
+        'google_email' => 'only@gmail.com',
+    ]);
+
+    $driver = Mockery::mock('Laravel\Socialite\Two\GoogleProvider');
+    $driver->shouldReceive('redirect')->once()->andReturn(redirect('https://accounts.google.com/oauth'));
+    Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
+
+    $response = $this->actingAs($user)
+        ->get(route('2fa.challenge'));
+
+    $response->assertRedirect();
+    $location = $response->headers->get('Location');
+    expect($location)->toContain('accounts.google.com');
+    expect(session('google_oauth_intent'))->toBe('2fa_verify');
+    expect(session('google_oauth_user'))->toBe($user->id);
+});
+
+test('2fa challenge renders view for SSO-only user when block_google_auto_verify is set', function () {
     config(['auth.google_sso_enabled' => true]);
 
     $user = User::factory()->create([
@@ -189,10 +212,34 @@ test('2fa challenge shows only Google button when no TOTP enrolled', function ()
     ]);
 
     $this->actingAs($user)
+        ->withSession(['block_google_auto_verify' => true])
         ->get(route('2fa.challenge'))
         ->assertOk()
-        ->assertSee('Verify with Google')
-        ->assertDontSee('name="code"', false);
+        ->assertSee('Verify with Google');
+
+    // Flag should be consumed (pulled) — not present after this request
+    expect(session('block_google_auto_verify'))->toBeNull();
+});
+
+test('failed 2fa_verify sub mismatch sets block_google_auto_verify in session', function () {
+    $user = User::factory()->create([
+        'google_sub' => 'stored-sub',
+        'google_email' => 'stored@gmail.com',
+    ]);
+
+    $socialiteUser = make2FaSocialiteUser('different-sub', 'different@gmail.com');
+    stub2FaSocialiteUser($socialiteUser);
+
+    $response = $this->actingAs($user)
+        ->withSession([
+            'google_oauth_intent' => '2fa_verify',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
+
+    $response->assertRedirect(route('2fa.challenge'));
+    $response->assertSessionHas('error');
+    expect(session('block_google_auto_verify'))->toBeTrue();
 });
 
 // ── startGoogleVerify: redirect to Google ────────────────────────────────

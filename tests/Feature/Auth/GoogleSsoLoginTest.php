@@ -98,7 +98,9 @@ test('2fa_verify callback handles Socialite exception gracefully', function () {
         ])
         ->get('/auth/google/callback');
 
-    $response->assertRedirect(route('2fa.setup'));
+    $response->assertRedirect(route('2fa.challenge'));
     $response->assertSessionHas('error');
     $this->assertFalse((bool) session('2fa_verified'));
+    // Loop-prevention flag must be set so the challenge page does not re-auto-redirect
+    expect(session('block_google_auto_verify'))->toBeTrue();
 });

@@ -83,6 +83,12 @@ class TwoFactorController extends Controller
      *
      * Accepts both TOTP-enrolled users and Google-only users. If the user has
      * neither factor configured, redirects to setup.
+     *
+     * SSO-only users (Google linked, no TOTP) are silently redirected to Google
+     * rather than presenting a redundant single-button page. Loop protection:
+     * if the previous verify attempt failed (e.g. sub mismatch), the session
+     * flag `block_google_auto_verify` is set and pulled here so we render the
+     * page once instead of re-entering the redirect loop.
      */
     public function showChallenge(Request $request): View|RedirectResponse
     {
@@ -91,6 +97,21 @@ class TwoFactorController extends Controller
         }
 
         $user = $request->user();
+
+        // SSO-only auto-redirect: skip the single-button page for Google-only users.
+        $autoRedirectBlocked = $request->session()->pull('block_google_auto_verify', false);
+
+        if (
+            $user->hasGoogleLinked()
+            && ! $user->google2fa_secret
+            && config('auth.google_sso_enabled')
+            && ! $autoRedirectBlocked
+        ) {
+            $request->session()->put('google_oauth_intent', '2fa_verify');
+            $request->session()->put('google_oauth_user', $user->id);
+
+            return Socialite::driver('google')->redirect();
+        }
 
         // If the user has at least one factor (TOTP or Google), show the challenge.
         if ($user->google2fa_secret || $user->hasGoogleLinked()) {

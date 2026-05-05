@@ -38,9 +38,19 @@ class GoogleSsoController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (\Throwable) {
-            $fallbackRoute = $intent === 'link' ? 'settings.sign-in-methods.index' : '2fa.setup';
+            if ($intent === 'link') {
+                return redirect()->route('settings.sign-in-methods.index')
+                    ->with('error', 'Google authorization failed. Please try again.');
+            }
 
-            return redirect()->route($fallbackRoute)
+            if ($intent === '2fa_verify') {
+                session()->put('block_google_auto_verify', true);
+
+                return redirect()->route('2fa.challenge')
+                    ->with('error', 'Google authorization failed. Please try again.');
+            }
+
+            return redirect()->route('2fa.setup')
                 ->with('error', 'Google authorization failed. Please try again.');
         }
 
@@ -132,6 +142,10 @@ class GoogleSsoController extends Controller
         // Critical: the Google sub MUST match what we stored — reject if the user
         // authenticated to Google with a different account.
         if ($googleUser->getId() !== $user->google_sub) {
+            // Block the auto-redirect on the next challenge load so the user can
+            // pick a different Google account or sign out rather than looping.
+            session()->put('block_google_auto_verify', true);
+
             return redirect()->route('2fa.challenge')
                 ->with('error', 'The Google account used does not match the one linked to your MadData account.');
         }
