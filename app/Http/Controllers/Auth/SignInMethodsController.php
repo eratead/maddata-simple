@@ -28,22 +28,17 @@ class SignInMethodsController extends Controller
     }
 
     /**
-     * Verify password, then redirect to Socialite with a signed link-state token.
+     * Verify password, then redirect to Google. Intent is stored in the session;
+     * Socialite manages CSRF state normally.
      */
     public function startConnectGoogle(ConfirmPasswordRequest $request): RedirectResponse
     {
         $request->verifyPassword();
 
-        $user = Auth::user();
+        $request->session()->put('google_oauth_intent', 'link');
+        $request->session()->put('google_oauth_user', Auth::id());
 
-        // Build a signed state: "link:{userId}:{hmac}" so the callback can safely
-        // identify who initiated the link without relying on session state alone.
-        $hmac = hash_hmac('sha256', 'link:'.$user->id, config('app.key'));
-        $state = 'link:'.$user->id.':'.$hmac;
-
-        return \Laravel\Socialite\Facades\Socialite::driver('google')
-            ->with(['state' => $state])
-            ->redirect();
+        return \Laravel\Socialite\Facades\Socialite::driver('google')->redirect();
     }
 
     /**

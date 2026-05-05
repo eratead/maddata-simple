@@ -38,16 +38,12 @@ test('start connect google requires correct password', function () {
     $this->assertNull($user->fresh()->google_sub);
 });
 
-test('start connect google redirects to Google with correct signed state', function () {
+test('start connect google redirects to Google and stores session intent', function () {
     config(['auth.google_sso_enabled' => true]);
 
     $user = User::factory()->create();
 
     $driver = Mockery::mock('Laravel\Socialite\Two\GoogleProvider');
-    $driver->shouldReceive('with')->once()->withArgs(function (array $args) use ($user) {
-        // Validate the state starts with "link:{userId}:"
-        return isset($args['state']) && str_starts_with($args['state'], 'link:'.$user->id.':');
-    })->andReturnSelf();
     $driver->shouldReceive('redirect')->once()->andReturn(redirect('https://accounts.google.com/oauth'));
 
     Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
@@ -58,15 +54,14 @@ test('start connect google redirects to Google with correct signed state', funct
         ]);
 
     $response->assertRedirect();
+    expect(session('google_oauth_intent'))->toBe('link');
+    expect(session('google_oauth_user'))->toBe($user->id);
 });
 
 // ── Callback completes the link ────────────────────────────────────────────
 
-test('google callback links the account when state is valid', function () {
+test('google callback links the account when session intent is valid', function () {
     $user = User::factory()->create();
-
-    $hmac = hash_hmac('sha256', 'link:'.$user->id, config('app.key'));
-    $state = 'link:'.$user->id.':'.$hmac;
 
     $socialiteUser = Mockery::mock(SocialiteUser::class);
     $socialiteUser->shouldReceive('getId')->andReturn('new-sub-789');
@@ -78,7 +73,11 @@ test('google callback links the account when state is valid', function () {
     Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
 
     $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state))
+        ->withSession([
+            'google_oauth_intent' => 'link',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback')
         ->assertRedirect(route('settings.sign-in-methods.index'));
 
     $fresh = $user->fresh();
@@ -90,9 +89,6 @@ test('google callback links the account when state is valid', function () {
 test('google link writes an activity log row', function () {
     $user = User::factory()->create();
 
-    $hmac = hash_hmac('sha256', 'link:'.$user->id, config('app.key'));
-    $state = 'link:'.$user->id.':'.$hmac;
-
     $socialiteUser = Mockery::mock(SocialiteUser::class);
     $socialiteUser->shouldReceive('getId')->andReturn('audit-sub');
     $socialiteUser->shouldReceive('getEmail')->andReturn('audit@gmail.com');
@@ -103,7 +99,11 @@ test('google link writes an activity log row', function () {
     Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
 
     $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => 'link',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
 
     $log = ActivityLog::where('subject_type', User::class)
         ->where('subject_id', $user->id)

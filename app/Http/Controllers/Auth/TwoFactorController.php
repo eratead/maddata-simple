@@ -142,36 +142,26 @@ class TwoFactorController extends Controller
 
     /**
      * Begin the "use Google as your second factor" setup flow.
-     * User is already authenticated (password validated); we send them to
-     * Google with a signed state token so the callback can recognise this
-     * as a setup (link + verify in one step), not a plain settings link.
+     * Stores the intent in the session and lets Socialite manage CSRF state normally.
      */
     public function startGoogleSetup(Request $request): RedirectResponse
     {
-        $user = $request->user();
-        $hmac = hash_hmac('sha256', '2fa_setup:'.$user->id, config('app.key'));
-        $state = '2fa_setup:'.$user->id.':'.$hmac;
+        $request->session()->put('google_oauth_intent', '2fa_setup');
+        $request->session()->put('google_oauth_user', $request->user()->id);
 
-        return Socialite::driver('google')
-            ->with(['state' => $state])
-            ->redirect();
+        return Socialite::driver('google')->redirect();
     }
 
     /**
      * Begin the Google verification step (user already has Google linked).
-     * Sends them to Google with a signed state token; the callback will
-     * assert the returned sub matches their stored google_sub before
-     * setting 2fa_verified=true.
+     * Stores the intent in the session and lets Socialite manage CSRF state normally.
      */
     public function startGoogleVerify(Request $request): RedirectResponse
     {
-        $user = $request->user();
-        $hmac = hash_hmac('sha256', '2fa_verify:'.$user->id, config('app.key'));
-        $state = '2fa_verify:'.$user->id.':'.$hmac;
+        $request->session()->put('google_oauth_intent', '2fa_verify');
+        $request->session()->put('google_oauth_user', $request->user()->id);
 
-        return Socialite::driver('google')
-            ->with(['state' => $state])
-            ->redirect();
+        return Socialite::driver('google')->redirect();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

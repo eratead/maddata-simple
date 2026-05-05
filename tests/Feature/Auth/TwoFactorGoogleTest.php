@@ -35,7 +35,6 @@ function stub2FaSocialiteUser(SocialiteUser $socialiteUser): void
 function stubSocialiteRedirect(): void
 {
     $driver = Mockery::mock('Laravel\Socialite\Two\GoogleProvider');
-    $driver->shouldReceive('with')->once()->andReturnSelf();
     $driver->shouldReceive('redirect')->once()->andReturn(redirect('https://accounts.google.com/oauth'));
 
     Socialite::shouldReceive('driver')->with('google')->andReturn($driver);
@@ -74,7 +73,7 @@ test('2fa setup page does not show Google option when SSO disabled', function ()
 
 // ── startGoogleSetup: redirect to Google ──────────────────────────────────
 
-test('POST 2fa.google.start-setup redirects to Google with signed 2fa_setup state', function () {
+test('POST 2fa.google.start-setup redirects to Google and stores session intent', function () {
     $user = User::factory()->create([
         'google2fa_secret' => null,
         'google_sub' => null,
@@ -86,6 +85,8 @@ test('POST 2fa.google.start-setup redirects to Google with signed 2fa_setup stat
         ->post(route('2fa.google.start-setup'));
 
     $response->assertRedirect();
+    expect(session('google_oauth_intent'))->toBe('2fa_setup');
+    expect(session('google_oauth_user'))->toBe($user->id);
 });
 
 test('POST 2fa.google.start-setup requires authentication', function () {
@@ -103,14 +104,15 @@ test('2fa_setup callback links Google account and sets 2fa_verified', function (
         'google_sub' => null,
     ]);
 
-    $hmac = hash_hmac('sha256', '2fa_setup:'.$user->id, config('app.key'));
-    $state = '2fa_setup:'.$user->id.':'.$hmac;
-
     $socialiteUser = make2FaSocialiteUser('new-sub-setup', 'setup@gmail.com');
     stub2FaSocialiteUser($socialiteUser);
 
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => '2fa_setup',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
 
     $response->assertRedirect();
     $this->assertTrue(session('2fa_verified'));
@@ -120,18 +122,17 @@ test('2fa_setup callback links Google account and sets 2fa_verified', function (
     expect($fresh->google_email)->toBe('setup@gmail.com');
 });
 
-test('2fa_setup callback is blocked by HMAC mismatch', function () {
+test('2fa_setup callback is blocked when session intent is missing', function () {
     $user = User::factory()->create([
         'google2fa_secret' => null,
         'google_sub' => null,
     ]);
 
-    $state = '2fa_setup:'.$user->id.':bad-hmac';
-
+    // No session intent set — simulates a forged or replayed request
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->get('/auth/google/callback');
 
-    $response->assertRedirect(route('2fa.setup'));
+    $response->assertRedirect(route('login'));
     $response->assertSessionHas('error');
     $this->assertNull($user->fresh()->google_sub);
 });
@@ -145,14 +146,15 @@ test('2fa_setup callback blocks when Google sub is already linked to another use
         'google_sub' => null,
     ]);
 
-    $hmac = hash_hmac('sha256', '2fa_setup:'.$user->id, config('app.key'));
-    $state = '2fa_setup:'.$user->id.':'.$hmac;
-
     $socialiteUser = make2FaSocialiteUser('taken-sub', 'taken@gmail.com');
     stub2FaSocialiteUser($socialiteUser);
 
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => '2fa_setup',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
 
     $response->assertRedirect(route('2fa.setup'));
     $response->assertSessionHas('error');
@@ -195,7 +197,7 @@ test('2fa challenge shows only Google button when no TOTP enrolled', function ()
 
 // ── startGoogleVerify: redirect to Google ────────────────────────────────
 
-test('POST 2fa.google.start-verify redirects to Google with signed 2fa_verify state', function () {
+test('POST 2fa.google.start-verify redirects to Google and stores session intent', function () {
     $user = User::factory()->create([
         'google_sub' => 'verify-sub',
     ]);
@@ -206,6 +208,8 @@ test('POST 2fa.google.start-verify redirects to Google with signed 2fa_verify st
         ->post(route('2fa.google.start-verify'));
 
     $response->assertRedirect();
+    expect(session('google_oauth_intent'))->toBe('2fa_verify');
+    expect(session('google_oauth_user'))->toBe($user->id);
 });
 
 // ── 2fa_verify callback ────────────────────────────────────────────────────
@@ -217,14 +221,15 @@ test('2fa_verify callback sets 2fa_verified when sub matches', function () {
         'google_email' => 'correct@gmail.com',
     ]);
 
-    $hmac = hash_hmac('sha256', '2fa_verify:'.$user->id, config('app.key'));
-    $state = '2fa_verify:'.$user->id.':'.$hmac;
-
     $socialiteUser = make2FaSocialiteUser($sub, 'correct@gmail.com');
     stub2FaSocialiteUser($socialiteUser);
 
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => '2fa_verify',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
 
     $response->assertRedirect();
     $this->assertTrue(session('2fa_verified'));
@@ -236,46 +241,50 @@ test('2fa_verify callback is rejected when Google sub does not match stored sub'
         'google_email' => 'stored@gmail.com',
     ]);
 
-    $hmac = hash_hmac('sha256', '2fa_verify:'.$user->id, config('app.key'));
-    $state = '2fa_verify:'.$user->id.':'.$hmac;
-
     // Google returns a different sub (user signed into wrong Google account)
     $socialiteUser = make2FaSocialiteUser('different-sub', 'different@gmail.com');
     stub2FaSocialiteUser($socialiteUser);
 
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => '2fa_verify',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
 
     $response->assertRedirect(route('2fa.challenge'));
     $response->assertSessionHas('error');
     $this->assertFalse((bool) session('2fa_verified'));
 });
 
-test('2fa_verify callback is blocked by HMAC mismatch', function () {
+test('2fa_verify callback is blocked when session intent is missing', function () {
     $user = User::factory()->create([
         'google_sub' => 'some-sub',
     ]);
 
-    $state = '2fa_verify:'.$user->id.':tampered-hmac';
-
+    // No session intent — simulates a forged or replayed request
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->get('/auth/google/callback');
 
-    $response->assertRedirect(route('2fa.challenge'));
+    $response->assertRedirect(route('login'));
     $response->assertSessionHas('error');
     $this->assertFalse((bool) session('2fa_verified'));
 });
 
-test('2fa_verify callback is blocked when session user does not match state userId', function () {
+test('2fa_verify callback is blocked when session user does not match authenticated user', function () {
     $userA = User::factory()->create(['google_sub' => 'sub-a']);
     $userB = User::factory()->create(['google_sub' => 'sub-b']);
 
-    // HMAC is signed for userA, but we are authenticated as userB
-    $hmac = hash_hmac('sha256', '2fa_verify:'.$userA->id, config('app.key'));
-    $state = '2fa_verify:'.$userA->id.':'.$hmac;
+    // Session says userA, but we are authenticated as userB
+    $socialiteUser = make2FaSocialiteUser('sub-a', 'a@gmail.com');
+    stub2FaSocialiteUser($socialiteUser);
 
     $response = $this->actingAs($userB)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => '2fa_verify',
+            'google_oauth_user'   => $userA->id,
+        ])
+        ->get('/auth/google/callback');
 
     $response->assertRedirect(route('login'));
     $response->assertSessionHas('error');

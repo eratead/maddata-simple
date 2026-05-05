@@ -31,11 +31,11 @@ function stubSocialiteLogin(SocialiteUser $socialiteUser): void
         ->andReturn($driver);
 }
 
-// ── Callback: unknown / bare state rejected ────────────────────────────────
+// ── Callback: missing session intent rejected ──────────────────────────────
 
-test('callback with unrecognised state redirects to login with error', function () {
-    // A bare Socialite CSRF token (no recognised prefix) must be rejected
-    $response = $this->get('/auth/google/callback?state=some-random-csrf-token');
+test('callback with no session intent redirects to login with error', function () {
+    // No google_oauth_intent in session — must be rejected
+    $response = $this->get('/auth/google/callback');
 
     $response->assertRedirect(route('login'));
     $response->assertSessionHas('error');
@@ -52,15 +52,10 @@ test('2fa_verify callback blocks an inactive user', function () {
     ]);
 
     // Authenticated as this user (password login happened, but user is inactive)
-    // The resolveAuthenticatedUser check uses Auth::id(), so we need the user
+    // The doVerify check uses Auth::id(), so we need the user
     // to be the authenticated one. The inactive check happens at login — but
     // if they somehow reach the 2fa_verify callback, verify the sub still works.
-    // More precisely: resolveAuthenticatedUser confirms Auth::id() === userId,
-    // so an inactive user who is still in the session can attempt this callback.
     // The sub-match assertion will fire correctly.
-    $hmac = hash_hmac('sha256', '2fa_verify:'.$user->id, config('app.key'));
-    $state = '2fa_verify:'.$user->id.':'.$hmac;
-
     $socialiteUser = makeSocialiteUser($sub, 'inactive@gmail.com');
     stubSocialiteLogin($socialiteUser);
 
@@ -70,7 +65,11 @@ test('2fa_verify callback blocks an inactive user', function () {
     // check time). This test confirms the happy path still works for the callback
     // contract; inactive blocking is tested at the login level.
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => '2fa_verify',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
 
     // Sub matches → 2fa_verified is set
     $response->assertRedirect();
@@ -92,13 +91,14 @@ test('2fa_verify callback handles Socialite exception gracefully', function () {
         ->with('google')
         ->andReturn($driver);
 
-    $hmac = hash_hmac('sha256', '2fa_verify:'.$user->id, config('app.key'));
-    $state = '2fa_verify:'.$user->id.':'.$hmac;
-
     $response = $this->actingAs($user)
-        ->get('/auth/google/callback?state='.urlencode($state));
+        ->withSession([
+            'google_oauth_intent' => '2fa_verify',
+            'google_oauth_user'   => $user->id,
+        ])
+        ->get('/auth/google/callback');
 
-    $response->assertRedirect(route('2fa.challenge'));
+    $response->assertRedirect(route('2fa.setup'));
     $response->assertSessionHas('error');
     $this->assertFalse((bool) session('2fa_verified'));
 });
