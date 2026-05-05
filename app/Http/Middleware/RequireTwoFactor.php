@@ -11,11 +11,16 @@ class RequireTwoFactor
 {
     /**
      * Routes that are exempt from the 2FA gate (auth + 2FA routes themselves).
+     *
+     * `auth.google.*` is exempt because the Google OAuth callback is the route
+     * that ESTABLISHES the second factor (or verifies it). If the gate ran
+     * before the callback's controller, the link/verify would never persist
+     * and the user would loop back to /2fa/setup forever.
      */
     private const EXEMPT_ROUTES = [
         'login', 'register', 'logout',
         'password.*', 'verification.*',
-        '2fa.*',
+        '2fa.*', 'auth.google.*',
     ];
 
     public function handle(Request $request, Closure $next): Response
