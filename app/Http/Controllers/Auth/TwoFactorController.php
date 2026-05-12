@@ -176,13 +176,24 @@ class TwoFactorController extends Controller
     /**
      * Begin the Google verification step (user already has Google linked).
      * Stores the intent in the session and lets Socialite manage CSRF state normally.
+     *
+     * login_hint is verify-only: in the setup flow the user is choosing which Gmail
+     * to link, so pre-filling would defeat the purpose.
      */
     public function startGoogleVerify(Request $request): RedirectResponse
     {
-        $request->session()->put('google_oauth_intent', '2fa_verify');
-        $request->session()->put('google_oauth_user', $request->user()->id);
+        $user = $request->user();
 
-        return Socialite::driver('google')->redirect();
+        $request->session()->put('google_oauth_intent', '2fa_verify');
+        $request->session()->put('google_oauth_user', $user->id);
+
+        $driver = Socialite::driver('google');
+
+        if ($user->google_email) {
+            $driver = $driver->with(['login_hint' => $user->google_email]);
+        }
+
+        return $driver->redirect();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────

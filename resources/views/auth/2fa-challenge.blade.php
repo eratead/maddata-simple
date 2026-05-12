@@ -17,6 +17,30 @@
       </div>
     @endif
 
+    @if (session('error'))
+      <div class="mb-6 flex items-start gap-3 px-4 py-3 rounded-lg bg-red-50 border border-red-200">
+        <svg class="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+        </svg>
+        <div>
+          <p class="text-sm font-semibold text-red-700">Verification failed</p>
+          <p class="text-xs text-red-500 mt-0.5">{{ session('error') }}</p>
+        </div>
+      </div>
+    @endif
+
+    @if (session('success'))
+      <div class="mb-6 flex items-start gap-3 px-4 py-3 rounded-lg bg-green-50 border border-green-200">
+        <svg class="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24">
+          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+        </svg>
+        <div>
+          <p class="text-sm font-semibold text-green-700">Success</p>
+          <p class="text-xs text-green-500 mt-0.5">{{ session('success') }}</p>
+        </div>
+      </div>
+    @endif
+
     {{-- Header --}}
     <div class="flex items-center gap-3 mb-8">
       <div class="w-10 h-10 rounded-xl bg-[#F97316]/10 flex items-center justify-center shrink-0">
@@ -113,7 +137,8 @@
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              Verify with Google
+              @php($googleEmail = auth()->user()->google_email)
+              Verify with Google{{ $googleEmail ? ' (' . Str::substr($googleEmail, 0, 1) . '***@' . Str::after($googleEmail, '@') . ')' : '' }}
             </button>
           </form>
         </div>
@@ -141,7 +166,8 @@
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
-          Verify with Google
+          @php($googleEmail = auth()->user()->google_email)
+          Verify with Google{{ $googleEmail ? ' (' . Str::substr($googleEmail, 0, 1) . '***@' . Str::after($googleEmail, '@') . ')' : '' }}
         </button>
 
         {{-- Sign in as different user --}}
