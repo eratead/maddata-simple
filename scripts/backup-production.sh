@@ -4,6 +4,8 @@
 #
 # Snapshots DB + .env + storage/app + current commit hash into a timestamped
 # directory under /var/backups/maddata. Rotates: keeps last 7 backups.
+# If DO_BUCKET / DO_ACCESS_KEY_ID / DO_SECRET_ACCESS_KEY are set in .env,
+# also uploads the backup off-site to DO Spaces (remote retention: 30 days).
 #
 # Runs standalone (cron-safe) — not tied to deploy time. Designed for use as:
 #   ./scripts/backup-production.sh            (ad-hoc)
@@ -18,6 +20,7 @@ set -euo pipefail
 PROJECT_DIR="${PROJECT_DIR:-/var/www/maddata}"
 BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/maddata}"
 RETENTION="${BACKUP_RETENTION:-7}"
+REMOTE_RETENTION_DAYS="${BACKUP_REMOTE_RETENTION_DAYS:-30}"
 
 # ─── Pre-flight ─────────────────────────────────────────────────────────
 if [ ! -d "$PROJECT_DIR" ]; then
@@ -94,7 +97,7 @@ else
 fi
 
 # ─── 1. DB dump ─────────────────────────────────────────────────────────
-echo "[1/3] Dumping database: $DB_NAME"
+echo "[1/4] Dumping database: $DB_NAME"
 DB_ARCHIVE="$BACKUP_DIR/db.sql.gz"
 MYSQL_PWD="$DB_PASS" mysqldump \
     --host="$DB_HOST" \
@@ -114,12 +117,12 @@ if [ ! -s "$DB_ARCHIVE" ]; then
 fi
 
 # ─── 2. .env tarball ────────────────────────────────────────────────────
-echo "[2/3] Archiving .env"
+echo "[2/4] Archiving .env"
 ENV_ARCHIVE="$BACKUP_DIR/env.tar.gz"
 tar -czf "$ENV_ARCHIVE" -C "$PROJECT_DIR" .env
 
 # ─── 3. storage/app tarball ─────────────────────────────────────────────
-echo "[3/3] Archiving storage/app"
+echo "[3/4] Archiving storage/app"
 STORAGE_ARCHIVE="$BACKUP_DIR/storage-app.tar.gz"
 if [ -d "$PROJECT_DIR/storage/app" ]; then
     tar -czf "$STORAGE_ARCHIVE" -C "$PROJECT_DIR/storage" app
@@ -140,6 +143,41 @@ fi
     echo "Disk usage:"
     df -h "$BACKUP_ROOT" | tail -1
 } >> "$MANIFEST"
+
+# ─── 4. Off-site upload to DO Spaces (optional) ─────────────────────────
+DO_BUCKET=$(get_env DO_BUCKET)
+DO_ACCESS_KEY_ID=$(get_env DO_ACCESS_KEY_ID)
+DO_SECRET_ACCESS_KEY=$(get_env DO_SECRET_ACCESS_KEY)
+DO_SPACES_ENDPOINT=$(get_env DO_SPACES_ENDPOINT)
+: "${DO_SPACES_ENDPOINT:=fra1.digitaloceanspaces.com}"
+
+if [ -n "$DO_BUCKET" ] && [ -n "$DO_ACCESS_KEY_ID" ] && [ -n "$DO_SECRET_ACCESS_KEY" ] && command -v s3cmd >/dev/null; then
+    echo "[4/4] Uploading off-site to s3://$DO_BUCKET/backups/$TIMESTAMP/"
+    s3() {
+        s3cmd --access_key="$DO_ACCESS_KEY_ID" \
+              --secret_key="$DO_SECRET_ACCESS_KEY" \
+              --host="$DO_SPACES_ENDPOINT" \
+              --host-bucket="%(bucket)s.$DO_SPACES_ENDPOINT" \
+              --no-progress "$@"
+    }
+    if s3 put "$DB_ARCHIVE" "$ENV_ARCHIVE" "$STORAGE_ARCHIVE" "$MANIFEST" \
+          "s3://$DO_BUCKET/backups/$TIMESTAMP/"; then
+        echo "Off-site upload:    s3://$DO_BUCKET/backups/$TIMESTAMP/" >> "$MANIFEST"
+
+        # Remote retention: delete backup prefixes older than N days
+        CUTOFF=$(date -u -d "-$REMOTE_RETENTION_DAYS days" +%Y%m%d_%H%M%S)
+        s3 ls "s3://$DO_BUCKET/backups/" | awk -F/ '/DIR/ {print $(NF-1)}' | while read -r remote; do
+            if [[ "$remote" =~ ^[0-9]{8}_[0-9]{6}$ ]] && [[ "$remote" < "$CUTOFF" ]]; then
+                echo "  removing remote: $remote"
+                s3 del --recursive "s3://$DO_BUCKET/backups/$remote/"
+            fi
+        done || echo "WARN: remote retention pruning failed" >&2
+    else
+        echo "WARN: off-site upload failed — local backup is still intact" >&2
+    fi
+else
+    echo "[4/4] Off-site upload skipped (DO_* credentials not configured)"
+fi
 
 # ─── Rotation: keep last N ──────────────────────────────────────────────
 echo "[rotate] Keeping last $RETENTION backups"
