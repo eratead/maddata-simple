@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MadData — The largest mobile advertising network in Israel</title>
+  <meta name="description" content="MadData is a mobile advertising network powered by deep audience data — Device-ID precision, premium placements, and measurable brand lift across the Israeli market." />
+
+  <!-- Inter (matches the dashboard) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind via CDN (mockup only — production Astro/Laravel will use a build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent: { DEFAULT: '#F97316', soft: '#FB923C', deep: '#C2410C' },
+            navy:   { 950: '#0B1220', 900: '#111827' },
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          backgroundImage: {
+            'hero-gradient': 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(249,115,22,0.18) 0%, transparent 60%), linear-gradient(180deg, #0B1220 0%, #111827 60%, #0B1220 100%)',
+            'glow':          'radial-gradient(ellipse at center, rgba(249,115,22,0.25) 0%, transparent 70%)',
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .text-gradient {
+      background: linear-gradient(135deg, #ffffff 0%, #F97316 60%, #FB923C 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass {
+      background: rgba(17, 24, 39, 0.55);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .ring-accent { box-shadow: 0 0 0 1px rgba(249,115,22,0.35), 0 8px 32px -8px rgba(249,115,22,0.25); }
+    .marquee {
+      animation: marquee 40s linear infinite;
+    }
+    @keyframes marquee {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .device-frame {
+      background: linear-gradient(180deg, #1f2937 0%, #0b1220 100%);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 28px;
+      padding: 8px;
+      box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(249,115,22,0.06);
+    }
+    .device-screen {
+      border-radius: 22px;
+      overflow: hidden;
+      aspect-ratio: 9 / 16;
+      background: #0b1220;
+    }
+  </style>
+</head>
+
+<body class="bg-navy-950 text-slate-200 antialiased">
+
+<!-- ============== STICKY HEADER ============== -->
+<header class="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-navy-950/70 border-b border-white/5">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center group">
+      <!-- Real logo from /public/images/madata_logo_white_orange.png (1320×301) -->
+      <img src="https://ad.maddata.media/images/madata_logo_white_orange.png" alt="MadData" class="h-8 w-auto" />
+    </a>
+    <nav class="hidden md:flex items-center gap-8 text-sm text-slate-300">
+      <a href="#audiences"  class="hover:text-white transition">Audiences</a>
+      <a href="#placements" class="hover:text-white transition">Placements</a>
+      <a href="#tools"      class="hover:text-white transition">Ad Tools</a>
+      <a href="#clients"    class="hover:text-white transition">Clients</a>
+    </nav>
+    <a href="#contact" class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent hover:bg-accent-soft text-white text-sm font-semibold transition">
+      Get in touch
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+    </a>
+  </div>
+</header>
+
+<!-- ============== HERO ============== -->
+<section class="relative pt-40 pb-32 overflow-hidden bg-hero-gradient">
+  <div class="absolute inset-0 grid-bg opacity-40"></div>
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-navy-950 pointer-events-none"></div>
+
+  <div class="relative max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="max-w-4xl">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-semibold tracking-wide uppercase mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
+        Israel's #1 mobile advertising network
+      </div>
+      <h1 class="text-5xl md:text-7xl font-black tracking-tight leading-[1.05] text-white">
+        Reach the right audience.<br />
+        <span class="text-gradient">At the right moment.</span>
+      </h1>
+      <p class="mt-6 text-lg md:text-xl text-slate-400 max-w-2xl leading-relaxed">
+        MadData is a mobile advertising network powered by deep audience data &mdash; Device-ID precision, premium placements across Israel's top apps and sites, and measurable brand lift.
+      </p>
+      <div class="mt-10 flex flex-wrap items-center gap-4">
+        <a href="#contact" class="inline-flex items-center gap-2 px-6 py-3 rounded-md bg-accent hover:bg-accent-soft text-white font-semibold transition shadow-lg shadow-accent/20">
+          Start a campaign
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+        <a href="#audiences" class="inline-flex items-center gap-2 px-6 py-3 rounded-md border border-white/10 hover:border-white/30 text-slate-200 font-semibold transition">
+          See how it works
+        </a>
+      </div>
+
+      <!-- Hero stats -->
+      <dl class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl">
+        <div>
+          <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Apps & sites</dt>
+          <dd class="mt-1 text-3xl font-black text-white">1,000<span class="text-accent">+</span></dd>
+        </div>
+        <div>
+          <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Data sources</dt>
+          <dd class="mt-1 text-3xl font-black text-white">100<span class="text-accent">+</span></dd>
+        </div>
+        <div>
+          <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Exchanges</dt>
+          <dd class="mt-1 text-3xl font-black text-white">500<span class="text-accent">+</span></dd>
+        </div>
+        <div>
+          <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Avg CTR</dt>
+          <dd class="mt-1 text-3xl font-black text-white">2.0<span class="text-accent">%</span></dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ============== TRUST LOGOS ============== -->
+<section class="border-y border-white/5 bg-navy-900/40">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-12">
+    <p class="text-center text-[11px] uppercase tracking-widest text-slate-500 font-semibold mb-8">Trusted by leading brands in Israel</p>
+    <div class="overflow-hidden">
+      <div class="marquee flex items-center gap-12 whitespace-nowrap text-2xl font-bold tracking-tight text-slate-500 hover:[animation-play-state:paused]">
+        <!-- Replace with real <img> tags once logos are in public/images/clients/ -->
+        <span>Coca-Cola</span>
+        <span>McDonald's</span>
+        <span>Domino's</span>
+        <span>Nespresso</span>
+        <span>Mercedes-Benz</span>
+        <span>Toyota</span>
+        <span>SMART</span>
+        <span>AVATR</span>
+        <span>Pandora</span>
+        <span>Bosch</span>
+        <span>ACE</span>
+        <span>Optikana</span>
+        <span>FOX</span>
+        <span>De'Longhi</span>
+        <span>Bank Leumi</span>
+        <span>HOT</span>
+        <!-- Duplicate for seamless loop -->
+        <span>Coca-Cola</span>
+        <span>McDonald's</span>
+        <span>Domino's</span>
+        <span>Nespresso</span>
+        <span>Mercedes-Benz</span>
+        <span>Toyota</span>
+        <span>SMART</span>
+        <span>AVATR</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== VALUE PROPS (3-column, mirrors PDF page 2) ============== -->
+<section class="py-28 relative">
+  <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-glow opacity-20 pointer-events-none"></div>
+
+  <div class="relative max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="max-w-3xl mb-16">
+      <p class="text-accent text-sm font-bold uppercase tracking-widest mb-3">How we deliver</p>
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white">
+        Long-tail reach with<br/>
+        <span class="text-gradient">upper-mid-funnel impact.</span>
+      </h2>
+      <p class="mt-5 text-slate-400 text-lg leading-relaxed">
+        Awareness that converts. Precise audiences, premium environments, and the analytics to prove brand-lift &mdash; all on mobile.
+      </p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <!-- Card 1: Audiences -->
+      <div class="glass rounded-2xl p-8 hover:ring-accent transition">
+        <div class="w-12 h-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-6">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Audience targeting</h3>
+        <p class="text-slate-400 leading-relaxed mb-5">Device-ID accuracy beats cookie-based methods. Pick from hundreds of audiences, build custom lookalikes in 48 hours, and target by precise GPS location in real time.</p>
+        <ul class="space-y-2 text-sm text-slate-300">
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Device-ID precision (no cookies)</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Demographic, socio-economic, behavioural</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Lookalike audiences in 48 hours</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Real-time GPS-based location targeting</li>
+        </ul>
+      </div>
+
+      <!-- Card 2: Premium Placements -->
+      <div class="glass rounded-2xl p-8 hover:ring-accent transition">
+        <div class="w-12 h-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-6">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Premium placements</h3>
+        <p class="text-slate-400 leading-relaxed mb-5">Full-screen mobile inventory across the most-read news, sports, finance, and lifestyle apps in Israel. No bot traffic, no MFA junk &mdash; just attention.</p>
+        <ul class="space-y-2 text-sm text-slate-300">
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> News: Mako, Ynet, N12, Israel Hayom, Channel 13&nbsp;&amp;&nbsp;14</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Sports: Sport5, ONE, Sport1</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Finance: TheMarker, Calcalist, Globes, Investing.com</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Games &amp; Lifestyle: Candy Crush, Tinder, Grindr</li>
+        </ul>
+      </div>
+
+      <!-- Card 3: Brand Lift -->
+      <div class="glass rounded-2xl p-8 hover:ring-accent transition">
+        <div class="w-12 h-12 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center mb-6">
+          <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        <h3 class="text-xl font-bold text-white mb-3">Measurable brand lift</h3>
+        <p class="text-slate-400 leading-relaxed mb-5">Every campaign comes with proof. CTRs above industry average, low cost-per-engagement, and brand-lift surveys to quantify recall and intent.</p>
+        <ul class="space-y-2 text-sm text-slate-300">
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> CTR above 2% (industry &lt; 0.5%)</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> High engagement-per-session</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Significantly lower cost-per-click</li>
+          <li class="flex gap-2"><span class="text-accent">&bull;</span> Brand-lift surveys included</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== AUDIENCES — split layout ============== -->
+<section id="audiences" class="py-28 relative bg-navy-900/30 border-y border-white/5">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 grid md:grid-cols-2 gap-16 items-center">
+    <div>
+      <p class="text-accent text-sm font-bold uppercase tracking-widest mb-3">Audience-first</p>
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white mb-6">Hundreds of audiences. Built on real behavior.</h2>
+      <p class="text-slate-400 text-lg leading-relaxed mb-8">
+        We connect dozens of next-generation data sources with a privacy-respecting Device-ID layer to build audiences that actually look like the people you want to reach &mdash; not approximations from third-party cookies.
+      </p>
+      <ul class="space-y-4">
+        <li class="flex gap-3">
+          <div class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold">A suitable audience for every brief</p>
+            <p class="text-slate-400 text-sm">Ready-made segments across every major vertical, plus custom builds.</p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold">Lookalikes generated in 48 hours</p>
+            <p class="text-slate-400 text-sm">Feed us a seed list; we deliver an audience that performs like it.</p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold">Real-time, location-precise targeting</p>
+            <p class="text-slate-400 text-sm">GPS-grade location signals at the moment of decision.</p>
+          </div>
+        </li>
+        <li class="flex gap-3">
+          <div class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold">Tailored age ranges &mdash; including youth</p>
+            <p class="text-slate-400 text-sm">Granular demographic segmentation that goes beyond bucket ranges.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Audience face mosaic placeholder -->
+    <div class="relative">
+      <div class="grid grid-cols-4 gap-2 rounded-2xl overflow-hidden border border-white/5">
+        <!-- 16 placeholder squares — replace with real face-mosaic image -->
+        <template x-init id="mosaic"></template>
+        <div class="aspect-square bg-gradient-to-br from-rose-400/40 to-pink-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-amber-400/40 to-orange-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-emerald-400/40 to-teal-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-sky-400/40 to-blue-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-violet-400/40 to-purple-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-fuchsia-400/40 to-pink-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-yellow-400/40 to-amber-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-lime-400/40 to-green-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-cyan-400/40 to-sky-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-indigo-400/40 to-violet-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-pink-400/40 to-rose-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-orange-400/40 to-red-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-teal-400/40 to-cyan-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-purple-400/40 to-indigo-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-red-400/40 to-rose-600/40"></div>
+        <div class="aspect-square bg-gradient-to-br from-green-400/40 to-emerald-600/40"></div>
+      </div>
+      <!-- Floating audience pill -->
+      <div class="absolute -top-4 -right-4 glass rounded-full px-4 py-2 flex items-center gap-2 shadow-2xl">
+        <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+        <span class="text-xs font-semibold text-white">Live audience: <span class="text-accent">Auto Intenders 25-44</span></span>
+      </div>
+      <p class="text-center text-xs text-slate-500 mt-4">Replace with real face-mosaic image (the existing WP image works).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PLACEMENTS GRID ============== -->
+<section id="placements" class="py-28">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="max-w-2xl mb-16">
+      <p class="text-accent text-sm font-bold uppercase tracking-widest mb-3">Premium inventory</p>
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white">Where Israel actually reads, watches, and shops.</h2>
+    </div>
+
+    <!-- Categorised logo grid -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="glass rounded-2xl p-6">
+        <p class="text-[11px] uppercase tracking-widest text-accent font-bold mb-4">News</p>
+        <ul class="space-y-2 text-slate-300">
+          <li>Mako</li><li>Ynet</li><li>N12</li><li>Israel Hayom</li><li>Channel 13</li><li>Channel 14</li>
+        </ul>
+      </div>
+      <div class="glass rounded-2xl p-6">
+        <p class="text-[11px] uppercase tracking-widest text-accent font-bold mb-4">Sports</p>
+        <ul class="space-y-2 text-slate-300">
+          <li>Sport5</li><li>ONE</li><li>Sport1</li>
+        </ul>
+      </div>
+      <div class="glass rounded-2xl p-6">
+        <p class="text-[11px] uppercase tracking-widest text-accent font-bold mb-4">Finance</p>
+        <ul class="space-y-2 text-slate-300">
+          <li>TheMarker</li><li>Calcalist</li><li>Globes</li><li>Investing.com</li><li>BizPortal</li>
+        </ul>
+      </div>
+      <div class="glass rounded-2xl p-6">
+        <p class="text-[11px] uppercase tracking-widest text-accent font-bold mb-4">Games &amp; Lifestyle</p>
+        <ul class="space-y-2 text-slate-300">
+          <li>Candy Crush</li><li>Block Blast</li><li>Tinder</li><li>Grindr</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="mt-8 text-sm text-slate-500">+ thousands of long-tail apps and sites we vet for brand safety.</p>
+  </div>
+</section>
+
+<!-- ============== PERFORMANCE PILLARS ============== -->
+<section class="py-28 relative">
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent pointer-events-none"></div>
+
+  <div class="relative max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="max-w-2xl mb-16">
+      <p class="text-accent text-sm font-bold uppercase tracking-widest mb-3">Quality awareness</p>
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white">Awareness that strengthens conversion.</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="glass rounded-2xl p-8">
+        <div class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold mb-2">Awareness</div>
+        <div class="text-5xl font-black text-white mb-1">+38%</div>
+        <p class="text-sm text-slate-400 mb-6">Average brand recall lift across surveyed campaigns</p>
+        <ul class="space-y-2 text-sm text-slate-300 border-t border-white/5 pt-5">
+          <li class="flex justify-between"><span>High CTR</span><span class="text-accent font-bold">2.0%+</span></li>
+          <li class="flex justify-between"><span>More site entries</span><span class="text-accent font-bold">3&times;</span></li>
+          <li class="flex justify-between"><span>Lower session cost</span><span class="text-accent font-bold">-42%</span></li>
+        </ul>
+      </div>
+      <div class="glass rounded-2xl p-8 ring-accent">
+        <div class="text-[11px] uppercase tracking-widest text-accent font-semibold mb-2">Engagement</div>
+        <div class="text-5xl font-black text-white mb-1">3.2&times;</div>
+        <p class="text-sm text-slate-400 mb-6">Higher engagement-per-session vs. industry baseline</p>
+        <ul class="space-y-2 text-sm text-slate-300 border-t border-white/5 pt-5">
+          <li class="flex justify-between"><span>Effective exposure</span><span class="text-accent font-bold">+57%</span></li>
+          <li class="flex justify-between"><span>Low bounce rate</span><span class="text-accent font-bold">-34%</span></li>
+          <li class="flex justify-between"><span>Long sessions</span><span class="text-accent font-bold">2:14</span></li>
+        </ul>
+      </div>
+      <div class="glass rounded-2xl p-8">
+        <div class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold mb-2">Conversion</div>
+        <div class="text-5xl font-black text-white mb-1">+22%</div>
+        <p class="text-sm text-slate-400 mb-6">Funnel improvement on campaigns with brand-lift surveys</p>
+        <ul class="space-y-2 text-sm text-slate-300 border-t border-white/5 pt-5">
+          <li class="flex justify-between"><span>Awareness &rarr; consideration</span><span class="text-accent font-bold">+19%</span></li>
+          <li class="flex justify-between"><span>Consideration &rarr; intent</span><span class="text-accent font-bold">+24%</span></li>
+          <li class="flex justify-between"><span>Real-time location usage</span><span class="text-accent font-bold">live</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="mt-6 text-xs text-slate-500">Sample numbers shown for layout. Replace with real benchmarks before launch.</p>
+  </div>
+</section>
+
+<!-- ============== AD TOOLS — phone mockups ============== -->
+<section id="tools" class="py-28 bg-navy-900/30 border-y border-white/5">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="max-w-2xl mb-16">
+      <p class="text-accent text-sm font-bold uppercase tracking-widest mb-3">Creative formats</p>
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white">Ad formats built for attention.</h2>
+      <p class="mt-4 text-slate-400 text-lg">Three creative shapes, each tuned for a stage of the funnel.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-10">
+      <!-- Format 1 -->
+      <div class="text-center">
+        <div class="device-frame max-w-[260px] mx-auto">
+          <div class="device-screen bg-gradient-to-br from-slate-800 to-slate-900 flex items-end p-4">
+            <div class="w-full glass rounded-xl p-4 text-left">
+              <div class="text-xs uppercase tracking-widest text-accent font-bold mb-2">Static / Video Interstitial</div>
+              <div class="text-white font-bold mb-1">Full-screen, full-attention.</div>
+              <div class="text-xs text-slate-400">Replaces a placeholder ad slot with rich brand storytelling.</div>
+            </div>
+          </div>
+        </div>
+        <h3 class="mt-6 text-xl font-bold text-white">Static / Video Interstitial</h3>
+        <p class="mt-2 text-sm text-slate-400 max-w-xs mx-auto">Full-screen takeover at natural break points. The PDF&apos;s &ldquo;Electric Chic&rdquo; format.</p>
+      </div>
+      <!-- Format 2 -->
+      <div class="text-center">
+        <div class="device-frame max-w-[260px] mx-auto">
+          <div class="device-screen bg-gradient-to-br from-slate-800 to-slate-900 flex flex-col p-4 gap-3">
+            <div class="h-1/3 rounded-md bg-slate-700/50"></div>
+            <div class="rounded-md bg-accent/10 border border-accent/30 p-3 flex-1 flex items-center justify-center text-accent font-bold text-sm">MPU 300&times;250</div>
+            <div class="h-1/4 rounded-md bg-slate-700/50"></div>
+          </div>
+        </div>
+        <h3 class="mt-6 text-xl font-bold text-white">MPU Static / Video</h3>
+        <p class="mt-2 text-sm text-slate-400 max-w-xs mx-auto">In-content placements with viewability and tap-to-expand.</p>
+      </div>
+      <!-- Format 3 -->
+      <div class="text-center">
+        <div class="device-frame max-w-[260px] mx-auto">
+          <div class="device-screen bg-gradient-to-br from-blue-900 to-slate-900 flex flex-col items-center justify-center text-center p-4">
+            <div class="text-white font-bold text-base mb-2">Watch &amp; earn</div>
+            <div class="text-xs text-slate-300 mb-4">15s reward unlock</div>
+            <button class="px-4 py-2 rounded-full bg-accent text-white text-xs font-bold">Continue</button>
+            <div class="absolute bottom-3 left-3 text-[9px] uppercase tracking-widest text-accent font-bold opacity-70">+30% engagement</div>
+          </div>
+        </div>
+        <h3 class="mt-6 text-xl font-bold text-white">Rewarded Video</h3>
+        <p class="mt-2 text-sm text-slate-400 max-w-xs mx-auto">Opt-in video for high attention &mdash; users choose to watch in exchange for in-app value.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CLIENT SHOWCASE ============== -->
+<section id="clients" class="py-28">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10">
+    <div class="max-w-2xl mb-12">
+      <p class="text-accent text-sm font-bold uppercase tracking-widest mb-3">Selected clients</p>
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white">Brands that trust us with their reach.</h2>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+      <!-- Replace each <span> with <img src="/images/clients/x.svg" alt="X" /> when assets are in -->
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Coca-Cola</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">McDonald&apos;s</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Domino&apos;s</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Nespresso</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Mercedes-Benz</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Toyota</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">SMART</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">AVATR</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Pandora</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Bosch</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">ACE</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Optikana</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">FOX</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">De&apos;Longhi</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Bank Leumi</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Tel Aviv Academy</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Shilav</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Tenbis</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Bar Ilan</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">HOT</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">EPSON</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Michael Kors</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Nautica</div>
+      <div class="aspect-[3/2] glass rounded-xl flex items-center justify-center text-slate-300 font-bold text-sm">Uniqlo</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CONTACT ============== -->
+<section id="contact" class="py-28 relative">
+  <div class="absolute inset-0 bg-gradient-to-t from-accent/10 via-transparent to-transparent pointer-events-none"></div>
+
+  <div class="relative max-w-3xl mx-auto px-6 lg:px-10">
+    <div class="text-center mb-12">
+      <p class="text-accent text-sm font-bold uppercase tracking-widest mb-3">Let&apos;s talk</p>
+      <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">Ready to reach the right audience?</h2>
+      <p class="text-slate-400 text-lg">Tell us about your brief. We&apos;ll respond within one business day.</p>
+    </div>
+
+    <form action="/contact" method="POST" class="glass rounded-2xl p-8 space-y-5">
+      <!-- honeypot — invisible to users, real bots fill it -->
+      <input type="text" name="_honeypot" class="hidden" tabindex="-1" autocomplete="off" />
+
+      <div class="grid md:grid-cols-2 gap-5">
+        <label class="block">
+          <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">Name</span>
+          <input type="text" name="name" required class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition" placeholder="Your full name" />
+        </label>
+        <label class="block">
+          <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">Email</span>
+          <input type="email" name="email" required class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition" placeholder="you@brand.com" />
+        </label>
+      </div>
+      <label class="block">
+        <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">Company</span>
+        <input type="text" name="company" class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition" placeholder="Brand or agency" />
+      </label>
+      <label class="block">
+        <span class="text-xs uppercase tracking-widest text-slate-400 font-semibold">Brief</span>
+        <textarea name="message" rows="5" required class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition resize-none" placeholder="Audience, budget range, timing, anything else relevant…"></textarea>
+      </label>
+      <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-md bg-accent hover:bg-accent-soft text-white font-semibold text-base transition shadow-lg shadow-accent/20">
+        Send brief
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </button>
+      <p class="text-xs text-slate-500 text-center">Or email us directly at <a href="mailto:support@erate.co.il" class="text-accent hover:underline">support@erate.co.il</a></p>
+    </form>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="border-t border-white/5 bg-navy-950">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-12">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center">
+        <img src="https://ad.maddata.media/images/madata_logo_white_orange.png" alt="MadData" class="h-7 w-auto" />
+      </div>
+      <div class="flex items-center gap-6 text-sm text-slate-500">
+        <a href="/privacy" class="hover:text-white transition">Privacy Policy</a>
+        <a href="/terms"   class="hover:text-white transition">Terms of Service</a>
+        <a href="mailto:support@erate.co.il" class="hover:text-white transition">support@erate.co.il</a>
+      </div>
+      <p class="text-xs text-slate-600">&copy; 2026 eRate online measurement solutions ltd. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

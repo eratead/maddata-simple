@@ -6,7 +6,6 @@
 /storage/*.key
 /storage/pail
 /vendor
-/DOCS
 .env
 .env.backup
 .env.production
@@ -22,4 +21,5 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-/DOCS
+.DS_Store
+/docs/צילומי מסך של IDX/

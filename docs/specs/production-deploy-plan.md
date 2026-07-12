@@ -1,7 +1,8 @@
-# Production Deploy Plan
+# Production Deploy Plan (OLD DROPLET — SUPERSEDED)
 
 **Created:** 2026-03-23
-**Status:** Waiting for staging QA approval
+**Status:** SUPERSEDED — this plan was for the old droplet (207.154.253.28). Production moved to new droplet (164.90.233.136) on 2026-04-12.
+**See instead:** [production-new-droplet-migration.md](production-new-droplet-migration.md) and [cutover-execution-2026-04-12.md](cutover-execution-2026-04-12.md)
 
 ## Prerequisites
 

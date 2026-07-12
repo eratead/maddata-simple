@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MadData — Audience-driven mobile advertising. v7 (Minimal cards)</title>
+    <meta name="description"
+        content="MadData is a mobile advertising network powered by deep audience data — Device-ID precision, premium placements, and measurable brand lift across the Israeli market." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: { DEFAULT: '#F97316', soft: '#FB923C', deep: '#C2410C' },
+                        cyan2: { DEFAULT: '#06B6D4', soft: '#22D3EE', deep: '#0891B2' },
+                        navy: { 950: '#070B14', 900: '#0F1729', 800: '#1A2540' },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --accent: #F97316;
+            --cyan: #06B6D4;
+        }
+
+        html, body {
+            overflow-x: hidden;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* ============== ANIMATED MESH BACKGROUND ============== */
+        .mesh-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .mesh-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+            will-change: transform;
+        }
+
+        .mesh-blob-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent), transparent 70%);
+            top: -10%;
+            left: -10%;
+            animation: drift1 22s ease-in-out infinite;
+        }
+
+        .mesh-blob-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--cyan), transparent 70%);
+            top: 20%;
+            right: -10%;
+            animation: drift2 28s ease-in-out infinite;
+        }
+
+        .mesh-blob-3 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #A855F7, transparent 70%);
+            bottom: -10%;
+            left: 30%;
+            opacity: 0.2;
+            animation: drift3 32s ease-in-out infinite;
+        }
+
+        @keyframes drift1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(80px, 40px) scale(1.1);
+            }
+        }
+
+        @keyframes drift2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(-60px, 80px) scale(0.9);
+            }
+        }
+
+        @keyframes drift3 {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(40px, -60px) scale(1.15);
+            }
+        }
+
+        /* ============== GRID OVERLAY ============== */
+        .grid-bg {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+        }
+
+        /* ============== TEXT GRADIENT ============== */
+        .text-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #FB923C 40%, #F97316 65%, #22D3EE 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 6s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        /* ============== GLASS CARDS ============== */
+        .glass {
+            background: rgba(15, 23, 41, 0.55);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: transform .4s ease, border-color .4s ease, box-shadow .4s ease;
+        }
+
+        .glass:hover {
+            transform: translateY(-4px);
+            border-color: rgba(249, 115, 22, 0.5);
+            box-shadow: 0 24px 48px -16px rgba(249, 115, 22, 0.25), 0 0 0 1px rgba(249, 115, 22, 0.2);
+        }
+
+        .glass-cyan:hover {
+            border-color: rgba(34, 211, 238, 0.5);
+            box-shadow: 0 24px 48px -16px rgba(34, 211, 238, 0.25), 0 0 0 1px rgba(34, 211, 238, 0.2);
+        }
+
+        /* ============== SHIMMERING CTA ============== */
+        .cta {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left .8s ease;
+        }
+
+        .cta:hover::before {
+            left: 100%;
+        }
+
+        .cta-arrow {
+            transition: transform .3s ease;
+        }
+
+        .cta:hover .cta-arrow {
+            transform: translateX(4px);
+        }
+
+        /* ============== MARQUEE ============== */
+        .marquee-mask {
+            mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+            -webkit-mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
+        }
+
+        .marquee {
+            animation: marquee 40s linear infinite;
+        }
+
+        .marquee:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ============== SCROLL REVEAL ============== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .8s ease, transform .8s ease;
+        }
+
+        .reveal.in {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 {
+            transition-delay: .1s;
+        }
+
+        .reveal-delay-2 {
+            transition-delay: .2s;
+        }
+
+        .reveal-delay-3 {
+            transition-delay: .3s;
+        }
+
+        /* ============== PHONE MOCKUPS ============== */
+        .device-frame {
+            background: linear-gradient(180deg, #1a2540 0%, #070b14 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 32px;
+            padding: 8px;
+            box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(249, 115, 22, 0.06);
+        }
+
+        .device-screen {
+            border-radius: 24px;
+            overflow: hidden;
+            aspect-ratio: 9 / 16;
+            background: #070b14;
+            position: relative;
+        }
+
+        .creative-slide {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            animation: cycleCreatives 9s infinite;
+        }
+
+        .creative-slide:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .creative-slide:nth-child(2) {
+            animation-delay: 3s;
+        }
+
+        .creative-slide:nth-child(3) {
+            animation-delay: 6s;
+        }
+
+        @keyframes cycleCreatives {
+
+            0%,
+            28% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            33%,
+            95% {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+        }
+
+        /* ============== ANIMATED SVG ICONS ============== */
+        .icon-pulse circle.pulse-ring {
+            transform-origin: center;
+            animation: iconPulse 2.5s ease-out infinite;
+        }
+
+        @keyframes iconPulse {
+            0% {
+                transform: scale(0.6);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
+
+        .icon-orbit g.orbit {
+            transform-origin: center;
+            animation: orbit 8s linear infinite;
+        }
+
+        @keyframes orbit {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .bars-anim rect {
+            transform-origin: bottom;
+            animation: barGrow 2s ease-out forwards;
+        }
+
+        .bars-anim rect:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .bars-anim rect:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .bars-anim rect:nth-child(3) {
+            animation-delay: 0.5s;
+        }
+
+        .bars-anim rect:nth-child(4) {
+            animation-delay: 0.7s;
+        }
+
+        .bars-anim rect:nth-child(5) {
+            animation-delay: 0.9s;
+        }
+
+        @keyframes barGrow {
+            from {
+                transform: scaleY(0);
+            }
+
+            to {
+                transform: scaleY(1);
+            }
+        }
+
+        /* radar sweep */
+        .radar-sweep {
+            transform-origin: center;
+            animation: sweep 4s linear infinite;
+        }
+
+        @keyframes sweep {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .radar-blip {
+            animation: blip 2.5s ease-in-out infinite;
+        }
+
+        @keyframes blip {
+
+            0%,
+            100% {
+                opacity: .3;
+                r: 3;
+            }
+
+            50% {
+                opacity: 1;
+                r: 5;
+            }
+        }
+
+        /* line-draw for KPI charts */
+        .draw-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawPath 3s ease-out forwards;
+        }
+
+        @keyframes drawPath {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        /* network nodes pulse */
+        .node-pulse circle {
+            transform-origin: center;
+            animation: nodePulse 3s ease-in-out infinite;
+        }
+
+        .node-pulse circle:nth-child(2) {
+            animation-delay: .4s;
+        }
+
+        .node-pulse circle:nth-child(3) {
+            animation-delay: .8s;
+        }
+
+        .node-pulse circle:nth-child(4) {
+            animation-delay: 1.2s;
+        }
+
+        .node-pulse circle:nth-child(5) {
+            animation-delay: 1.6s;
+        }
+
+        .node-pulse circle:nth-child(6) {
+            animation-delay: 2s;
+        }
+
+        @keyframes nodePulse {
+
+            0%,
+            100% {
+                opacity: .5;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.3);
+            }
+        }
+
+        /* ============== FLIP CLOCK — minimal: plain rectangles, no chassis, no chrome ============== */
+        .flip-clock {
+            max-width: 1100px;
+        }
+        .flip-clock-chassis {
+            /* chassis stripped — no frame, no shadow, no padding, no rounded corners */
+            position: relative;
+        }
+        .flip-clock-status {
+            display: none;  /* status bar removed */
+        }
+        .flip-clock-slots {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            perspective: 1400px;
+            perspective-origin: 50% 30%;
+        }
+        .flip-slot {
+            position: relative;
+            aspect-ratio: 9 / 16;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            background: #ffffff;
+            /* No border-radius, no shadow — plain white rectangle */
+        }
+        /* Each layer is a full image, stacked via z-index. Only the top layer is visible at rest. */
+        .image-layer {
+            position: absolute;
+            inset: 0;
+        }
+        /* Two halves per layer — top half rotates (with front+back faces), bottom half static */
+        .image-half {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 50%;
+        }
+        .image-half.top {
+            top: 0;
+            transform-origin: bottom center;
+            transform: rotateX(0deg);
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+            will-change: transform;
+        }
+        .image-half.bottom {
+            bottom: 0;
+            background-size: 100% 200%;
+            background-repeat: no-repeat;
+            background-position: bottom center;
+        }
+        /* Front and back faces of the top half. Past 90° rotation, the back face
+           becomes visible, occupying the lower-half area. */
+        .image-half.top .face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .image-half.top .face.front {
+            background-size: 100% 200%;
+            background-repeat: no-repeat;
+            background-position: top center;
+        }
+        .image-half.top .face.back {
+            transform: rotateX(180deg);
+            background: #ffffff;
+        }
+        @keyframes flipTopDown {
+            0%   { transform: rotateX(0deg); }
+            100% { transform: rotateX(-180deg); }
+        }
+        .image-layer.flipping .image-half.top {
+            animation: flipTopDown 0.42s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+        }
+        /* Mobile: show only 2 cards (hide slots 3-5). Cards remain readable at phone widths. */
+        @media (max-width: 767px) {
+            .flip-clock-slots {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .flip-clock-slots .flip-slot:nth-child(n+3) {
+                display: none;
+            }
+        }
+
+        /* ============== A11Y: respect reduced motion ============== */
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.001s !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001s !important;
+            }
+
+            .reveal {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-navy-950 text-slate-200 antialiased">
+
+    <!-- ============== STICKY HEADER ============== -->
+    <header class="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-navy-950/70 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+            <a href="#" class="flex items-center group">
+                <img src="https://ad.maddata.media/images/madata_logo_white_orange.png" alt="MadData"
+                    class="h-8 w-auto transition-transform group-hover:scale-105" />
+            </a>
+            <nav class="hidden md:flex items-center gap-8 text-sm text-slate-300">
+                <a href="#brands"
+                    class="hover:text-white transition relative after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:bg-accent after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left">Brands</a>
+                <a href="#audiences"
+                    class="hover:text-white transition relative after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:bg-accent after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left">Audiences</a>
+                <a href="#results"
+                    class="hover:text-white transition relative after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:bg-accent after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left">Results</a>
+            </nav>
+            <a href="#contact"
+                class="cta inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent hover:bg-accent-soft text-white text-sm font-semibold transition">
+                Get in touch
+                <svg class="w-4 h-4 cta-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- ============== HERO ============== -->
+    <section class="relative pt-40 pb-32 overflow-hidden">
+        <!-- Animated mesh background -->
+        <div class="mesh-bg">
+            <div class="mesh-blob mesh-blob-1"></div>
+            <div class="mesh-blob mesh-blob-2"></div>
+            <div class="mesh-blob mesh-blob-3"></div>
+        </div>
+        <div class="absolute inset-0 grid-bg opacity-50"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-navy-950 pointer-events-none">
+        </div>
+
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-10 grid lg:grid-cols-12 gap-10 items-center">
+            <div class="lg:col-span-7 reveal">
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-accent/30 bg-accent/10 text-accent text-xs font-mono font-semibold tracking-wide uppercase mb-6">
+                    <span class="relative flex w-2 h-2">
+                        <span class="absolute inset-0 rounded-full bg-accent opacity-75 animate-ping"></span>
+                        <span class="relative rounded-full w-2 h-2 bg-accent"></span>
+                    </span>
+                    Live · Israel · Mobile
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black tracking-tight leading-[1.05] text-white">
+                    Audience-driven<br />
+                    mobile advertising.<br />
+                    <span class="text-gradient">At full attention.</span>
+                </h1>
+                <p class="mt-6 text-lg md:text-xl text-slate-400 max-w-2xl leading-relaxed">
+                    MadData reaches the right person on the right screen at the right second &mdash; powered by
+                    Device-ID precision, premium placements across Israel's top mobile properties, and brand-lift you
+                    can prove.
+                </p>
+                <div class="mt-10 flex flex-wrap items-center gap-4">
+                    <a href="#contact"
+                        class="cta inline-flex items-center gap-2 px-6 py-3 rounded-md bg-accent hover:bg-accent-soft text-white font-semibold transition shadow-lg shadow-accent/20">
+                        Start a campaign
+                        <svg class="w-4 h-4 cta-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </a>
+                    <a href="#audiences"
+                        class="inline-flex items-center gap-2 px-6 py-3 rounded-md border border-white/10 hover:border-white/30 text-slate-200 font-semibold transition">
+                        See how it works
+                    </a>
+                </div>
+
+                <!-- Hero counters with count-up animation -->
+                <dl class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl">
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Apps & sites</dt>
+                        <dd class="mt-1 text-3xl font-black text-white"><span class="counter"
+                                data-target="1000">0</span><span class="text-accent">+</span></dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Data sources</dt>
+                        <dd class="mt-1 text-3xl font-black text-white"><span class="counter"
+                                data-target="100">0</span><span class="text-accent">+</span></dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Exchanges</dt>
+                        <dd class="mt-1 text-3xl font-black text-white"><span class="counter"
+                                data-target="500">0</span><span class="text-accent">+</span></dd>
+                    </div>
+                    <div>
+                        <dt class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Avg CTR</dt>
+                        <dd class="mt-1 text-3xl font-black text-white"><span class="counter" data-target="2"
+                                data-decimal="1">0</span><span class="text-accent">%</span></dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Animated network mesh illustration -->
+            <div class="lg:col-span-5 reveal reveal-delay-2">
+                <div class="relative w-full aspect-square max-w-md mx-auto">
+                    <svg viewBox="0 0 400 400" class="w-full h-full">
+                        <!-- gradient defs -->
+                        <defs>
+                            <radialGradient id="centralGlow" cx="50%" cy="50%" r="40%">
+                                <stop offset="0%" stop-color="#F97316" stop-opacity="0.4" />
+                                <stop offset="100%" stop-color="#F97316" stop-opacity="0" />
+                            </radialGradient>
+                            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#F97316" stop-opacity="0.6" />
+                                <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.6" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Glow background -->
+                        <circle cx="200" cy="200" r="120" fill="url(#centralGlow)" />
+
+                        <!-- Orbiting outer ring -->
+                        <g class="icon-orbit">
+                            <g class="orbit">
+                                <circle cx="200" cy="40" r="4" fill="#F97316" />
+                                <circle cx="360" cy="200" r="4" fill="#22D3EE" />
+                                <circle cx="200" cy="360" r="4" fill="#F97316" />
+                                <circle cx="40" cy="200" r="4" fill="#22D3EE" />
+                            </g>
+                        </g>
+
+                        <!-- Connecting lines (animated) -->
+                        <g stroke="url(#lineGrad)" stroke-width="1.5" fill="none" opacity="0.5">
+                            <line x1="200" y1="200" x2="100" y2="100">
+                                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="6s"
+                                    repeatCount="indefinite" />
+                            </line>
+                            <line x1="200" y1="200" x2="300" y2="100">
+                                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="7s"
+                                    repeatCount="indefinite" />
+                            </line>
+                            <line x1="200" y1="200" x2="100" y2="300">
+                                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="5s"
+                                    repeatCount="indefinite" />
+                            </line>
+                            <line x1="200" y1="200" x2="300" y2="300">
+                                <animate attributeName="stroke-dasharray" values="0,200;200,0;0,200" dur="8s"
+                                    repeatCount="indefinite" />
+                            </line>
+                            <line x1="100" y1="100" x2="300" y2="100" stroke-opacity="0.3" />
+                            <line x1="300" y1="100" x2="300" y2="300" stroke-opacity="0.3" />
+                            <line x1="300" y1="300" x2="100" y2="300" stroke-opacity="0.3" />
+                            <line x1="100" y1="300" x2="100" y2="100" stroke-opacity="0.3" />
+                        </g>
+
+                        <!-- Network nodes (pulsing) -->
+                        <g class="node-pulse">
+                            <circle cx="100" cy="100" r="6" fill="#F97316" />
+                            <circle cx="300" cy="100" r="6" fill="#22D3EE" />
+                            <circle cx="100" cy="300" r="6" fill="#22D3EE" />
+                            <circle cx="300" cy="300" r="6" fill="#F97316" />
+                            <circle cx="200" cy="60" r="4" fill="#FB923C" />
+                            <circle cx="200" cy="340" r="4" fill="#FB923C" />
+                        </g>
+
+                        <!-- Central MadData icon -->
+                        <g transform="translate(170, 178)">
+                            <rect x="0" y="6" width="6" height="32" rx="1.5" fill="#F97316" />
+                            <rect x="14" y="0" width="6" height="44" rx="1.5" fill="#ffffff" />
+                            <rect x="28" y="12" width="6" height="20" rx="1.5" fill="#F97316" />
+                            <rect x="42" y="18" width="6" height="8" rx="1.5" fill="#22D3EE" />
+                        </g>
+                        <circle cx="200" cy="200" r="48" fill="none" stroke="#F97316" stroke-width="1" opacity="0.3" />
+
+                        <!-- floating data labels -->
+                        <g font-family="JetBrains Mono, monospace" font-size="10" fill="#94a3b8">
+                            <text x="60" y="80">device:ios</text>
+                            <text x="240" y="80">geo:tlv</text>
+                            <text x="40" y="320">audience:auto</text>
+                            <text x="240" y="320">ctr:2.3%</text>
+                        </g>
+                    </svg>
+
+                    <!-- Floating live-bid pill -->
+                    <div
+                        class="absolute -top-2 -left-2 glass rounded-full px-4 py-2 flex items-center gap-2 text-xs font-mono">
+                        <span class="w-2 h-2 rounded-full bg-cyan2 animate-pulse"></span>
+                        <span class="text-white">bid: <span class="text-cyan2">won @ ₪0.18</span></span>
+                    </div>
+                    <div
+                        class="absolute -bottom-2 -right-2 glass rounded-full px-4 py-2 flex items-center gap-2 text-xs font-mono">
+                        <span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                        <span class="text-white">match: <span class="text-accent">98.2%</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== TRUST BOARD — 5 stacks × 4 PDF images, split-flap ============== -->
+    <section id="brands" class="py-20 border-y border-white/5 bg-navy-900/60 overflow-hidden relative">
+        <div class="absolute inset-0 grid-bg opacity-30 pointer-events-none"></div>
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-10">
+            <p class="text-center text-[11px] uppercase tracking-widest text-slate-500 font-mono font-semibold mb-12">// trusted by leading brands in israel</p>
+
+            <!-- Flip clock: 5 slots, each with a stack of 4 image layers. No chassis chrome. -->
+            <div class="flip-clock mx-auto" id="flipClock">
+                <div class="flip-clock-chassis">
+                    <!-- Five card slots in a row. Each slot is populated by JS with 4 layered images. -->
+                    <div class="flip-clock-slots">
+                        <div class="flip-slot" data-slot="0"></div>
+                        <div class="flip-slot" data-slot="1"></div>
+                        <div class="flip-slot" data-slot="2"></div>
+                        <div class="flip-slot" data-slot="3"></div>
+                        <div class="flip-slot" data-slot="4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-slate-500 mt-6 font-mono">// hover to pause · cards advance one per cycle, 4 second period</p>
+        </div>
+    </section>
+
+    <!-- ============== VALUE PROPS ============== -->
+    <section class="py-28 relative">
+        <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] pointer-events-none">
+            <div class="mesh-blob mesh-blob-1" style="width:500px;height:500px;top:0;left:0;opacity:.15"></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-10">
+            <div class="max-w-3xl mb-16 reveal">
+                <p class="text-cyan2 text-sm font-mono font-bold uppercase tracking-widest mb-3">// how we deliver</p>
+                <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white">
+                    Long-tail reach with<br />
+                    <span class="text-gradient">upper-mid-funnel impact.</span>
+                </h2>
+                <p class="mt-5 text-slate-400 text-lg leading-relaxed">
+                    Awareness that converts. Precise audiences, premium environments, and the analytics to prove
+                    brand-lift &mdash; all on mobile.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Card 1: Audiences -->
+                <div class="glass rounded-2xl p-8 reveal reveal-delay-1">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6 relative overflow-hidden">
+                        <svg viewBox="0 0 56 56" class="w-full h-full icon-pulse">
+                            <circle class="pulse-ring" cx="28" cy="28" r="14" fill="none" stroke="#F97316"
+                                stroke-width="1.5" />
+                            <circle cx="28" cy="28" r="6" fill="#F97316" />
+                            <circle cx="28" cy="28" r="3" fill="#ffffff" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Audience targeting</h3>
+                    <p class="text-slate-400 leading-relaxed mb-5">Device-ID accuracy beats cookie-based methods.
+                        Hundreds of audiences, lookalikes in 48 hours, real-time GPS targeting.</p>
+                    <ul class="space-y-2 text-sm text-slate-300">
+                        <li class="flex gap-2"><span class="text-accent">→</span> Device-ID precision (no cookies)</li>
+                        <li class="flex gap-2"><span class="text-accent">→</span> Demographic, socio-economic,
+                            behavioural</li>
+                        <li class="flex gap-2"><span class="text-accent">→</span> Lookalike audiences in 48 hours</li>
+                        <li class="flex gap-2"><span class="text-accent">→</span> Real-time GPS-based location</li>
+                    </ul>
+                </div>
+
+                <!-- Card 2: Premium Placements -->
+                <div class="glass glass-cyan rounded-2xl p-8 reveal reveal-delay-2">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-cyan2/10 border border-cyan2/20 flex items-center justify-center mb-6 relative overflow-hidden">
+                        <svg viewBox="0 0 56 56" class="w-full h-full icon-orbit">
+                            <circle cx="28" cy="28" r="6" fill="#22D3EE" />
+                            <g class="orbit">
+                                <circle cx="28" cy="10" r="3" fill="#FB923C" />
+                                <circle cx="46" cy="28" r="3" fill="#22D3EE" />
+                                <circle cx="28" cy="46" r="3" fill="#FB923C" />
+                                <circle cx="10" cy="28" r="3" fill="#22D3EE" />
+                            </g>
+                            <circle cx="28" cy="28" r="18" fill="none" stroke="#22D3EE" stroke-width="0.5"
+                                opacity="0.5" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Premium placements</h3>
+                    <p class="text-slate-400 leading-relaxed mb-5">Full-screen mobile inventory across the most-read
+                        news, sports, finance, and lifestyle apps in Israel. No bot traffic.</p>
+                    <ul class="space-y-2 text-sm text-slate-300">
+                        <li class="flex gap-2"><span class="text-cyan2">→</span> News: Mako, Ynet, N12, Israel Hayom
+                        </li>
+                        <li class="flex gap-2"><span class="text-cyan2">→</span> Sports: Sport5, ONE, Sport1</li>
+                        <li class="flex gap-2"><span class="text-cyan2">→</span> Finance: TheMarker, Calcalist, Globes
+                        </li>
+                        <li class="flex gap-2"><span class="text-cyan2">→</span> Games: Candy Crush, Tinder, Grindr</li>
+                    </ul>
+                </div>
+
+                <!-- Card 3: Brand Lift -->
+                <div class="glass rounded-2xl p-8 reveal reveal-delay-3">
+                    <div
+                        class="w-14 h-14 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center mb-6 relative overflow-hidden">
+                        <svg viewBox="0 0 56 56" class="w-full h-full bars-anim">
+                            <rect x="8" y="36" width="6" height="12" rx="1" fill="#F97316" />
+                            <rect x="18" y="28" width="6" height="20" rx="1" fill="#F97316" />
+                            <rect x="28" y="20" width="6" height="28" rx="1" fill="#F97316" />
+                            <rect x="38" y="12" width="6" height="36" rx="1" fill="#FB923C" />
+                            <rect x="48" y="6" width="6" height="42" rx="1" fill="#22D3EE" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Measurable brand lift</h3>
+                    <p class="text-slate-400 leading-relaxed mb-5">Every campaign comes with proof. CTRs above industry
+                        average, low cost-per-engagement, and brand-lift surveys.</p>
+                    <ul class="space-y-2 text-sm text-slate-300">
+                        <li class="flex gap-2"><span class="text-accent">→</span> CTR above 2% (industry &lt; 0.5%)</li>
+                        <li class="flex gap-2"><span class="text-accent">→</span> High engagement-per-session</li>
+                        <li class="flex gap-2"><span class="text-accent">→</span> Significantly lower cost-per-click
+                        </li>
+                        <li class="flex gap-2"><span class="text-accent">→</span> Brand-lift surveys included</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== AUDIENCES — split with radar ============== -->
+    <section id="audiences" class="py-28 relative bg-navy-900/40 border-y border-white/5">
+        <div class="max-w-7xl mx-auto px-6 lg:px-10 grid md:grid-cols-2 gap-16 items-center">
+            <div class="reveal">
+                <p class="text-cyan2 text-sm font-mono font-bold uppercase tracking-widest mb-3">// audience-first</p>
+                <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white mb-6">Hundreds of audiences. Built
+                    on real behaviour.</h2>
+                <p class="text-slate-400 text-lg leading-relaxed mb-8">
+                    We connect dozens of next-gen data sources with a privacy-respecting Device-ID layer to build
+                    audiences that look like the people you want to reach &mdash; not approximations from third-party
+                    cookies.
+                </p>
+                <ul class="space-y-4">
+                    <li class="flex gap-3">
+                        <div
+                            class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-white font-semibold">A suitable audience for every brief</p>
+                            <p class="text-slate-400 text-sm">Ready-made segments across every major vertical, plus
+                                custom builds.</p>
+                        </div>
+                    </li>
+                    <li class="flex gap-3">
+                        <div
+                            class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-white font-semibold">Lookalikes in 48 hours</p>
+                            <p class="text-slate-400 text-sm">Feed us a seed list; we deliver an audience that performs
+                                like it.</p>
+                        </div>
+                    </li>
+                    <li class="flex gap-3">
+                        <div
+                            class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-white font-semibold">Real-time, GPS-precise targeting</p>
+                            <p class="text-slate-400 text-sm">Location signals at the moment of decision.</p>
+                        </div>
+                    </li>
+                    <li class="flex gap-3">
+                        <div
+                            class="w-6 h-6 rounded-md bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-white font-semibold">Tailored age ranges &mdash; including youth</p>
+                            <p class="text-slate-400 text-sm">Granular demographic segmentation.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Animated radar visualisation -->
+            <div class="relative reveal reveal-delay-2">
+                <div class="aspect-square max-w-md mx-auto relative">
+                    <svg viewBox="0 0 400 400" class="w-full h-full">
+                        <defs>
+                            <radialGradient id="radarBg" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#F97316" stop-opacity="0.15" />
+                                <stop offset="100%" stop-color="#0F1729" stop-opacity="0" />
+                            </radialGradient>
+                            <linearGradient id="sweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#F97316" stop-opacity="0" />
+                                <stop offset="100%" stop-color="#F97316" stop-opacity="0.5" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Radar background -->
+                        <circle cx="200" cy="200" r="180" fill="url(#radarBg)" />
+                        <circle cx="200" cy="200" r="180" fill="none" stroke="#F97316" stroke-width="0.5"
+                            opacity="0.3" />
+                        <circle cx="200" cy="200" r="135" fill="none" stroke="#F97316" stroke-width="0.5"
+                            opacity="0.3" />
+                        <circle cx="200" cy="200" r="90" fill="none" stroke="#F97316" stroke-width="0.5"
+                            opacity="0.3" />
+                        <circle cx="200" cy="200" r="45" fill="none" stroke="#F97316" stroke-width="0.5"
+                            opacity="0.3" />
+                        <line x1="20" y1="200" x2="380" y2="200" stroke="#F97316" stroke-width="0.5" opacity="0.2" />
+                        <line x1="200" y1="20" x2="200" y2="380" stroke="#F97316" stroke-width="0.5" opacity="0.2" />
+
+                        <!-- Radar sweep -->
+                        <g class="radar-sweep">
+                            <path d="M 200 200 L 200 20 A 180 180 0 0 1 380 200 Z" fill="url(#sweepGrad)"
+                                opacity="0.6" />
+                        </g>
+
+                        <!-- Audience blips at various positions -->
+                        <g fill="#22D3EE">
+                            <circle class="radar-blip" cx="120" cy="140" r="3" />
+                            <circle class="radar-blip" cx="280" cy="160" r="3" style="animation-delay:.5s" />
+                            <circle class="radar-blip" cx="240" cy="280" r="3" style="animation-delay:1s" />
+                            <circle class="radar-blip" cx="100" cy="260" r="3" style="animation-delay:1.5s" />
+                            <circle class="radar-blip" cx="320" cy="240" r="3" style="animation-delay:2s" />
+                        </g>
+                        <g fill="#F97316">
+                            <circle class="radar-blip" cx="180" cy="100" r="3" style="animation-delay:.3s" />
+                            <circle class="radar-blip" cx="300" cy="120" r="3" style="animation-delay:.8s" />
+                            <circle class="radar-blip" cx="160" cy="320" r="3" style="animation-delay:1.3s" />
+                        </g>
+
+                        <!-- Center node -->
+                        <circle cx="200" cy="200" r="8" fill="#F97316" />
+                        <circle cx="200" cy="200" r="4" fill="#ffffff" />
+                    </svg>
+
+                    <!-- Floating audience labels -->
+                    <div class="absolute top-4 right-4 glass rounded-lg px-3 py-1.5 text-xs font-mono">
+                        <div class="text-slate-500">audience</div>
+                        <div class="text-accent font-bold">Auto Intenders 25-44</div>
+                    </div>
+                    <div class="absolute bottom-4 left-4 glass rounded-lg px-3 py-1.5 text-xs font-mono">
+                        <div class="text-slate-500">match</div>
+                        <div class="text-cyan2 font-bold">98.2% precision</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============== PERFORMANCE PILLARS — animated SVG charts ============== -->
+    <section id="results" class="py-28 relative">
+        <div class="max-w-7xl mx-auto px-6 lg:px-10">
+            <div class="max-w-2xl mb-16 reveal">
+                <p class="text-cyan2 text-sm font-mono font-bold uppercase tracking-widest mb-3">// quality awareness
+                </p>
+                <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white">Awareness that strengthens
+                    conversion.</h2>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Awareness -->
+                <div class="glass rounded-2xl p-8 reveal reveal-delay-1">
+                    <div class="flex items-baseline justify-between mb-4">
+                        <div class="text-[11px] uppercase tracking-widest text-slate-500 font-mono font-semibold">
+                            Awareness</div>
+                        <div class="text-[11px] text-accent font-mono">+38%</div>
+                    </div>
+                    <div class="text-5xl font-black text-white mb-1"><span class="counter"
+                            data-target="38">0</span><span class="text-accent">%</span></div>
+                    <p class="text-sm text-slate-400 mb-6">Average brand recall lift across surveyed campaigns</p>
+                    <!-- Animated line chart -->
+                    <svg viewBox="0 0 200 60" class="w-full h-16 mb-4">
+                        <defs>
+                            <linearGradient id="awareGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="#F97316" stop-opacity="0.4" />
+                                <stop offset="100%" stop-color="#F97316" stop-opacity="0" />
+                            </linearGradient>
+                        </defs>
+                        <path class="draw-path" d="M 0 50 L 30 45 L 60 38 L 90 32 L 120 24 L 150 18 L 180 12 L 200 8"
+                            fill="none" stroke="#F97316" stroke-width="2" stroke-linecap="round" />
+                        <path d="M 0 50 L 30 45 L 60 38 L 90 32 L 120 24 L 150 18 L 180 12 L 200 8 L 200 60 L 0 60 Z"
+                            fill="url(#awareGrad)" />
+                    </svg>
+                    <ul class="space-y-2 text-sm text-slate-300 border-t border-white/5 pt-5">
+                        <li class="flex justify-between"><span>High CTR</span><span
+                                class="text-accent font-bold">2.0%+</span></li>
+                        <li class="flex justify-between"><span>More site entries</span><span
+                                class="text-accent font-bold">3&times;</span></li>
+                        <li class="flex justify-between"><span>Lower session cost</span><span
+                                class="text-accent font-bold">-42%</span></li>
+                    </ul>
+                </div>
+
+                <!-- Engagement (highlighted) -->
+                <div
+                    class="glass rounded-2xl p-8 ring-1 ring-cyan2/40 shadow-2xl shadow-cyan2/10 reveal reveal-delay-2">
+                    <div class="flex items-baseline justify-between mb-4">
+                        <div class="text-[11px] uppercase tracking-widest text-cyan2 font-mono font-semibold">Engagement
+                        </div>
+                        <div class="text-[11px] text-cyan2 font-mono">primary kpi</div>
+                    </div>
+                    <div class="text-5xl font-black text-white mb-1"><span class="counter" data-target="3"
+                            data-decimal="1">0</span><span class="text-cyan2">&times;</span></div>
+                    <p class="text-sm text-slate-400 mb-6">Higher engagement-per-session vs. industry baseline</p>
+                    <!-- Animated bars -->
+                    <svg viewBox="0 0 200 60" class="w-full h-16 mb-4 bars-anim">
+                        <rect x="10" y="40" width="20" height="20" rx="2" fill="#22D3EE" opacity="0.4" />
+                        <rect x="40" y="32" width="20" height="28" rx="2" fill="#22D3EE" opacity="0.55" />
+                        <rect x="70" y="22" width="20" height="38" rx="2" fill="#22D3EE" opacity="0.7" />
+                        <rect x="100" y="14" width="20" height="46" rx="2" fill="#22D3EE" opacity="0.85" />
+                        <rect x="130" y="6" width="20" height="54" rx="2" fill="#22D3EE" />
+                        <rect x="160" y="2" width="20" height="58" rx="2" fill="#F97316" />
+                    </svg>
+                    <ul class="space-y-2 text-sm text-slate-300 border-t border-white/5 pt-5">
+                        <li class="flex justify-between"><span>Effective exposure</span><span
+                                class="text-cyan2 font-bold">+57%</span></li>
+                        <li class="flex justify-between"><span>Low bounce rate</span><span
+                                class="text-cyan2 font-bold">-34%</span></li>
+                        <li class="flex justify-between"><span>Long sessions</span><span
+                                class="text-cyan2 font-bold">2:14</span></li>
+                    </ul>
+                </div>
+
+                <!-- Conversion -->
+                <div class="glass rounded-2xl p-8 reveal reveal-delay-3">
+                    <div class="flex items-baseline justify-between mb-4">
+                        <div class="text-[11px] uppercase tracking-widest text-slate-500 font-mono font-semibold">
+                            Conversion</div>
+                        <div class="text-[11px] text-accent font-mono">+22%</div>
+                    </div>
+                    <div class="text-5xl font-black text-white mb-1">+<span class="counter"
+                            data-target="22">0</span><span class="text-accent">%</span></div>
+                    <p class="text-sm text-slate-400 mb-6">Funnel improvement on campaigns with brand-lift surveys</p>
+                    <!-- Animated funnel -->
+                    <svg viewBox="0 0 200 60" class="w-full h-16 mb-4">
+                        <defs>
+                            <linearGradient id="funnelGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#F97316" />
+                                <stop offset="100%" stop-color="#22D3EE" />
+                            </linearGradient>
+                        </defs>
+                        <polygon class="draw-path" points="10,15 190,15 150,30 50,30" fill="url(#funnelGrad)"
+                            opacity="0.6" />
+                        <polygon class="draw-path" points="50,32 150,32 130,45 70,45" fill="url(#funnelGrad)"
+                            opacity="0.4" style="animation-delay:0.5s" />
+                        <polygon class="draw-path" points="70,47 130,47 115,55 85,55" fill="url(#funnelGrad)"
+                            opacity="0.25" style="animation-delay:1s" />
+                    </svg>
+                    <ul class="space-y-2 text-sm text-slate-300 border-t border-white/5 pt-5">
+                        <li class="flex justify-between"><span>Awareness &rarr; consid.</span><span
+                                class="text-accent font-bold">+19%</span></li>
+                        <li class="flex justify-between"><span>Consid. &rarr; intent</span><span
+                                class="text-accent font-bold">+24%</span></li>
+                        <li class="flex justify-between"><span>Real-time location</span><span
+                                class="text-accent font-bold">live</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <p class="mt-6 text-xs text-slate-500 font-mono">// sample numbers shown for layout — replace with real
+                benchmarks before launch</p>
+        </div>
+    </section>
+
+    <!-- ============== CONTACT ============== -->
+    <section id="contact" class="py-28 relative">
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="mesh-blob mesh-blob-1" style="top: 30%; left: -10%; opacity: 0.15"></div>
+            <div class="mesh-blob mesh-blob-2" style="top: 20%; right: -10%; opacity: 0.15"></div>
+        </div>
+
+        <div class="relative max-w-3xl mx-auto px-6 lg:px-10">
+            <div class="text-center mb-12 reveal">
+                <p class="text-cyan2 text-sm font-mono font-bold uppercase tracking-widest mb-3">// let's talk</p>
+                <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white mb-4">Ready to reach the right
+                    audience?</h2>
+                <p class="text-slate-400 text-lg">Tell us about your brief. We'll respond within one business day.</p>
+            </div>
+
+            <form action="/contact" method="POST" class="glass rounded-2xl p-8 space-y-5 reveal reveal-delay-1">
+                <input type="text" name="_honeypot" class="hidden" tabindex="-1" autocomplete="off" />
+                <div class="grid md:grid-cols-2 gap-5">
+                    <label class="block">
+                        <span
+                            class="text-xs uppercase tracking-widest text-slate-400 font-mono font-semibold">Name</span>
+                        <input type="text" name="name" required
+                            class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition"
+                            placeholder="Your full name" />
+                    </label>
+                    <label class="block">
+                        <span
+                            class="text-xs uppercase tracking-widest text-slate-400 font-mono font-semibold">Email</span>
+                        <input type="email" name="email" required
+                            class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition"
+                            placeholder="you@brand.com" />
+                    </label>
+                </div>
+                <label class="block">
+                    <span
+                        class="text-xs uppercase tracking-widest text-slate-400 font-mono font-semibold">Company</span>
+                    <input type="text" name="company"
+                        class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition"
+                        placeholder="Brand or agency" />
+                </label>
+                <label class="block">
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-mono font-semibold">Brief</span>
+                    <textarea name="message" rows="5" required
+                        class="mt-2 w-full bg-navy-950/60 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-slate-600 focus:border-accent focus:ring-1 focus:ring-accent outline-none transition resize-none"
+                        placeholder="Audience, budget range, timing, anything else relevant…"></textarea>
+                </label>
+                <button type="submit"
+                    class="cta w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-md bg-accent hover:bg-accent-soft text-white font-semibold text-base transition shadow-lg shadow-accent/20">
+                    Send brief
+                    <svg class="w-4 h-4 cta-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+                <p class="text-xs text-slate-500 text-center font-mono">// or email us directly at <a
+                        href="mailto:support@erate.co.il" class="text-accent hover:underline">support@erate.co.il</a>
+                </p>
+            </form>
+        </div>
+    </section>
+
+    <!-- ============== FOOTER ============== -->
+    <footer class="border-t border-white/5 bg-navy-950">
+        <div class="max-w-7xl mx-auto px-6 lg:px-10 py-12">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center">
+                    <img src="https://ad.maddata.media/images/madata_logo_white_orange.png" alt="MadData" class="h-7 w-auto" />
+                </div>
+                <div class="flex items-center gap-6 text-sm text-slate-500">
+                    <a href="/privacy" class="hover:text-white transition">Privacy Policy</a>
+                    <a href="/terms" class="hover:text-white transition">Terms of Service</a>
+                    <a href="mailto:support@erate.co.il" class="hover:text-white transition">support@erate.co.il</a>
+                </div>
+                <p class="text-xs text-slate-600 font-mono">// &copy; 2026 eRate online measurement solutions ltd</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============== SCROLL REVEAL + COUNT-UP ============== -->
+    <script>
+        // Scroll-triggered reveals
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('in');
+                    revealObserver.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // Count-up
+        const counterObserver = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (!e.isIntersecting) return;
+                const el = e.target;
+                const target = parseFloat(el.dataset.target);
+                const decimal = parseInt(el.dataset.decimal || '0', 10);
+                const duration = 1600;
+                const start = performance.now();
+                function tick(now) {
+                    const t = Math.min(1, (now - start) / duration);
+                    const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+                    const value = target * eased;
+                    el.textContent = decimal ? value.toFixed(decimal) : Math.floor(value).toLocaleString();
+                    if (t < 1) requestAnimationFrame(tick);
+                    else el.textContent = decimal ? target.toFixed(decimal) : target.toLocaleString();
+                }
+                requestAnimationFrame(tick);
+                counterObserver.unobserve(el);
+            });
+        }, { threshold: 0.4 });
+        document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));
+
+        // ============== FLIP-CLOCK CONTROLLER (5 stacks × 4 PDF images) ==============
+        // 20 images extracted from "MadData in short.pdf" pages 3-7 (4 brand creatives per page).
+        // Slot N is loaded with the 4 cells from PDF page (N+2). Each slot independently flips
+        // through its stack a random number of times per cycle (1-4).
+        const IMAGE_BASE = 'https://maddata.media/demos/brand-images';
+        const stacks = [
+            // Slot 0 — page 3 brands (food/beverage from PDF)
+            ['cell-p2-0.jpg', 'cell-p2-1.jpg', 'cell-p2-2.jpg', 'cell-p2-3.jpg'],
+            // Slot 1 — page 4 brands (automotive)
+            ['cell-p3-0.jpg', 'cell-p3-1.jpg', 'cell-p3-2.jpg', 'cell-p3-3.jpg'],
+            // Slot 2 — page 5 brands (retail/jewelry)
+            ['cell-p4-0.jpg', 'cell-p4-1.jpg', 'cell-p4-2.jpg', 'cell-p4-3.jpg'],
+            // Slot 3 — page 6 brands (mixed)
+            ['cell-p5-0.jpg', 'cell-p5-1.jpg', 'cell-p5-2.jpg', 'cell-p5-3.jpg'],
+            // Slot 4 — page 7 brands (mixed)
+            ['cell-p6-0.jpg', 'cell-p6-1.jpg', 'cell-p6-2.jpg', 'cell-p6-3.jpg'],
+        ];
+
+        const PERIOD_MS = 4000;       // wait between cycles
+        const FLIP_DURATION = 420;    // ms per single-flip animation (matches CSS keyframe)
+        const FLIP_GAP = 80;          // ms between consecutive flips on the same slot
+        const SLOT_STAGGER_MS = 100;  // ms between adjacent slots starting their flip sequence
+
+        const flipClock = document.getElementById('flipClock');
+        const slotEls   = flipClock.querySelectorAll('.flip-slot');
+
+        let paused = false;
+        flipClock.addEventListener('mouseenter', () => paused = true);
+        flipClock.addEventListener('mouseleave', () => paused = false);
+
+        const wait = (ms) => new Promise(r => setTimeout(r, ms));
+        const waitWhilePaused = async () => { while (paused) await wait(120); };
+
+        // Build a stack of 4 image layers for one slot. Layers are inserted with
+        // z-index 4 (top) down to 1, so the FIRST image in the array is the visible one.
+        function buildSlot(slotEl, images) {
+            slotEl.querySelectorAll('.image-layer').forEach(el => el.remove());
+            images.forEach((img, i) => {
+                const url = `${IMAGE_BASE}/${img}?v=4`;
+                const layer = document.createElement('div');
+                layer.className = 'image-layer';
+                layer.style.zIndex = String(images.length - i);
+                layer.innerHTML = `
+                    <div class="image-half top">
+                        <div class="face front" style="background-image: url('${url}');"></div>
+                        <div class="face back"></div>
+                    </div>
+                    <div class="image-half bottom" style="background-image: url('${url}');"></div>
+                `;
+                slotEl.appendChild(layer);
+            });
+        }
+
+        // Pre-load all images so the first flip doesn't show empty boxes
+        function preloadImages(callback) {
+            let loaded = 0;
+            const all = stacks.flat();
+            all.forEach(img => {
+                const i = new Image();
+                i.onload = i.onerror = () => {
+                    if (++loaded === all.length) callback();
+                };
+                i.src = `${IMAGE_BASE}/${img}?v=4`;
+            });
+        }
+
+        // Flip the current top layer of `slotIdx` once. The flipped layer recycles
+        // to the BACK of the stack (z=1); all other layers get promoted by +1 z-index.
+        // After 4 cycles, the original order is restored — perpetual loop, no rebuild.
+        function flipSingle(slotIdx) {
+            return new Promise((resolve) => {
+                const slotEl = slotEls[slotIdx];
+                const layers = Array.from(slotEl.querySelectorAll('.image-layer'));
+                if (layers.length === 0) return resolve();
+                // Current top = layer with highest z-index
+                const top = layers.reduce((a, b) =>
+                    parseInt(b.style.zIndex) > parseInt(a.style.zIndex) ? b : a);
+
+                top.classList.add('flipping');
+                const topHalf = top.querySelector('.image-half.top');
+                topHalf.addEventListener('animationend', function onEnd() {
+                    topHalf.removeEventListener('animationend', onEnd);
+                    // Atomic recycle in a single JS tick so no intermediate frame paints:
+                    // top → z=1 (back), every other layer's z increases by 1 (so the second-highest
+                    // becomes the new top). Removing .flipping makes the top-half snap back to
+                    // rotateX(0deg) — but since it's now at z=1 it's hidden behind the new top.
+                    layers.forEach(l => {
+                        if (l === top) {
+                            l.style.zIndex = '1';
+                            l.classList.remove('flipping');
+                        } else {
+                            l.style.zIndex = String(parseInt(l.style.zIndex) + 1);
+                        }
+                    });
+                    resolve();
+                }, { once: true });
+            });
+        }
+
+        async function cycle() {
+            // Initial build — populate each slot with its 4 image stack
+            stacks.forEach((images, slotIdx) => buildSlot(slotEls[slotIdx], images));
+            await wait(1500);
+
+            while (true) {
+                await waitWhilePaused();
+                // Each slot flips ONCE per cycle. Adjacent slots start 100ms apart so
+                // the wave reads left → right. All five finish at roughly the same time
+                // (each flip is ~420ms; total wave is 420+400=820ms).
+                await Promise.all(stacks.map((_, slotIdx) =>
+                    wait(slotIdx * SLOT_STAGGER_MS).then(() => flipSingle(slotIdx))
+                ));
+                // wait the full period before next cycle (paused-aware)
+                let waited = 0;
+                while (waited < PERIOD_MS) {
+                    await wait(100);
+                    if (!paused) waited += 100;
+                }
+            }
+        }
+
+        // Start when the section scrolls into view (preload images first)
+        const flipObserver = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    flipObserver.disconnect();
+                    preloadImages(() => cycle());
+                }
+            });
+        }, { threshold: 0.2 });
+        flipObserver.observe(document.getElementById('brands'));
+    </script>
+
+</body>
+
+</html>
