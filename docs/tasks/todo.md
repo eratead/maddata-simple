@@ -752,7 +752,7 @@ The original V0.1–V0.6 tasks below pick up unchanged once F6 confirms the fix.
 
 **What the new checks found on their first production run** — all real, none caused by the deploy:
 - `d1` — composer advisories against the deployed lock, **2 critical and 13 high**. Verified by hand against Packagist before being believed. `phpoffice/phpspreadsheet` 1.30.2 carries both criticals; `laravel/framework` is at 12.12.0 against advisories fixed in 12.60; `guzzlehttp/guzzle` 7.9.3 against `<7.15.2`. **This is the largest outstanding item in the project right now.**
-- `d2-mysql` — production MySQL is past its published end of security support.
+- `d2-mysql` / `d2-redis` — MySQL 8.0.46 and Redis 7.0.15 are both past their **upstream** windows, and both are Ubuntu 24.04 `main` packages that Canonical still backports fixes into. They report WARN "plan a migration", not CRIT: the branch is frozen, the box is not exposed, and a CRIT only an OS upgrade could clear is permanent red. Took two attempts to get right — see the build notes in the spec's §10.
 - `d3` — now reads **0 pending**, retiring the stuck "1 pending security update" that no action could clear.
 - `d4` / `B4` — never-recorded markers. `d4` stays WARN deliberately: recording a patch run nobody performed would be a false entry in the one check that answers "when did a human last patch?".
 - `X1` — expired Sanctum tokens still in the table. Housekeeping.

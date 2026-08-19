@@ -72,6 +72,39 @@ Rules:
 3. **Distinguish "cannot read" from "not there".** They are different facts with different fixes, and collapsing them turns a permission bug into a phantom data-loss alarm.
 4. **Enforce the permission in the script that depends on it**, not by hand — a hand-applied `chmod` is silently lost the next time the directory is recreated.
 
+## A check must be able to reach both of its answers
+
+Before shipping a check that distinguishes two states, confirm the data it reads
+can actually express both. **A test whose answer is structurally fixed is worse
+than no test, because it reads like a finding.**
+
+Recorded 2026-08-19. Health check `d2` decides whether a runtime past its
+upstream EOL is an outage or a migration to plan, by looking for a distro marker
+(`ubuntu`, `debian`) in the version string. That works for MySQL, which bakes
+its package suffix into `select version()` — `8.0.46-0ubuntu0.24.04.3`. It can
+never work for Redis, which answers `INFO server` with a bare upstream `7.0.15`
+even when the installed package is `5:7.0.15-1ubuntu0.24.04.4`. So `d2-redis`
+shipped to production reporting CRIT "security support ended 751 days ago" on a
+box Canonical was actively patching, and no possible state of the world would
+have made it say otherwise.
+
+The tests passed, because they fed the check a string containing "ubuntu" — a
+string the real probe cannot produce. **A fixture that the production data path
+cannot generate proves nothing.**
+
+Rules:
+
+1. **For each branch of a check, ask what real input reaches it.** If you cannot
+   name one, the branch is dead code wearing a finding's clothes.
+2. **Prefer authoritative evidence to a self-report.** The package manager knows
+   what is installed; a daemon knows only what it was compiled as.
+3. **When the authority is out of reach, move the question, not the rule.** PHP-FPM
+   is not allowed to shell out to `dpkg`, so the root-owned facts script asks and
+   publishes the answer — the same root-writes/app-reads hand-off the rest of
+   the monitor uses. The fix was never to relax the zero-grant rule.
+4. **Keep the fallback weaker, not wrong.** Missing package facts degrade to the
+   self-report test; they must not degrade to a confident CRIT.
+
 ## `npm run build` is part of the deploy whenever Blade or Tailwind changed
 
 `/public/build` is gitignored, so compiled assets exist only on each server. A
