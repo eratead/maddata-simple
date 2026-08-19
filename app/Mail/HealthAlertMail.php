@@ -31,13 +31,16 @@ class HealthAlertMail extends Mailable
             return new Envelope(subject: '[MadData] Recovered - all systems go');
         }
 
-        $failing = count($this->snapshot->failing());
+        // alertable(), not failing(): this mail is about the half of the
+        // catalog that is allowed to wake someone. Counting digest-only items
+        // in the subject would promise an outage the body does not describe.
+        $failing = count($this->snapshot->alertable());
 
         // ASCII on purpose: an em dash MIME-encodes in the subject line and
         // mangles on the SMS and pager gateways alerts often get forwarded to.
         return new Envelope(subject: sprintf(
             '[MadData] %s - %d check%s failing',
-            $this->snapshot->overall === HealthStatus::CRIT ? 'OUTAGE' : 'Degraded',
+            $this->snapshot->alertStatus() === HealthStatus::CRIT ? 'OUTAGE' : 'Degraded',
             $failing,
             $failing === 1 ? '' : 's',
         ));
@@ -51,7 +54,11 @@ class HealthAlertMail extends Mailable
                 'snapshot' => $this->snapshot,
                 'reason' => $this->reason,
                 'isRecovery' => $this->isRecovery,
-                'failing' => $this->snapshot->failing(),
+                'failing' => $this->snapshot->alertable(),
+                // Reported as a one-line footnote, never as an alert: the two
+                // channels cross-reference instead of each hiding the other's
+                // contents.
+                'digestOnly' => $this->snapshot->digestable(),
                 'episodeStartedAt' => $this->episodeStartedAt,
             ],
         );

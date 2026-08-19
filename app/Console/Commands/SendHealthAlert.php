@@ -35,6 +35,12 @@ use Throwable;
  *  4. MAIL FAILURES NEVER THROW and never record a notification, so the next
  *     tick retries rather than swallowing the alert.
  *
+ * A check's NODE decides whether it can trigger any of this. Nodes listed in
+ * health.alert_excluded_nodes — currently `platform`, which is d1-d4 and X1/X2 —
+ * are reported everywhere else but never alerted on; deps:digest owns them
+ * weekly. Every decision below therefore reads alertStatus()/alertable(), never
+ * overall/failing(): `overall` stays honest for the page and the pill.
+ *
  * Honest limit: if the droplet, the network or SMTP is down, none of this
  * fires. That is what the external uptime monitor is for.
  */
@@ -62,7 +68,10 @@ class SendHealthAlert extends Command
 
         [$state, $stateReadable] = $this->readState();
 
-        if ($snapshot->overall === HealthStatus::OK && ! $this->option('force')) {
+        // alertStatus(), not overall: checks on an alert-excluded node (d1-d4,
+        // X1/X2) are reported on the page and in the CLI but are owned by the
+        // weekly deps:digest. A platform-only problem is "all quiet" here.
+        if ($snapshot->alertStatus() === HealthStatus::OK && ! $this->option('force')) {
             return $this->handleRecovery($snapshot, $state);
         }
 
@@ -74,7 +83,7 @@ class SendHealthAlert extends Command
         // permanently, without ever saying so.
         if ($stateReadable && $consecutive < 2 && ! $this->option('force')) {
             if ($this->writeState($snapshot, $state, $consecutive, notified: false)) {
-                $this->comment("Non-OK observed once ({$snapshot->overall->value}) — holding one interval to rule out a deploy blip.");
+                $this->comment("Non-OK observed once ({$snapshot->alertStatus()->value}) — holding one interval to rule out a deploy blip.");
 
                 return self::SUCCESS;
             }
@@ -180,9 +189,9 @@ class SendHealthAlert extends Command
 
         $notifiedStatus = HealthStatus::tryFrom((string) ($state['notified_status'] ?? '')) ?? HealthStatus::OK;
 
-        if ($snapshot->overall->severity() > $notifiedStatus->severity()) {
+        if ($snapshot->alertStatus()->severity() > $notifiedStatus->severity()) {
             return [
-                'text' => "Escalated from {$notifiedStatus->value} to {$snapshot->overall->value}.",
+                'text' => "Escalated from {$notifiedStatus->value} to {$snapshot->alertStatus()->value}.",
                 'urgent' => true,
             ];
         }
@@ -221,7 +230,7 @@ class SendHealthAlert extends Command
             $previous[] = explode(':', $entry)[0];
         }
 
-        $current = array_map(fn ($check) => $check->key, $snapshot->failing());
+        $current = array_map(fn ($check) => $check->key, $snapshot->alertable());
 
         return array_values(array_diff($current, $previous));
     }
@@ -274,12 +283,12 @@ class SendHealthAlert extends Command
             HealthMarkers::store()->forever(HealthMarkers::ALERT_STATE, [
                 'last_sent_at' => $notified ? now()->getTimestamp() : ($previous['last_sent_at'] ?? null),
                 'signature' => $snapshot->signature(),
-                'status' => $snapshot->overall->value,
+                'status' => $snapshot->alertStatus()->value,
                 'consecutive_non_ok' => $consecutive,
                 'episode_started_at' => $previous['episode_started_at'] ?? now()->getTimestamp(),
                 'notified_at' => $notified ? now()->getTimestamp() : ($previous['notified_at'] ?? null),
                 'notified_signature' => $notified ? $snapshot->signature() : ($previous['notified_signature'] ?? null),
-                'notified_status' => $notified ? $snapshot->overall->value : ($previous['notified_status'] ?? null),
+                'notified_status' => $notified ? $snapshot->alertStatus()->value : ($previous['notified_status'] ?? null),
             ]);
 
             return true;

@@ -604,6 +604,57 @@ fires. Detecting that requires an external watcher on `/up` — see the runbook.
 | `routes/console.php` | *(modified)* Schedules the refresh, probe, alert and heartbeat, and records the business jobs' success markers via `->onSuccess()` — so the marker means "completed", not "started". The health tasks use `Schedule::call(fn () => Artisan::call(...))` rather than `Schedule::command()`: the latter spawns a fresh `php artisan` process per task, and three extra PHP boots a minute measurably loaded the single-core production droplet. The commands still exist for manual use. |
 | `app/Providers/AppServiceProvider.php` | *(modified)* Registers `HostFacts` as a singleton so one snapshot build reads the facts file once. |
 
+### Admin surface (Phase 3)
+
+**Spec:** `docs/specs/health-monitor-phases-3-4.md`
+
+| File | Responsibility |
+|------|---------------|
+| `app/Http/Controllers/Admin/MonitorController.php` | `/admin/monitor` (page), `/admin/monitor/data` (polled JSON, `throttle:60,1`) and `/admin/monitor/refresh` (POST, `throttle:6,1`). Thin by contract — no thresholds, no formatting, no queries. There is deliberately no API Resource: `HealthSnapshot::toArray()` is already the documented contract, and wrapping it would make two places to change one shape. Refresh is POST because it mutates cache state, and a GET that mutates is prefetchable by a browser link preview. |
+| `app/View/Components/HealthPill.php` | The header pill. Renders into `layouts/app.blade.php`, which **every** authenticated page uses, so the admin gate is `shouldRender()` rather than an `@if` in the layout — no page can render it unguarded, and non-admins get no markup at all rather than a hidden element. Reads `pillStatus()` (cache-only, never rebuilds) and still wraps it in its own try/catch: everything else in the monitor fails one panel, this would fail every page in the app. |
+| `resources/views/admin/monitor.blade.php` | The page and its Alpine component. Everything renders from the Alpine state object, never from Blade — Blade seeds it once via `@js()` and the poller replaces it wholesale, because two rendering paths for one shape is how the initial and refreshed views drift apart. The status→colour map holds **complete Tailwind class literals**; an interpolated `bg-${token}-500` is invisible to the JIT compiler and would ship the page with no colours. |
+| `resources/views/components/monitor/{node-card,kpi-tile,check-row}.blade.php` | The three repeated pieces. Each takes an `expr` prop naming the Alpine variable it should read, so the caller owns the loop and the component has no hidden coupling to a variable name. |
+| `resources/views/components/health-pill.blade.php` | Pill markup, tinted by a PHP `match` over `HealthStatus` (again full class literals, not interpolated tokens). |
+
+**The stale badge is load-bearing.** `snapshot_ttl` is 300s and `SNAPSHOT_LAST`
+has no TTL at all, so a dead scheduler would otherwise render a confidently
+green page forever — the worst failure a monitor has. Past
+`health.ui.stale_seconds` the header says the snapshot is old regardless of what
+`overall` claims. Check S1 covers the same ground, but the header must not
+depend on the reader noticing a check.
+
+`SystemHealthService::refreshOnDemand()` backs the refresh button: it takes the
+single-flight lock and, when it cannot get it, serves the in-flight result
+rather than queueing a second rebuild. Two admins clicking on a sick box is
+exactly when the probes are slowest, because the MySQL round trip and the Redis
+`INFO` are expensive *because* MySQL and Redis are what is broken. `snapshot()`
+is now `cached() ?? refreshOnDemand()`, so the lock logic exists once.
+
+### Dependency currency (Phase 4)
+
+**Spec:** `docs/specs/health-monitor-phases-3-4.md` §9-12
+
+The structural change is that **a check's node now decides its delivery
+channel.** `config/health.php`'s `alert_excluded_nodes` (currently `platform`)
+splits the catalog in two: `HealthSnapshot::alertable()` / `alertStatus()` drive
+`health:alert`, `digestable()` drives the weekly `deps:digest`, and
+`signature()` is computed from the alertable half so a new advisory can never
+read as "something new broke". `overall` stays honest, so the page and the pill
+still go red — the page is pull, alerting is push, and only push is filtered.
+
+| File | Responsibility |
+|------|---------------|
+| `app/Services/Health/Checks/DependencyAdvisoriesCheck.php` | d1 — deployed `composer.lock` vs Packagist's advisory API, matched with `composer/semver`. Cached **by the lock's sha256**, so a deploy re-queries instead of serving a day-old clean bill. An unreachable feed serves the last known result and says so, or warns; it is never green. Unrated severity counts as high. Dev-only advisories cap at WARN — production installs `--no-dev`, so they are not on the box, but they are on every developer's machine. |
+| `app/Services/Health/Checks/RuntimeEolCheck.php` | d2 — PHP/MySQL/Redis/Nginx versions vs `config/dependency_maintenance.php`. MySQL is read on the short-timeout `mysql_health` connection. Two subtleties: a branch missing from the table WARNS rather than passing, and a null support window is OK-with-a-note when another check owns that runtime's currency (`tracked_by`) but WARNS when it does not. Plus a check on the table's own `reviewed_at` — a support table nobody revisits reports "all supported" forever. |
+| `app/Services/Health/Checks/OsPatchCheck.php` | d3 — pending security updates and whether a reboot is owed, from the facts file. Holds a since-marker because apt only reports the CURRENT count, so "unpatched for a month" is otherwise indistinguishable from "unpatched since lunchtime"; the marker resets when the backlog clears **or shrinks**. A `null` count is STALE, never 0. |
+| `app/Services/Health/Checks/PatchRunFreshnessCheck.php` | d4 — how long since a human patched, from the marker `deps:mark-patch-run` writes. Also stores the lock hash at the time, so a recent patch run that no longer describes the deployed lock still warns. Never marked reads WARN, not STALE: "nobody has ever patched this" is a fact, not missing data. |
+| `app/Services/Health/Checks/SecurityPostureCheck.php` | X1 expired Sanctum tokens (WARN only — `CheckTokenExpiry` already refuses them, so leftovers are untidy rather than dangerous) and X2 failed-login bursts. |
+| `app/Services/Health/Listeners/RecordFailedLogin.php` | Feeds X2 by incrementing a self-expiring one-minute cache bucket per failed login — no table, no migration, nothing to prune. Wrapped in try/catch: a monitoring counter must never stop people signing in. **Registered explicitly in `AppServiceProvider`, and deliberately NOT in `app/Listeners`** — event discovery is active here, so a class in that directory with a typed `handle()` gets registered a second time and double-counts. |
+| `app/Console/Commands/SendDependencyDigest.php` + `app/Mail/DependencyDigestMail.php` + `resources/views/emails/dependency_digest.blade.php` | The weekly channel. **Always sends, including all-clear** — a report that only appears on bad news is indistinguishable from one that has stopped working. |
+| `app/Console/Commands/MarkPatchRun.php` | Writes d4's marker with the lock hash. The check nags; a human does the work. |
+| `config/dependency_maintenance.php` | The support-window table. Every date carries its `source`; an unsourced table reads green with authority. |
+| `scripts/health-facts.sh` | *(modified)* Counts security updates via `apt-get -s upgrade` filtered to `-security` pockets, **not** `apt-check` — the latter counts packages that are not installed, which produced a permanently stuck amber no action could clear. Writes `null` when it cannot compute. |
+
 ### Tests
 
 `tests/Unit/Health/` (enum + snapshot DTO) and `tests/Feature/Health/` (one file
@@ -612,3 +663,13 @@ per check class, plus `SystemHealthServiceTest`), with the command tests in
 (`fakeHostFacts`, `fakeBackupMarker`, `checksByKey`) — **no test executes a shell
 command.** `SystemHealthServiceTest` explicitly asserts the resilience property:
 a check class that throws still yields a built snapshot.
+
+`MonitorControllerTest` and `HealthPillTest` cover the Phase 3 surface. Two
+things there are deliberate rather than incidental: the agency-manager 403 is
+asserted **separately** on the page, the JSON endpoint and the refresh POST
+(health is system-level, so the admin middleware is the only thing scoping it,
+and the JSON endpoint is the one that actually leaks); and the resilience
+property is re-asserted at the HTTP boundary — every check throwing must still
+produce a 200 with a CRIT payload, not a 500. The pill is tested on an
+unrelated page, because that is where it lives, and the non-admin case asserts
+the markup is **absent** rather than merely hidden.

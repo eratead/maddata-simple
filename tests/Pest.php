@@ -96,6 +96,23 @@ function checksByKey(App\Services\Health\Checks\HealthCheck $check): array
     return $results;
 }
 
+/**
+ * Point checks d1/d4 at a fixture lock file instead of the repo's own, so their
+ * assertions do not change every time a dependency is bumped.
+ */
+function fakeComposerLock(?array $lock): string
+{
+    $path = sys_get_temp_dir().'/maddata-composer-lock-'.getmypid().'.json';
+
+    $lock === null
+        ? @unlink($path)
+        : file_put_contents($path, json_encode($lock));
+
+    config(['health.composer_lock_path' => $path]);
+
+    return $path;
+}
+
 /** Fake /proc/uptime so boot-grace behaviour is testable off Linux. */
 function fakeUptime(?int $seconds): void
 {

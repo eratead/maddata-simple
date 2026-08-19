@@ -17,6 +17,9 @@ class AlertableCheck extends HealthCheck
     /** @var array<string, HealthStatus> extra checks, keyed by check key */
     public static array $extra = [];
 
+    /** @var array<string, HealthStatus> checks on the digest-only `platform` node */
+    public static array $platform = [];
+
     public function run(): array
     {
         $results = [new HealthCheckResult(
@@ -32,6 +35,10 @@ class AlertableCheck extends HealthCheck
             $results[] = new HealthCheckResult($key, $key.' check', $status, 'data', 'v', 't');
         }
 
+        foreach (self::$platform as $key => $status) {
+            $results[] = new HealthCheckResult($key, $key.' check', $status, 'platform', 'v', 't');
+        }
+
         return $results;
     }
 }
@@ -39,11 +46,13 @@ class AlertableCheck extends HealthCheck
 beforeEach(function () {
     AlertableCheck::$status = HealthStatus::OK;
     AlertableCheck::$extra = [];
+    AlertableCheck::$platform = [];
 
     config([
         'health.checks' => [AlertableCheck::class],
         'health.alert_recipients' => ['ops@maddata.test'],
         'health.realert_hours' => 6,
+        'health.alert_excluded_nodes' => ['platform'],
     ]);
 
     HealthMarkers::store()->forget(HealthMarkers::ALERT_STATE);
@@ -360,4 +369,88 @@ it('still sends with --force during boot grace', function () {
     runAlert(['--force' => true]);
 
     Mail::assertSent(HealthAlertMail::class);
+});
+
+/*
+|--------------------------------------------------------------------------
+| The alerting split (Phase 4)
+|--------------------------------------------------------------------------
+|
+| Checks on an excluded node are real findings reported everywhere else, and
+| deps:digest owns them. The property that matters is that routing them away
+| CANNOT silence anything that was alerting before.
+|
+*/
+
+it('never alerts on a problem confined to a digest-only node', function () {
+    AlertableCheck::$platform = ['d1' => HealthStatus::CRIT];
+
+    runAlert();
+    runAlert();
+    runAlert();
+
+    // A critical composer advisory is real, and it is not a 2am page.
+    Mail::assertNothingSent();
+});
+
+it('still alerts on a real outage while a digest-only check is also failing', function () {
+    AlertableCheck::$status = HealthStatus::CRIT;
+    AlertableCheck::$platform = ['d1' => HealthStatus::CRIT];
+
+    runAlert();
+    runAlert();
+
+    Mail::assertSent(HealthAlertMail::class);
+});
+
+it('names the digest-only findings in the alert without counting them as failures', function () {
+    AlertableCheck::$status = HealthStatus::WARN;
+    AlertableCheck::$platform = ['d1' => HealthStatus::CRIT, 'd4' => HealthStatus::WARN];
+
+    runAlert();
+    runAlert();
+
+    Mail::assertSent(HealthAlertMail::class, function (HealthAlertMail $mail) {
+        // The subject describes the alertable half only — one WARN, not an
+        // OUTAGE — while the body still cross-references the other channel.
+        expect($mail->envelope()->subject)->toContain('Degraded')->toContain('1 check');
+
+        $rendered = $mail->render();
+
+        expect($rendered)->toContain('weekly dependency digest')
+            ->and($rendered)->toContain('d1');
+
+        return true;
+    });
+});
+
+it('treats a recovery as a recovery even while digest-only checks are still failing', function () {
+    AlertableCheck::$status = HealthStatus::CRIT;
+    runAlert();
+    runAlert();
+    Mail::assertSent(HealthAlertMail::class);
+
+    // The outage clears; a dependency finding remains, as it will for weeks.
+    AlertableCheck::$status = HealthStatus::OK;
+    AlertableCheck::$platform = ['d1' => HealthStatus::CRIT];
+    runAlert();
+
+    // Without the split this recovery notice would never be sent, and the
+    // operator would be left believing the outage was still open.
+    Mail::assertSent(HealthAlertMail::class, fn (HealthAlertMail $mail) => $mail->isRecovery);
+});
+
+it('does not treat a new digest-only finding as a new failing check', function () {
+    AlertableCheck::$status = HealthStatus::CRIT;
+    runAlert();
+    runAlert();
+
+    $sentAfterOutage = count(Mail::sent(HealthAlertMail::class));
+
+    // A fresh advisory lands. The signature must not move — otherwise this
+    // reads as "something new broke" and re-alerts about a dependency.
+    AlertableCheck::$platform = ['d1' => HealthStatus::CRIT];
+    runAlert();
+
+    expect(Mail::sent(HealthAlertMail::class))->toHaveCount($sentAfterOutage);
 });

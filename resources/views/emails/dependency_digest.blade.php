@@ -1,17 +1,12 @@
 @php
-    use App\Enums\HealthStatus;
-    use App\Services\Health\HealthFormat;
-
     $palette = [
         'ok' => ['bg' => '#f0fdf4', 'border' => '#16a34a', 'text' => '#166534'],
         'warn' => ['bg' => '#fffbeb', 'border' => '#f59e0b', 'text' => '#92400e'],
         'crit' => ['bg' => '#fef2f2', 'border' => '#dc2626', 'text' => '#991b1b'],
         'stale' => ['bg' => '#f9fafb', 'border' => '#9ca3af', 'text' => '#374151'],
     ];
-    // alertStatus(), matching the envelope: digest-only findings must not make
-    // the banner shout OUTAGE about something this mail does not even list.
-    $alertStatus = $snapshot->alertStatus();
-    $tone = $palette[$alertStatus->value] ?? $palette['stale'];
+    $worst = App\Enums\HealthStatus::worstOf(...array_map(fn ($c) => $c->status, $failing));
+    $tone = $palette[count($failing) ? $worst->value : 'ok'];
 @endphp
 <!DOCTYPE html>
 <html>
@@ -29,69 +24,68 @@
         .status-crit { color: #dc2626; }
         .status-warn { color: #d97706; }
         .status-stale { color: #6b7280; }
+        .status-ok { color: #16a34a; }
         .meta { font-size: 13px; color: #6b7280; border-top: 1px solid #eee; padding-top: 12px; }
     </style>
 </head>
 <body>
     <div class="banner" style="background: {{ $tone['bg'] }}; border-color: {{ $tone['border'] }}; color: {{ $tone['text'] }};">
-        <h2>{{ $isRecovery ? 'All systems go' : strtoupper($alertStatus->label()) }}</h2>
-        <div class="reason">{{ $reason }}</div>
+        <h2>Weekly dependency digest</h2>
+        <div class="reason">
+            @if (count($failing))
+                {{ count($failing) }} item{{ count($failing) === 1 ? '' : 's' }} need attention.
+            @else
+                Everything is current. Nothing to do.
+            @endif
+        </div>
     </div>
 
-    @if ($isRecovery)
-        <p>
-            Everything that was failing has recovered.
-            @if ($episodeStartedAt)
-                The problem lasted {{ HealthFormat::age(max(0, now()->getTimestamp() - $episodeStartedAt)) }}.
-            @endif
-        </p>
-    @else
+    @if (count($failing))
         <table>
             <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>Check</th>
-                    <th>Node</th>
-                    <th>Value</th>
-                    <th>Threshold</th>
-                </tr>
+                <tr><th>Check</th><th>Status</th><th>Value</th><th>Threshold</th></tr>
             </thead>
             <tbody>
                 @foreach ($failing as $check)
                     <tr>
+                        <td><span class="key">{{ $check->key }}</span> {{ $check->label }}</td>
                         <td class="status status-{{ $check->status->value }}">{{ $check->status->value }}</td>
-                        <td>
-                            <span class="key">{{ $check->key }}</span><br>
-                            {{ $check->label }}
-                        </td>
-                        <td>{{ $check->node }}</td>
                         <td>{{ $check->value }}</td>
-                        <td>{{ $check->threshold }}</td>
+                        <td style="color:#6b7280;">{{ $check->threshold }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
         <p style="font-size: 14px;">
-            What each failure means, and the first command to run for it, is in
-            <strong>docs/runbooks/health-monitor.md</strong>. From the droplet:
-            <code>php artisan health:check</code>
+            After patching, record it so check d4 stops nagging:
+            <code>php artisan deps:mark-patch-run --note="what you did"</code>
         </p>
     @endif
 
-    @if (count($digestOnly))
-        <p style="font-size: 13px; color: #6b7280;">
-            Also outstanding: {{ count($digestOnly) }} dependency/platform
-            item{{ count($digestOnly) === 1 ? '' : 's' }}
-            ({{ implode(', ', array_map(fn ($c) => $c->key, $digestOnly)) }}).
-            Those are reported in the weekly dependency digest, not here.
-        </p>
+    @if (count($passing))
+        <table>
+            <thead>
+                <tr><th colspan="2">Currently fine</th></tr>
+            </thead>
+            <tbody>
+                @foreach ($passing as $check)
+                    <tr>
+                        <td><span class="key">{{ $check->key }}</span> {{ $check->label }}</td>
+                        <td style="color:#6b7280;">{{ $check->value }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     @endif
 
     <div class="meta">
+        {{-- This digest is sent every week even when there is nothing wrong. A
+             report that only appears on bad news is indistinguishable from one
+             that has stopped working. --}}
         Snapshot taken {{ $snapshot->generatedAt->toDayDateTimeString() }} ·
-        {{ count($snapshot->checks) }} checks run ·
-        {{ count($snapshot->alertable()) }} failing
+        sent weekly whether or not anything is wrong ·
+        outages are alerted separately by health:alert.
     </div>
 </body>
 </html>

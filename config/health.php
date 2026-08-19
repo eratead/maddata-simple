@@ -26,6 +26,31 @@ return [
         explode(',', (string) env('HEALTH_ALERT_RECIPIENTS', ''))
     ))),
 
+    /*
+    | Nodes whose failing checks are reported but NOT alerted on — they go to
+    | the weekly dependency digest instead (deps:digest). d1-d4 and X1/X2 all
+    | live on `platform`: a composer advisory or a runtime nearing EOL is real
+    | and is not a 2am page.
+    |
+    | Emptying this list turns dependency findings back into transition alerts,
+    | which is the whole reversal, in one line.
+    */
+    'alert_excluded_nodes' => ['platform'],
+
+    /* Weekly digest for the excluded nodes. Falls back to alert_recipients. */
+    'deps_digest_recipients' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('HEALTH_DEPS_DIGEST_RECIPIENTS', ''))
+    ))),
+
+    /*
+    | The app runs in UTC (config/app.php) with display_timezone Asia/Jerusalem,
+    | so this is scheduled with an explicit timezone — a bare "08:00" would land
+    | mid-morning Israel time, and would drift by an hour twice a year.
+    */
+    'deps_digest_day' => env('HEALTH_DEPS_DIGEST_DAY', 'monday'),
+    'deps_digest_hour' => env('HEALTH_DEPS_DIGEST_HOUR', '08:00'),
+
     /* How long a problem stays quiet before it nags again. */
     'realert_hours' => (int) env('HEALTH_REALERT_HOURS', 6),
 
@@ -47,6 +72,15 @@ return [
         App\Services\Health\Checks\QueueCheck::class,
         App\Services\Health\Checks\SchedulerCheck::class,
         App\Services\Health\Checks\BackupCheck::class,
+
+        // Phase 4 — slow-moving currency signals. All report on node `platform`,
+        // which health.alert_excluded_nodes routes to the weekly digest rather
+        // than to transition alerts.
+        App\Services\Health\Checks\DependencyAdvisoriesCheck::class,
+        App\Services\Health\Checks\RuntimeEolCheck::class,
+        App\Services\Health\Checks\OsPatchCheck::class,
+        App\Services\Health\Checks\PatchRunFreshnessCheck::class,
+        App\Services\Health\Checks\SecurityPostureCheck::class,
     ],
 
     /*
@@ -180,6 +214,51 @@ return [
         'backup_age' => ['warn' => 93600, 'crit' => 180000],            // 26h / 50h
         'backup_size_pct_of_median' => ['warn' => 70, 'crit' => 50],
         'restore_drill_age_days' => ['warn' => 120, 'crit' => 210],
+
+        /*
+        | d3 — OS security patches. "Sustained" is tracked check-side against a
+        | since-marker, because apt only ever reports the CURRENT count: a box
+        | unpatched for a month looks identical to one unpatched since lunchtime.
+        */
+        'os_patch_sustained' => ['warn' => 604800, 'crit' => 2592000],   // 7d / 30d
+        'os_patch_facts_age' => ['warn' => 172800, 'crit' => 604800],    // 48h / 7d
+
+        // d4 — how long since anyone actually patched (seconds).
+        'patch_run_age' => ['warn' => 3024000, 'crit' => 5184000],       // 35d / 60d
+
+        // X1 — expired Sanctum tokens still sitting in the table. Housekeeping.
+        'expired_tokens' => ['warn' => 1],
+
+        // X2 — failed logins in the last 15 minutes.
+        'failed_login_burst' => ['warn' => 20, 'crit' => 100],
+    ],
+
+    /*
+    | Which composer.lock d1 and d4 read. Null means the deployed one, which is
+    | always right in production — this exists so tests can point at a fixture
+    | instead of asserting against whatever the repo happens to have installed.
+    */
+    'composer_lock_path' => env('HEALTH_COMPOSER_LOCK_PATH'),
+
+    /* X2 sums this many one-minute buckets. */
+    'failed_login_window_minutes' => (int) env('HEALTH_FAILED_LOGIN_WINDOW', 15),
+
+    /*
+    | The /admin/monitor page (Phase 3).
+    |
+    | KPI tiles are chosen BY CHECK KEY from here rather than hardcoded in the
+    | Blade: adding a tile is a config line, and a renamed check shows up as one
+    | missing tile instead of a silently blank box.
+    |
+    | stale_seconds is load-bearing. snapshot_ttl is 300s and SNAPSHOT_LAST has
+    | no TTL at all, so a dead scheduler would otherwise render a confidently
+    | green page forever — the worst failure a monitor has. Past this age the
+    | header says so regardless of what `overall` claims.
+    */
+    'ui' => [
+        'poll_seconds' => (int) env('HEALTH_UI_POLL_SECONDS', 30),
+        'stale_seconds' => (int) env('HEALTH_UI_STALE_SECONDS', 180),
+        'kpi_keys' => ['H2', 'H4', 'Q1', 'Q2', 'B1', 'P1'],
     ],
 
     /*

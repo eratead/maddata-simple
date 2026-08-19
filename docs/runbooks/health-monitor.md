@@ -218,6 +218,70 @@ outermost ring and nothing on the droplet can replace it.
 
 ---
 
+## Dependency currency (Phase 4)
+
+Checks `d1`-`d4` and `X1`/`X2` all report on the **`platform`** node, and
+`config/health.php`'s `alert_excluded_nodes` routes that whole node **away from
+`health:alert`**. They show on `/admin/monitor` and in `php artisan health:check`,
+and they are emailed once a week by `deps:digest` (Monday 08:00 Israel time).
+
+That is deliberate: a composer advisory is real and is not a 2am page, and
+mixing the two teaches you to ignore outage mail. The consequence you should
+expect: **a critical advisory turns the monitor page and the header pill red
+while nothing emails.** To reverse it, set `'alert_excluded_nodes' => []`.
+
+### Deploying Phase 4
+
+1. **Redeploy the facts script.** `git pull` is not enough — `scripts/health-facts.sh`
+   is installed separately (see §2 above) and Phase 4 changes how it counts
+   security updates. Until it is reinstalled, `d3` reads STALE, which is correct
+   but uninformative.
+2. **Set the digest recipients** in the production `.env` (optional — it falls
+   back to `HEALTH_ALERT_RECIPIENTS`):
+   ```
+   HEALTH_DEPS_DIGEST_RECIPIENTS=ops@example.com
+   ```
+3. **Record a patch run** so `d4` starts from a real baseline instead of
+   "never recorded":
+   ```
+   php artisan deps:mark-patch-run --note="phase 4 rollout"
+   ```
+4. **Send one digest by hand** to prove the path works end to end. An untested
+   mail path is not a mail path:
+   ```
+   php artisan deps:digest
+   ```
+
+### Enabling unattended-upgrades
+
+`d3` measures whether security updates are being applied. It does not apply
+them. Enable them **security pocket only**, and do not let them reboot:
+
+```
+sudo cp /etc/apt/apt.conf.d/50unattended-upgrades /etc/apt/apt.conf.d/50unattended-upgrades.bak
+sudo dpkg-reconfigure --priority=low unattended-upgrades
+# In 50unattended-upgrades keep ONLY the -security origin, and set:
+#   Unattended-Upgrade::Automatic-Reboot "false";
+```
+
+Rebooting is a decision, not a side effect — `d3b` will tell you when one is
+owed. This is provisioning: **the deploy flow never runs `apt`.**
+
+### Why d3 does not use apt-check
+
+`apt-check` counts packages in the *full-upgrade* change set that have a
+security-pocket version, **including packages that are not installed at all**.
+On this droplet that produced a permanently stuck "1 pending security update" —
+`libabsl20220623t64`, not installed, and only ever arriving as a new dependency
+of `libgav1-1` during a full upgrade. `apt-get install --only-upgrade` refuses
+it and `unattended-upgrade` reports "no packages found", so no action could ever
+clear the amber.
+
+The facts script instead counts what `apt-get -s upgrade` would actually install
+from a `-security` pocket, which is exactly what can be applied. If it cannot
+compute the number it writes `null`, and `d3` reads `null` as **STALE, never
+0** — a monitor that cannot count must not report "clean".
+
 ## What each failure means
 
 | Check | CRIT means | First move |

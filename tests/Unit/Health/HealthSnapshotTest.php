@@ -87,3 +87,84 @@ it('survives a round trip through the cached array form', function () {
         ->and($restored->overall)->toBe(HealthStatus::WARN)
         ->and($restored->checks[0]->status)->toBe(HealthStatus::WARN);
 });
+
+/*
+|--------------------------------------------------------------------------
+| The alerting split (Phase 4)
+|--------------------------------------------------------------------------
+|
+| A check's NODE decides its delivery channel. The property that has to hold is
+| that routing a node away from alerting cannot silence anything that was
+| alerting before — so these assert the partition AND the signature stability.
+|
+*/
+
+beforeEach(function () {
+    config(['health.alert_excluded_nodes' => ['platform']]);
+});
+
+it('splits failing checks into the ones that page and the ones that do not', function () {
+    $snapshot = HealthSnapshot::fromResults([
+        result('D1', HealthStatus::CRIT, 'data'),
+        result('d1', HealthStatus::CRIT, 'platform'),
+        result('Q1', HealthStatus::OK, 'workers'),
+    ]);
+
+    expect(array_map(fn ($c) => $c->key, $snapshot->alertable()))->toBe(['D1'])
+        ->and(array_map(fn ($c) => $c->key, $snapshot->digestable()))->toBe(['d1']);
+});
+
+it('keeps overall honest even though alerting ignores the platform node', function () {
+    $snapshot = HealthSnapshot::fromResults([
+        result('D1', HealthStatus::OK, 'data'),
+        result('d1', HealthStatus::CRIT, 'platform'),
+    ]);
+
+    // The page and the pill still go red. The page is pull; only push is filtered.
+    expect($snapshot->overall)->toBe(HealthStatus::CRIT)
+        ->and($snapshot->alertStatus())->toBe(HealthStatus::OK);
+});
+
+it('takes the worst of the alertable half only', function () {
+    $snapshot = HealthSnapshot::fromResults([
+        result('D1', HealthStatus::WARN, 'data'),
+        result('d1', HealthStatus::CRIT, 'platform'),
+    ]);
+
+    expect($snapshot->alertStatus())->toBe(HealthStatus::WARN);
+});
+
+it('does not move the alert signature when a digest-only check flips', function () {
+    $before = HealthSnapshot::fromResults([
+        result('D1', HealthStatus::CRIT, 'data'),
+    ])->signature();
+
+    $after = HealthSnapshot::fromResults([
+        result('D1', HealthStatus::CRIT, 'data'),
+        result('d1', HealthStatus::CRIT, 'platform'),
+    ])->signature();
+
+    // If this moved, a new advisory would read as "something new broke" and
+    // page someone about a dependency at 2am.
+    expect($after)->toBe($before);
+});
+
+it('reads as all-ok for alerting when only digest-owned checks are failing', function () {
+    $snapshot = HealthSnapshot::fromResults([
+        result('d1', HealthStatus::CRIT, 'platform'),
+    ]);
+
+    expect($snapshot->signature())->toBe('all-ok');
+});
+
+it('alerts on everything when the exclusion list is emptied', function () {
+    config(['health.alert_excluded_nodes' => []]);
+
+    $snapshot = HealthSnapshot::fromResults([
+        result('d1', HealthStatus::CRIT, 'platform'),
+    ]);
+
+    // The whole reversal, in one config line.
+    expect($snapshot->alertStatus())->toBe(HealthStatus::CRIT)
+        ->and($snapshot->digestable())->toBe([]);
+});

@@ -94,18 +94,37 @@ done
 # ─── Pending security updates + nginx version (hourly, cached) ──────────
 # Both are expensive relative to everything else here and neither changes on a
 # per-minute timescale. Recomputed only when the cache has aged out.
+#
+# NOT apt-check. apt-check counts packages in the FULL-UPGRADE change set that
+# have a security-pocket version, including packages that are not installed at
+# all. On this droplet that produced a permanently-stuck "1 pending security
+# update" — libabsl20220623t64, which is not installed and would only arrive as
+# a new dependency of libgav1-1 during a full upgrade, so `apt-get install
+# --only-upgrade` refuses it and unattended-upgrade reports "no packages found".
+# An amber that no action can ever clear is how a monitor teaches people to
+# ignore it.
+#
+# `apt-get -s upgrade` is the right question: it simulates upgrading INSTALLED
+# packages only, and holds back anything that would need a new dependency —
+# exactly the semantics of what can actually be applied. We then count only the
+# lines whose archive is a -security pocket, matching inside the parenthesised
+# version field so a package merely NAMED *-security cannot inflate the count.
+#
+# A count we cannot compute is written as null, never as 0: check d3 reads null
+# as STALE, because a monitor that cannot count must not report "clean".
 if [ ! -f "$SLOW_CACHE" ] || [ "$(( $(date +%s) - $(stat -c %Y "$SLOW_CACHE" 2>/dev/null || echo 0) ))" -ge "$APT_CHECK_INTERVAL" ]; then
-    _sec=0
-    if [ -x /usr/lib/update-notifier/apt-check ]; then
-        _sec=$(/usr/lib/update-notifier/apt-check 2>&1 | cut -d';' -f2)
-        [[ "$_sec" =~ ^[0-9]+$ ]] || _sec=0
+    _sec="null"
+    if command -v apt-get >/dev/null 2>&1; then
+        _out=$(LC_ALL=C apt-get -s -o Debug::NoLocking=true upgrade 2>/dev/null) && \
+            _sec=$(printf '%s\n' "$_out" | grep -c -E '^Inst .*\([^)]*-security' || true)
+        [[ "$_sec" =~ ^[0-9]+$ ]] || _sec="null"
     fi
     _ngx=$(nginx -v 2>&1 | sed -n 's|.*nginx/\([0-9.]*\).*|\1|p')
     [ -z "$_ngx" ] && _ngx="unknown"
     printf '%s %s\n' "$_sec" "$_ngx" > "$SLOW_CACHE".tmp && mv -f "$SLOW_CACHE".tmp "$SLOW_CACHE"
 fi
-read -r pending_security nginx_version < "$SLOW_CACHE" 2>/dev/null || { pending_security=0; nginx_version="unknown"; }
-[[ "$pending_security" =~ ^[0-9]+$ ]] || pending_security=0
+read -r pending_security nginx_version < "$SLOW_CACHE" 2>/dev/null || { pending_security="null"; nginx_version="unknown"; }
+[[ "$pending_security" =~ ^[0-9]+$ ]] || pending_security="null"
 [ -z "${nginx_version:-}" ] && nginx_version="unknown"
 
 reboot_required=0
@@ -149,6 +168,10 @@ os_name=$( (. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || echo "unkno
 num() { [[ "${1:-}" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] && printf '%s' "$1" || printf 'null'; }
 cpu_pct=$(num "$cpu_pct"); mem_pct=$(num "$mem_pct")
 disk_pct=$(num "$disk_pct"); tls_days=$(num "$tls_days")
+# num() turns anything non-numeric — including the literal "null" — into null,
+# which is exactly what d3 needs to tell "no updates pending" from "could not
+# ask". Do NOT let this default to 0.
+pending_security=$(num "$pending_security")
 
 # ─── Atomic write ───────────────────────────────────────────────────────
 # Write to a temp file in the SAME directory then mv, so a reader can never

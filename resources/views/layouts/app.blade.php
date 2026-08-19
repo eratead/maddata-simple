@@ -57,6 +57,10 @@
                         @stack('page-actions')
                     </div>
 
+                    {{-- System health. The component's shouldRender() is the
+                         admin gate — non-admins get no markup at all. --}}
+                    <x-health-pill />
+
                 </div>
             </header>
 

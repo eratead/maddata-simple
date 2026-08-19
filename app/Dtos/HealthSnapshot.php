@@ -79,12 +79,70 @@ final readonly class HealthSnapshot
     }
 
     /**
+     * Failing checks that are allowed to wake somebody up.
+     *
+     * A check's NODE decides its delivery channel: anything in
+     * health.alert_excluded_nodes reports on the page and in the CLI, but is
+     * routed to the weekly dependency digest instead of the alert mail. A
+     * composer advisory is real, and it is not a 2am page — mixing the two
+     * teaches you to ignore outage mail.
+     *
+     * Node membership rather than a per-check flag: a flag would need setting
+     * in a dozen places and would drift the first time someone added a
+     * thirteenth check. The node is already what the UI groups by, and the
+     * exclusion list is one config line to audit.
+     *
+     * @return array<int, HealthCheckResult>
+     */
+    public function alertable(): array
+    {
+        return $this->partitionFailing(alertable: true);
+    }
+
+    /**
+     * The other half: failing checks the weekly digest owns.
+     *
+     * @return array<int, HealthCheckResult>
+     */
+    public function digestable(): array
+    {
+        return $this->partitionFailing(alertable: false);
+    }
+
+    /**
+     * What health:alert decides on. Deliberately NOT `overall`: `overall` stays
+     * honest, so a CRIT advisory still turns the page and the header pill red —
+     * the page is pull, alerting is push, and only the push half is filtered.
+     */
+    public function alertStatus(): HealthStatus
+    {
+        return HealthStatus::worstOf(
+            ...array_map(fn (HealthCheckResult $c) => $c->status, $this->alertable())
+        );
+    }
+
+    /** @return array<int, HealthCheckResult> */
+    private function partitionFailing(bool $alertable): array
+    {
+        $excluded = (array) config('health.alert_excluded_nodes', []);
+
+        return array_values(array_filter(
+            $this->failing(),
+            fn (HealthCheckResult $c) => in_array($c->node, $excluded, true) !== $alertable
+        ));
+    }
+
+    /**
      * Stable identity of the current problem set, used by health:alert to tell
      * "same problem, still going" from "something new broke".
+     *
+     * Built from alertable() so that a digest-only check flipping can never
+     * change the alert signature — otherwise a new advisory would read as
+     * "something new broke" and page someone about a dependency.
      */
     public function signature(): string
     {
-        $keys = array_map(fn (HealthCheckResult $c) => $c->key.':'.$c->status->value, $this->failing());
+        $keys = array_map(fn (HealthCheckResult $c) => $c->key.':'.$c->status->value, $this->alertable());
         sort($keys);
 
         return $keys === [] ? 'all-ok' : implode('|', $keys);

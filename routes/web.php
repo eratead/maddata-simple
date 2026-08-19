@@ -99,6 +99,16 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/system-status/admin-only', [\App\Http\Controllers\Admin\SystemStatusController::class, 'toggleAdminOnly'])->name('system-status.toggle-admin-only');
         Route::post('/system-status/terminate-all', [\App\Http\Controllers\Admin\SystemStatusController::class, 'terminateAll'])->name('system-status.terminate-all');
         Route::post('/system-status/terminate/{user}', [\App\Http\Controllers\Admin\SystemStatusController::class, 'terminateUser'])->name('system-status.terminate-user');
+
+        // System Health Monitor — read-only. Deliberately NOT merged into the
+        // system-status page above: that one carries destructive controls, and
+        // this one is left open in a tab polling every 30 seconds.
+        Route::get('/monitor', [\App\Http\Controllers\Admin\MonitorController::class, 'index'])->name('monitor.index');
+        // The only polled admin route in the app, hence its own throttle.
+        Route::get('/monitor/data', [\App\Http\Controllers\Admin\MonitorController::class, 'data'])
+            ->middleware('throttle:60,1')->name('monitor.data');
+        Route::post('/monitor/refresh', [\App\Http\Controllers\Admin\MonitorController::class, 'refresh'])
+            ->middleware('throttle:6,1')->name('monitor.refresh');
     });
 
     // Campaign Changes CRM (admin OR can_see_logs)

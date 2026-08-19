@@ -32,10 +32,22 @@ class SystemHealthService
      */
     public function snapshot(): HealthSnapshot
     {
-        if ($cached = $this->cached(HealthMarkers::SNAPSHOT)) {
-            return $cached;
-        }
+        return $this->cached(HealthMarkers::SNAPSHOT) ?? $this->refreshOnDemand();
+    }
 
+    /**
+     * Rebuild now, ignoring a warm cache — what the monitor page's "Refresh
+     * now" button calls, and what snapshot() falls back to on a cache miss.
+     *
+     * The single-flight rule has to survive a button. Two admins staring at a
+     * sick box will click this at the same time, and a sick box is exactly when
+     * the probes are slowest: the MySQL round trip and the Redis INFO are
+     * expensive *because* MySQL and Redis are what is broken. So the second
+     * caller takes the in-flight result instead of queueing a second rebuild
+     * behind the first.
+     */
+    public function refreshOnDemand(): HealthSnapshot
+    {
         try {
             $lock = $this->store()->lock(
                 HealthMarkers::SNAPSHOT_LOCK,

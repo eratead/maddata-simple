@@ -1,6 +1,6 @@
 # System Health Monitor (MadData)
 
-**Status:** Phases 1 and 2 built (2026-08-19), pending droplet deploy. Phases 3–4 not started.
+**Status:** Phases 1 and 2 built and deployed to production (2026-08-19). Phases 3–4 designed in detail in [health-monitor-phases-3-4.md](health-monitor-phases-3-4.md) — that document supersedes §6 and the Phase 3/4 rows of §10 where they differ, and records the four decisions taken before design (no history, read-only page + one refresh POST, dependency checks digest-only, admin-only header pill).
 **Author:** Architect
 **Date:** 2026-08-19
 **Prior art:** `erate-v2/docs/specs/system-health-monitor.md` (built & battle-tested 2026-07-23 → hardened 2026-07-29) and `erate-v2/docs/specs/dependency-security-maintenance.md`. This spec deliberately reuses that vertical's **names, contracts and hard-won rules** so one operator carries one mental model across both projects. It scales the design down from a 6-host fleet to MadData's single droplet.
@@ -240,8 +240,13 @@ Pest v3, `tests/Feature/Health/` + `tests/Unit/Health/`, mirroring erate-v2's sh
 | **0** | External uptime monitor on `/up` | 5 minutes of work, catches total death, needs no code |
 | **1** ✅ | Spine (enum, DTOs, service, base check) + facts script + H/D/Q/S/P/B checks + `health:check` CLI | The CLI alone answers today's question over SSH, and everything else builds on the spine |
 | **2** ✅ | `health:alert` + mailable | Highest operational value for a solo operator: problems find you |
-| **3** | `/admin/monitor` page + header pill | Glanceable surface once the data is trustworthy |
-| **4** | d1–d4 dependency/version checks + `config/dependency_maintenance.php` + X1/X2 | Reuses the spine; slower-moving signals, so last |
+| **3** ✅ | `/admin/monitor` page + header pill | Glanceable surface once the data is trustworthy |
+| **4** ✅ | d1–d4 dependency/version checks + `config/dependency_maintenance.php` + X1/X2 | Reuses the spine; slower-moving signals, so last |
+
+Phases 3 and 4 were built 2026-08-19 to [health-monitor-phases-3-4.md](health-monitor-phases-3-4.md).
+Phase 4 added a structural change this document did not anticipate: the
+`platform` node is routed **away from `health:alert`** and into a weekly
+`deps:digest`, so §3's catalog now spans two delivery channels rather than one.
 
 Phases 1–3 are independently shippable. Phase 4 is where the "is PHP/OS up to date" question gets its standing answer.
 

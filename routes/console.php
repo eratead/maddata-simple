@@ -93,3 +93,24 @@ Schedule::call(fn () => Artisan::call('health:alert'))
 // Keeps check Q2's 24h window cheap: without pruning, failed_jobs grows without
 // bound and the check slows down in proportion to how sick the queue is.
 Schedule::command('queue:prune-failed --hours=168')->weekly();
+
+/*
+| Phase 4 — the other half of the alerting split. Checks on the nodes
+| health:alert deliberately ignores (config health.alert_excluded_nodes) are
+| reported here once a week instead. A composer advisory is real and is not a
+| 2am page.
+|
+| The timezone is explicit and must stay that way: the app runs in UTC
+| (config/app.php), so a bare "08:00" would arrive mid-morning Israel time and
+| drift by an hour twice a year.
+*/
+$digestDays = ['sunday' => 0, 'monday' => 1, 'tuesday' => 2, 'wednesday' => 3, 'thursday' => 4, 'friday' => 5, 'saturday' => 6];
+
+Schedule::call(fn () => Artisan::call('deps:digest'))
+    ->weeklyOn(
+        $digestDays[strtolower((string) config('health.deps_digest_day', 'monday'))] ?? 1,
+        (string) config('health.deps_digest_hour', '08:00'),
+    )
+    ->timezone(config('app.display_timezone'))
+    ->name('deps-digest')
+    ->withoutOverlapping(10);

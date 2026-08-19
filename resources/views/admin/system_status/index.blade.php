@@ -4,6 +4,15 @@
     <h1 class="text-sm font-semibold text-gray-800">System Status</h1>
 @endpush
 
+@push('page-actions')
+    {{-- The read-only sibling. Kept separate on purpose: this page has
+         destructive controls, that one is left open in a tab polling. --}}
+    <a href="{{ route('admin.monitor.index') }}"
+       class="text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">
+        System Health →
+    </a>
+@endpush
+
     <x-flash-messages />
 
     {{-- System Mode Card --}}

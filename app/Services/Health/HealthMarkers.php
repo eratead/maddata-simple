@@ -44,6 +44,34 @@ final class HealthMarkers
      */
     public const ALERT_STATE = 'health:alert:state';
 
+    /* ── Phase 4: dependency & version currency ──────────────────────────── */
+
+    /**
+     * d1's advisory result, keyed by the deployed composer.lock's sha256 —
+     * appended by the check. A deploy that changes the lock therefore re-queries
+     * immediately instead of serving up to 24 hours of stale "clean".
+     */
+    public const ADVISORIES = 'health:deps:advisories';
+
+    /** d1's last-known-good result, no TTL. Served when the feed is unreachable. */
+    public const ADVISORIES_LAST = 'health:deps:advisories:last';
+
+    /**
+     * d3's since-marker: {count, first_seen}. apt only ever reports the CURRENT
+     * pending count, so "unpatched for 30 days" has to be remembered here.
+     */
+    public const OS_PATCH_SINCE = 'health:os_patch:since';
+
+    /** d4 — written by deps:mark-patch-run: {ts, lock_sha, note}. */
+    public const PATCH_RUN = 'health:deps:patch_run';
+
+    /**
+     * X2's per-minute failed-login buckets, suffixed with YmdHi. Buckets rather
+     * than a table: they expire themselves, and D1 of this phase's design says
+     * no migrations.
+     */
+    public const AUTH_FAIL_PREFIX = 'health:auth:fail:';
+
     /**
      * The store every marker lives in. Pinned by config rather than inherited,
      * so changing CACHE_STORE can never silently orphan the markers and leave
