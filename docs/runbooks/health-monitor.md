@@ -241,11 +241,12 @@ while nothing emails.** To reverse it, set `'alert_excluded_nodes' => []`.
    ```
    HEALTH_DEPS_DIGEST_RECIPIENTS=ops@example.com
    ```
-3. **Record a patch run** so `d4` starts from a real baseline instead of
-   "never recorded":
-   ```
-   php artisan deps:mark-patch-run --note="phase 4 rollout"
-   ```
+3. **Do not** record a patch run just to clear `d4`. It is tempting — `d4` reads
+   WARN "never recorded" until someone runs it — but marking a patch run that
+   did not happen is a false record in the one check whose entire job is to
+   answer "when did a human last patch this?". Leave it warning. Run
+   `php artisan deps:mark-patch-run --note="what you did"` **after** you have
+   actually patched, which is also when `d1`'s findings get addressed.
 4. **Send one digest by hand** to prove the path works end to end. An untested
    mail path is not a mail path:
    ```
