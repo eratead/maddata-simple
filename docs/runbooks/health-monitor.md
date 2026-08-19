@@ -31,6 +31,30 @@ seventeen hours until the next nightly run.
 
 ---
 
+## Verifying as www-data (read this before you run anything)
+
+Every check that touches the filesystem must be verified as the user that
+actually runs the code, never as root — root ignores permission bits and is the
+one user who cannot tell you whether a permission problem exists. On production
+the scheduler (www-data's own crontab), the queue worker (`User=www-data`) and
+PHP-FPM are all `www-data`, so that is the vantage point that matters:
+
+```
+sudo -u www-data php artisan health:check
+```
+
+**`artisan tinker` needs one extra thing.** `www-data`'s HOME is `/var/www`,
+which is root-owned, so psysh cannot write its config and the command errors
+(and logs an ERROR line) before doing anything useful:
+
+```
+sudo -u www-data env HOME=/var/www/maddata php artisan tinker --execute="..."
+```
+
+That is a shell-only concern — the scheduler and FPM never need HOME — so it is
+documented rather than fixed. Changing `www-data`'s home directory to make an
+ad-hoc debugging command tidier is not worth touching a system account for.
+
 ## Answering "is production OK?" right now
 
 ```bash
