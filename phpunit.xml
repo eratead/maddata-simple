@@ -22,6 +22,10 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- Markers default to the `health` FILE store in production, which
+             would otherwise leak state between tests via the real filesystem.
+             HealthMarkerStoreTest covers the production wiring explicitly. -->
+        <env name="HEALTH_MARKER_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="MAIL_MAILER" value="array"/>

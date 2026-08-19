@@ -17,8 +17,10 @@
     </button>
 
     <div x-show="isOpen({{ $expr }}.key)" x-cloak>
+        {{-- Stacked: these cards are a quarter of the grid, far too narrow to
+             put a sentence-length value beside a label. --}}
         <template x-for="check in checksIn({{ $expr }}.key)" :key="check.key">
-            <x-monitor.check-row expr="check" />
+            <x-monitor.check-row expr="check" stacked />
         </template>
     </div>
 </div>

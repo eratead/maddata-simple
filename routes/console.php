@@ -94,6 +94,13 @@ Schedule::call(fn () => Artisan::call('health:alert'))
 // bound and the check slows down in proportion to how sick the queue is.
 Schedule::command('queue:prune-failed --hours=168')->weekly();
 
+// Check X1 counts expired tokens still sitting in the table. Nothing was ever
+// deleting them, so the count only ever went up — a warning that accumulates on
+// its own is a warning nobody will act on. Sanctum already refuses these tokens;
+// this just stops them piling up. Retains a week so an expiry is still visible
+// for a few days after the fact.
+Schedule::command('sanctum:prune-expired --hours=168')->weekly();
+
 /*
 | Phase 4 — the other half of the alerting split. Checks on the nodes
 | health:alert deliberately ignores (config health.alert_excluded_nodes) are

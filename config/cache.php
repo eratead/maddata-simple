@@ -38,6 +38,26 @@ return [
             'serialize' => false,
         ],
 
+        /*
+        | The health monitor's markers (config/health.php marker_store).
+        |
+        | Its own store, on its own path, for two reasons:
+        |
+        |  1. `php artisan cache:clear` clears the DEFAULT store. Markers are
+        |     records of past events — "the nightly job last succeeded at X",
+        |     "the last restore drill was Y" — so clearing the app cache during
+        |     a deploy was erasing the monitor's memory and making healthy jobs
+        |     report "has never completed". Same class of mistake as keeping the
+        |     backup marker on tmpfs, where a reboot ate it.
+        |  2. The file driver depends on neither MySQL nor Redis, which are two
+        |     of the things the monitor exists to report on. On the database
+        |     store a MySQL outage made every age check unreadable at once.
+        */
+        'health' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/health'),
+        ],
+
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_CACHE_CONNECTION'),

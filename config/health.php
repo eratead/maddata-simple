@@ -100,11 +100,18 @@ return [
     'backup_marker_path' => env('HEALTH_BACKUP_MARKER_PATH', '/var/backups/maddata/backup-last.json'),
 
     /*
-    | Cache store holding the snapshot and all check markers. null = the
-    | default store. Pin this explicitly on production rather than inheriting
-    | the default, so a CACHE_STORE change can never silently orphan markers.
+    | Cache store holding the snapshot and all check markers.
+    |
+    | Defaults to the dedicated `health` store (config/cache.php), NOT the app
+    | cache. Markers are records of past events, and `php artisan cache:clear` —
+    | which every deploy runs — clears the default store. Sharing it meant each
+    | deploy erased the monitor's memory: S2a/S2b reported "has never completed"
+    | for healthy jobs, and B4 forgot the last restore drill. It also decouples
+    | the markers from MySQL and Redis, two of the things being monitored.
+    |
+    | Do not point this back at the app cache store.
     */
-    'marker_store' => env('HEALTH_MARKER_STORE'),
+    'marker_store' => env('HEALTH_MARKER_STORE', 'health'),
 
     /*
     | Boot grace. For the first minute or two after a restart the facts cron
