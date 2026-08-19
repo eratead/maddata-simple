@@ -44,14 +44,22 @@ Schedule::command('digest:send-activity')
 |
 */
 
+// These run IN-PROCESS via Schedule::call rather than Schedule::command.
+// Schedule::command() spawns a fresh `php artisan` process per task, and
+// production is a single-core droplet: three extra PHP boots a minute were
+// enough to saturate the core for several seconds and make the CPU check
+// report on its own overhead. The commands still exist for manual use.
+
 // Rebuild off-path so a real admin request is always just a cache read.
-Schedule::command('health:refresh-snapshot')
+Schedule::call(fn () => Artisan::call('health:refresh-snapshot'))
     ->everyMinute()
+    ->name('health-refresh-snapshot')
     ->withoutOverlapping();
 
 // Check P1 — the stack as an outside user sees it.
-Schedule::command('health:probe')
+Schedule::call(fn () => Artisan::call('health:probe'))
     ->everyMinute()
+    ->name('health-probe')
     ->withoutOverlapping();
 
 // Check Q3 — proof the worker CONSUMES, not merely that systemd says "active".
@@ -60,8 +68,9 @@ Schedule::job(new QueueHeartbeatJob)->everyMinute();
 // Phase 2 — transition-based alerting. Every five minutes rather than every
 // minute: the two-observation suppression rule below it means a deploy blip
 // needs to survive ten minutes before anyone's phone buzzes.
-Schedule::command('health:alert')
+Schedule::call(fn () => Artisan::call('health:alert'))
     ->everyFiveMinutes()
+    ->name('health-alert')
     ->withoutOverlapping();
 
 // Check S1 — proof cron reaches Laravel at all.

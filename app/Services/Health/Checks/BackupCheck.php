@@ -32,7 +32,7 @@ class BackupCheck extends HealthCheck
 
         return [
             $this->localAge($marker, $backups),
-            $this->sizeSanity($backups),
+            $this->sizeSanity($backups, $marker),
             $this->offsite($marker),
             $this->restoreDrill(),
         ];
@@ -71,10 +71,11 @@ class BackupCheck extends HealthCheck
     }
 
     /** B2 — silent truncation detector. Lower is worse. */
-    private function sizeSanity(array $backups): HealthCheckResult
+    private function sizeSanity(array $backups, ?array $marker): HealthCheckResult
     {
-        return $this->guard('B2', 'Backup size sanity', 'backups', function () use ($backups) {
+        return $this->guard('B2', 'Backup size sanity', 'backups', function () use ($backups, $marker) {
             $thresholds = $this->thresholds('backup_size_pct_of_median');
+            $backups = $this->completedOnly($backups, $marker);
 
             $sizes = array_values(array_filter(
                 array_map(fn ($b) => (int) ($b['bytes'] ?? 0), $backups),
@@ -185,6 +186,29 @@ class BackupCheck extends HealthCheck
                 link: config('health.links.backups'),
             );
         });
+    }
+
+    /**
+     * Drop any backup directory newer than the last completed backup.
+     *
+     * The facts cron stats the backup directory every minute, including while
+     * a backup is being written — so during the nightly run the newest entry is
+     * a half-finished directory. Comparing that against the median reported a
+     * CRIT "the dump shrank" every single night. The marker is written last, so
+     * anything newer than it is still in flight.
+     */
+    private function completedOnly(array $backups, ?array $marker): array
+    {
+        if (! isset($marker['ts']) || ! is_numeric($marker['ts'])) {
+            return $backups;
+        }
+
+        $completedAt = (int) $marker['ts'];
+
+        return array_values(array_filter(
+            $backups,
+            fn ($backup) => (int) ($backup['ts'] ?? 0) <= $completedAt
+        ));
     }
 
     /** Newest first, as the facts script writes them. */

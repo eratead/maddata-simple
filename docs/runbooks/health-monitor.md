@@ -77,9 +77,21 @@ reads STALE. Pin it explicitly.
 mkdir -p /run/maddata && chmod 755 /run/maddata
 chmod 700 /var/www/maddata/scripts/health-facts.sh
 crontab -e
-# add:
-* * * * * /var/www/maddata/scripts/health-facts.sh
+# add (root crontab):
+* * * * * sleep 25; HEALTH_TLS_CERT=/etc/letsencrypt/live/new.ad.maddata.media/fullchain.pem /var/www/maddata/scripts/health-facts.sh >/dev/null 2>&1
 ```
+
+Two details in that line are load-bearing:
+
+- **`sleep 25`** offsets the run away from the top of the minute. `schedule:run`
+  fires at `:00` and boots PHP; on the single-core production droplet that
+  saturates the core for several seconds. Sampling CPU there measures the
+  monitoring's own overhead, not the system's health — it reported a steady
+  100% while the box was 98% idle. `HEALTH_CPU_SAMPLE_SECONDS` (default 15)
+  controls the averaging window.
+- **`HEALTH_TLS_CERT`** — the production certificate lives under
+  `new.ad.maddata.media/`, not `ad.maddata.media/`, a leftover from the droplet
+  migration. Without this override check P2 reads STALE forever.
 
 Verify within two minutes:
 

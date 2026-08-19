@@ -26,13 +26,23 @@ BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/maddata}"
 TLS_CERT="${HEALTH_TLS_CERT:-/etc/letsencrypt/live/ad.maddata.media/fullchain.pem}"
 UNITS="${HEALTH_UNITS:-nginx php8.4-fpm mysql redis-server cron maddata-queue}"
 
+# How long to average CPU over. A 1-second sample on a small droplet is noise:
+# it reports whatever happened to run in that second. The crontab should also
+# offset this script away from the top of the minute, because that is when
+# `schedule:run` boots PHP and briefly saturates a single-core box — sampling
+# there measures the monitoring's own overhead. See docs/runbooks/health-monitor.md.
+CPU_SAMPLE_SECONDS="${HEALTH_CPU_SAMPLE_SECONDS:-15}"
+
 mkdir -p "$(dirname "$FACTS_OUT")" 2>/dev/null || true
 
 # ─── CPU: real utilization, NOT loadavg ─────────────────────────────────
 # loadavg/nproc runs well above true CPU under I/O concurrency and produces
 # false CRITs. vmstat's idle column is the honest number. Parse the column by
 # HEADER NAME — its index shifts between procps versions.
-cpu_pct=$(vmstat 1 2 2>/dev/null | awk '
+#
+# vmstat prints the since-boot average first, then one row per interval; we
+# take the LAST row, which is the interval we actually asked for.
+cpu_pct=$(vmstat "$CPU_SAMPLE_SECONDS" 2 2>/dev/null | awk '
     /r[ \t]+b/ { for (i = 1; i <= NF; i++) if ($i == "id") idx = i; next }
     { last = $idx }
     END { if (idx && last != "") printf "%.1f", 100 - last; else print "" }
@@ -110,6 +120,7 @@ cat > "$TMP" <<JSON
   "hostname": "$(hostname)",
   "os": "${os_name}",
   "cpu_pct": ${cpu_pct},
+  "cpu_sample_seconds": ${CPU_SAMPLE_SECONDS},
   "mem_pct": ${mem_pct},
   "disk_root_pct": ${disk_pct},
   "units": {${units_json}},

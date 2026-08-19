@@ -118,3 +118,41 @@ it('records a drill through the artisan command', function () {
 
     expect(backupChecks(['ts' => time(), 'remote_ok' => true])['B4']->status)->toBe(HealthStatus::OK);
 });
+
+it('ignores a backup that is still being written', function () {
+    // The exact production failure: the facts cron stats the backup directory
+    // every minute, so during the nightly run the newest entry is a
+    // half-written directory. Before this fix, B2 reported a CRIT "the dump
+    // shrank to 33% of median" every single night at 03:00.
+    $completedAt = now()->getTimestamp() - 60;
+
+    $backups = [
+        ['ts' => now()->getTimestamp(), 'bytes' => 80_000_000],   // in flight, 1/3 written
+        ['ts' => $completedAt, 'bytes' => 240_000_000],
+        ['ts' => $completedAt - 86400, 'bytes' => 240_000_000],
+        ['ts' => $completedAt - 172800, 'bytes' => 230_000_000],
+        ['ts' => $completedAt - 259200, 'bytes' => 235_000_000],
+    ];
+
+    $checks = backupChecks(['ts' => $completedAt, 'remote_ok' => true], $backups);
+
+    expect($checks['B2']->status)->toBe(HealthStatus::OK)
+        ->and($checks['B2']->value)->toContain('228.9MB');
+});
+
+it('still catches a genuinely truncated backup once it completes', function () {
+    // Same shape, but the marker now covers the small one — it finished, and
+    // finishing small is exactly the failure B2 exists to catch.
+    $completedAt = now()->getTimestamp();
+
+    $backups = [
+        ['ts' => $completedAt, 'bytes' => 80_000_000],
+        ['ts' => $completedAt - 86400, 'bytes' => 240_000_000],
+        ['ts' => $completedAt - 172800, 'bytes' => 240_000_000],
+        ['ts' => $completedAt - 259200, 'bytes' => 230_000_000],
+        ['ts' => $completedAt - 345600, 'bytes' => 235_000_000],
+    ];
+
+    expect(backupChecks(['ts' => $completedAt, 'remote_ok' => true], $backups)['B2']->status)
+        ->toBe(HealthStatus::CRIT);
+});
