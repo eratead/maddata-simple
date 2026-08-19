@@ -812,7 +812,7 @@ Remaining: `HEALTH_ALERT_RECIPIENTS` + the forced alert test (HM-2.4), and the e
 ---
 
 ## PHP 8.4.19 → 8.4.24 on production
-**Added:** 2026-08-19 · **Staging: done and validated. Production: awaiting a window.**
+**Added:** 2026-08-19 · **DONE — staging validated, production upgraded 2026-08-19 ~11:00 UTC (13:58 IDT).**
 **Rule:** [lessons.md](../lessons.md) — runtime upgrades are feature-sized, staged first, never bundled into another change.
 
 ### Staging validation (complete)
@@ -828,15 +828,17 @@ Remaining: `HEALTH_ALERT_RECIPIENTS` + the forced alert test (HM-2.4), and the e
 - [x] Staging lacked `php8.4-sqlite3`, so the suite (SQLite in-memory) could not run there at all. Installed.
 - [x] Staging disk **95% → 65%**: `/var/mail/root` held **3,853,036 cron failure mails accumulated since September 2022**, from jobs belonging to a different app on the same box (`/var/www/dev/maddata`: `taboola:sites`, `outbrain:budgets`, `eskimi:campaigns` — since commented out, spool never cleaned). Truncated in place; 300 KB sample kept at `/root/mail-sample-before-truncate-20260819.txt`. Journal vacuumed to 200 MB. Check H4 confirmed the recovery.
 
-### Production (not yet done — needs a window)
+### Production (done 2026-08-19)
 
-- [ ] **PHP-5** Take a fresh backup first: `scripts/backup-production.sh` (also refreshes the B1/B3 marker).
-- [ ] **PHP-6** Record `php -m | sort` and `php -v` before, for the after-comparison.
-- [ ] **PHP-7** Upgrade the 13 `php8.4-*` packages **only** — not the other 22 pending `noble-updates`, which are unrelated and belong in their own change:
+**Result:** 8.4.19 → 8.4.24, CLI and FPM both. Extension set **identical, 57 modules, none lost**. `/up` 200, `/login` 200 in 99 ms, Laravel 12.12.0 boots, FPM workers confirmed on the new binary, no errors logged. Queue worker verified *consuming* on the new runtime — check Q3's heartbeat advanced after the restart, which is the thing `systemctl is-active` cannot tell you. `health:check` 25/26 green, exit 0. One active user session during the ~1s FPM restart; sessions live in the database so nobody was logged out.
+
+- [x] **PHP-5** Take a fresh backup first: `scripts/backup-production.sh` (also refreshes the B1/B3 marker).
+- [x] **PHP-6** Record `php -m | sort` and `php -v` before, for the after-comparison.
+- [x] **PHP-7** Upgrade the 13 `php8.4-*` packages **only** — not the other 22 pending `noble-updates`, which are unrelated and belong in their own change:
       `DEBIAN_FRONTEND=noninteractive apt-get install -y --only-upgrade -o Dpkg::Options::=--force-confold -o Dpkg::Options::=--force-confdef $(apt-get -s upgrade | grep '^Inst php' | awk '{print $2}')`
-- [ ] **PHP-8** **Restart `php8.4-fpm` AND `maddata-queue`.** Both hold the old binary and extensions in memory; the app can look fine while half of it still runs the old PHP.
-- [ ] **PHP-9** Diff `php -m` against the before-capture. Any missing extension is a rollback trigger.
-- [ ] **PHP-10** Verify: `php artisan health:check` all green, `/up` 200, `/login` 200, log clean, queue heartbeat (Q3) recovering after the worker restart.
-- [ ] **PHP-11** Rollback if needed: `apt-get install --allow-downgrades php8.4-*=8.4.19-1+ubuntu24.04.1+deb.sury.org+1`, restart both services.
+- [x] **PHP-8** **Restart `php8.4-fpm` AND `maddata-queue`.** Both hold the old binary and extensions in memory; the app can look fine while half of it still runs the old PHP.
+- [x] **PHP-9** Diff `php -m` against the before-capture. Any missing extension is a rollback trigger.
+- [x] **PHP-10** Verify: `php artisan health:check` all green, `/up` 200, `/login` 200, log clean, queue heartbeat (Q3) recovering after the worker restart.
+- [ ] **PHP-11** *(not needed — extensions identical, no rollback)* Rollback command, kept for reference: `apt-get install --allow-downgrades php8.4-*=8.4.19-1+ubuntu24.04.1+deb.sury.org+1`, restart both services.
 
 **Known limit of the staging evidence:** staging is Apache + mod_php on Ubuntu 22.04; production is Nginx + PHP-FPM on 24.04. Staging proves *the application code runs correctly on 8.4.24*. It does **not** exercise the PHP-FPM restart path — that risk is retired only on production, which is why PHP-8 and PHP-10 exist.
