@@ -40,7 +40,7 @@ return [
         // Oracle Lifetime Support Policy, via endoflife.date/mysql.
         // 8.0 is an LTS that reached end of extended support on 2026-04-30 —
         // if production is still on it, d2 is supposed to say so.
-        ['product' => 'mysql', 'branch' => '8.0', 'security_support_until' => '2026-04-30', 'source' => 'endoflife.date/mysql (Oracle Lifetime Support)'],
+        ['product' => 'mysql', 'branch' => '8.0', 'security_support_until' => '2026-04-30', 'source' => 'endoflife.date/mysql (Oracle Lifetime Support)', 'package' => ['mysql-server', 'mysql-server-8.0']],
         ['product' => 'mysql', 'branch' => '8.4', 'security_support_until' => '2032-04-30', 'source' => 'endoflife.date/mysql (Oracle Lifetime Support, LTS)'],
 
         // https://endoflife.date/redis
@@ -48,11 +48,11 @@ return [
         // ended it on 2024-07-29, so d2 reports it — but as a WARN, because the
         // deployed build is the distro package and Canonical backports fixes to
         // 24.04 main. The check detects that from the version string itself.
-        ['product' => 'redis', 'branch' => '7.0', 'security_support_until' => '2024-07-29', 'source' => 'endoflife.date/redis'],
-        ['product' => 'redis', 'branch' => '7.2', 'security_support_until' => '2029-12-01', 'source' => 'endoflife.date/redis'],
-        ['product' => 'redis', 'branch' => '7.4', 'security_support_until' => '2029-12-01', 'source' => 'endoflife.date/redis'],
-        ['product' => 'redis', 'branch' => '8.0', 'security_support_until' => '2026-12-01', 'source' => 'endoflife.date/redis'],
-        ['product' => 'redis', 'branch' => '8.2', 'security_support_until' => '2030-09-01', 'source' => 'endoflife.date/redis'],
+        ['product' => 'redis', 'branch' => '7.0', 'security_support_until' => '2024-07-29', 'source' => 'endoflife.date/redis', 'package' => ['redis-server']],
+        ['product' => 'redis', 'branch' => '7.2', 'security_support_until' => '2029-12-01', 'source' => 'endoflife.date/redis', 'package' => ['redis-server']],
+        ['product' => 'redis', 'branch' => '7.4', 'security_support_until' => '2029-12-01', 'source' => 'endoflife.date/redis', 'package' => ['redis-server']],
+        ['product' => 'redis', 'branch' => '8.0', 'security_support_until' => '2026-12-01', 'source' => 'endoflife.date/redis', 'package' => ['redis-server']],
+        ['product' => 'redis', 'branch' => '8.2', 'security_support_until' => '2030-09-01', 'source' => 'endoflife.date/redis', 'package' => ['redis-server']],
 
         /*
         | nginx publishes no dated security window per branch — a branch is

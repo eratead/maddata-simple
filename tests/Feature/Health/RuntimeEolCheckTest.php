@@ -69,11 +69,51 @@ it('still goes critical for a past-EOL runtime built from upstream', function ()
     eolTable([['product' => 'nginx', 'branch' => '1.24', 'security_support_until' => now()->subYear()->toDateString()]]);
     fakeHostFacts(['ts' => now()->getTimestamp(), 'nginx_version' => '1.24.0']);
 
-    // No distro marker in the version string — nobody is backporting for you.
-    // Detected from the version itself, so swapping to an upstream build
-    // escalates this without anyone remembering to flip a config flag.
+    // No distro marker anywhere — nobody is backporting for you. Detected from
+    // evidence, so swapping to an upstream build escalates this without anyone
+    // remembering to flip a config flag.
     expect(d2('d2-nginx')->status)->toBe(HealthStatus::CRIT)
         ->and(d2('d2-nginx')->value)->toContain('security support ended');
+});
+
+it('trusts the installed package version when the runtime under-reports itself', function () {
+    /*
+     * Production's actual failure. Redis answers INFO server with a bare
+     * upstream semver even when the installed package is the Ubuntu build, so a
+     * self-report-only test called it a CRIT outage on a box Canonical was
+     * patching. dpkg is the only authority, the app may never ask it, so the
+     * facts script carries the answer.
+     */
+    eolTable([[
+        'product' => 'nginx',
+        'branch' => '1.24',
+        'security_support_until' => now()->subYear()->toDateString(),
+        'package' => ['nginx'],
+    ]]);
+
+    fakeHostFacts([
+        'ts' => now()->getTimestamp(),
+        'nginx_version' => '1.24.0',                             // no marker here...
+        'packages' => ['nginx' => '1.24.0-2ubuntu7.5'],          // ...but the truth is here
+    ]);
+
+    expect(d2('d2-nginx')->status)->toBe(HealthStatus::WARN)
+        ->and(d2('d2-nginx')->value)->toContain('upstream branch EOL');
+});
+
+it('falls back to the self-reported version when no package facts exist', function () {
+    // A host with no dpkg, or facts that predate this field, must degrade to the
+    // weaker test rather than to a wrong CRIT.
+    eolTable([[
+        'product' => 'nginx',
+        'branch' => '1.24',
+        'security_support_until' => now()->subYear()->toDateString(),
+        'package' => ['nginx'],
+    ]]);
+
+    fakeHostFacts(['ts' => now()->getTimestamp(), 'nginx_version' => '1.24.0 (Ubuntu)']);
+
+    expect(d2('d2-nginx')->status)->toBe(HealthStatus::WARN);
 });
 
 it('warns on a branch the table does not cover rather than passing it', function () {

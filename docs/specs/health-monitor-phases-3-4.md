@@ -244,12 +244,31 @@ is not exposed; the branch is frozen and a migration needs planning. Those are
 different facts and deserve different severities — and a CRIT that only an OS
 upgrade can clear is the permanent-red version of the amber trap in §11 d3.
 
-So a runtime past its upstream window reports **WARN when the version string
-carries a distro marker** (`ubuntu`, `debian`, `debN`) and CRIT otherwise, with
-a value that says which case it is. Detected from the version string rather than
-a config flag deliberately: that is the actual fact on the box, so installing
-MySQL from Oracle's own repo drops the marker and re-escalates to CRIT with
-nobody having to remember anything.
+So a runtime past its upstream window reports **WARN when it is the distro's
+build** (marker `ubuntu`, `debian`, `debN`) and CRIT otherwise, with a value that
+says which case it is. Detected from evidence rather than a config flag
+deliberately: that is the actual fact on the box, so installing MySQL from
+Oracle's own repo drops the marker and re-escalates to CRIT with nobody having
+to remember anything.
+
+**The first attempt at that detection was wrong, and production said so.** Testing
+the runtime's *self-reported* version works for MySQL, which bakes the package
+suffix into `select version()` — and fails completely for Redis, which answers
+`INFO server` with a bare upstream `7.0.15` even when the installed package is
+`5:7.0.15-1ubuntu0.24.04.4`. `d2-redis` therefore read CRIT on a box Canonical
+was actively patching, with no code path that could ever have said otherwise.
+
+The package manager is the only authority, and the app is never permitted to ask
+it (§2's zero-grant rule). So `scripts/health-facts.sh` now reports installed
+package versions in a `packages` object, and d2 tests the package version first,
+falling back to the self-report when there are no package facts — a host without
+dpkg should degrade to the weaker test, not to a wrong CRIT. Rows name their
+package(s) via `'package' => [...]`.
+
+The general lesson, which applies well beyond this check: **when a check must
+distinguish two states, verify that the data it reads can actually express both.**
+A test whose answer is structurally fixed is worse than no test, because it reads
+like a finding.
 
 ## 11. Check contracts
 

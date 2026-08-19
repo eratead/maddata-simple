@@ -110,12 +110,20 @@ class RuntimeEolCheck extends HealthCheck
              * an OS upgrade could clear it, which is how a monitor trains people
              * to ignore it. So it warns, and says exactly what is true.
              *
-             * Detected from the version string rather than configured, because
-             * that is the actual fact on the box: install MySQL from Oracle's
-             * own repo and the marker disappears, which correctly escalates this
-             * back to CRIT without anyone remembering to update a flag.
+             * Detected from evidence rather than configured, because that is the
+             * actual fact on the box: install MySQL from Oracle's own repo and
+             * the marker disappears, which correctly escalates this back to CRIT
+             * without anyone remembering to update a flag.
+             *
+             * The evidence has to be the INSTALLED PACKAGE version, not the
+             * runtime's self-report. MySQL bakes the suffix into `select
+             * version()` ("8.0.46-0ubuntu0.24.04.3"), but Redis reports a bare
+             * upstream semver ("7.0.15") even when the package is
+             * "5:7.0.15-1ubuntu0.24.04.4" — so a self-report-only test read
+             * production's Redis as a CRIT outage while Canonical was patching
+             * it. The facts script asks dpkg; this only reads the answer.
              */
-            $distroPackaged = (bool) preg_match('/ubuntu|debian|\bdeb\d/i', $version);
+            $distroPackaged = $this->distroPackaged($version, $row['package'] ?? null);
 
             $status = match (true) {
                 $days < 0 => $distroPackaged ? HealthStatus::WARN : HealthStatus::CRIT,
@@ -170,6 +178,32 @@ class RuntimeEolCheck extends HealthCheck
                 threshold: "review every {$months} months",
             );
         });
+    }
+
+    /**
+     * Is this runtime the distro's build, and therefore receiving the distro's
+     * backported security fixes?
+     *
+     * Prefers the installed package version from the facts file, falling back to
+     * the runtime's own version string. The fallback still matters: MySQL
+     * answers honestly on its own, and a host with no dpkg (or with facts
+     * missing) should degrade to the weaker test rather than to a wrong CRIT.
+     *
+     * @param  string|array<int, string>|null  $package  package name(s) to look up
+     */
+    private function distroPackaged(string $version, string|array|null $package): bool
+    {
+        $evidence = [$version];
+
+        $packages = (array) $this->facts->get('packages', []);
+
+        foreach ((array) ($package ?? []) as $name) {
+            if (isset($packages[$name]) && is_string($packages[$name])) {
+                $evidence[] = $packages[$name];
+            }
+        }
+
+        return (bool) preg_match('/ubuntu|debian|\bdeb\d/i', implode(' ', $evidence));
     }
 
     private function branch(string $version): string

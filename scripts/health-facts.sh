@@ -45,6 +45,7 @@ CPU_SAMPLE_SECONDS="${HEALTH_CPU_SAMPLE_SECONDS:-15}"
 # hourly and cached; the per-minute run just reads the cached number.
 APT_CHECK_INTERVAL="${HEALTH_APT_CHECK_INTERVAL:-3600}"
 SLOW_CACHE="$(dirname "$FACTS_OUT")/slow-facts.cache"
+PKG_CACHE="$(dirname "$FACTS_OUT")/pkg-facts.cache"
 
 # Worst case this script runs ~40s (CPU sample + apt-check) against a 60s cron.
 # Without a lock a slow run produces two concurrent instances fighting over the
@@ -127,6 +128,40 @@ read -r pending_security nginx_version < "$SLOW_CACHE" 2>/dev/null || { pending_
 [[ "$pending_security" =~ ^[0-9]+$ ]] || pending_security="null"
 [ -z "${nginx_version:-}" ] && nginx_version="unknown"
 
+# ─── Installed package versions (hourly, cached) ─────────────────────────
+# Check d2 needs to tell an upstream build from a distro-backported one, and a
+# runtime's SELF-REPORTED version cannot always answer that. MySQL bakes the
+# package suffix into `select version()` ("8.0.46-0ubuntu0.24.04.3"), but Redis
+# reports a bare upstream semver ("7.0.15") even when the installed package is
+# "5:7.0.15-1ubuntu0.24.04.4" — so d2 read Redis as CRIT-past-EOL on a box that
+# is in fact receiving Canonical's backports.
+#
+# The package manager is the only authority on this, and the app is never
+# allowed to ask it: PHP-FPM does not shell out. So root asks here, and the app
+# reads the answer, exactly like every other fact in this file.
+if [ ! -f "$PKG_CACHE" ] || [ "$(( $(date +%s) - $(stat -c %Y "$PKG_CACHE" 2>/dev/null || echo 0) ))" -ge "$APT_CHECK_INTERVAL" ]; then
+    _pkgs=""
+    if command -v dpkg-query >/dev/null 2>&1; then
+        for _p in redis-server mysql-server mysql-server-8.0 mysql-server-8.4 nginx nginx-core; do
+            _pv=$(LC_ALL=C dpkg-query -W -f='${Version}' "$_p" 2>/dev/null) || _pv=""
+            # Quote-strip: these land inside JSON string values.
+            _pv=${_pv//\"/}
+            if [ -n "$_pv" ]; then
+                [ -n "$_pkgs" ] && _pkgs="${_pkgs},"
+                _pkgs="${_pkgs}\"${_p}\":\"${_pv}\""
+            fi
+        done
+    fi
+    printf '{%s}\n' "$_pkgs" > "$PKG_CACHE".tmp && mv -f "$PKG_CACHE".tmp "$PKG_CACHE"
+fi
+packages_json=$(cat "$PKG_CACHE" 2>/dev/null) || packages_json="{}"
+# An empty or truncated cache must not make the whole facts file unparseable,
+# which would blind every host check at once.
+case "$packages_json" in
+    '{'*'}') ;;
+    *) packages_json="{}" ;;
+esac
+
 reboot_required=0
 [ -f /var/run/reboot-required ] && reboot_required=1
 
@@ -191,6 +226,7 @@ cat > "$TMP" <<JSON
   "reboot_required": ${reboot_required},
   "tls_days_remaining": ${tls_days},
   "nginx_version": "${nginx_version}",
+  "packages": ${packages_json},
   "backups": ${backups_json}
 }
 JSON
