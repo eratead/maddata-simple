@@ -45,6 +45,23 @@ class EdgeProbeCheck extends HealthCheck
                 );
             }
 
+            // checked_at was written but never read: if health:probe itself dies,
+            // the marker lingers for its whole TTL and P1 keeps reporting the last
+            // good latency. A stale probe is unknown, not healthy.
+            $checkedAt = $marker['checked_at'] ?? null;
+            $maxAge = (int) config('health.thresholds.probe_marker_age.warn', 300);
+
+            if (is_numeric($checkedAt) && (now()->getTimestamp() - (int) $checkedAt) > $maxAge) {
+                return new HealthCheckResult(
+                    key: 'P1',
+                    label: 'Public HTTPS probe',
+                    status: HealthStatus::STALE,
+                    node: 'edge',
+                    value: 'last probe '.HealthFormat::age(now()->getTimestamp() - (int) $checkedAt).' ago — is health:probe running?',
+                    threshold: 'expects a probe every minute',
+                );
+            }
+
             $failThresholds = $this->thresholds('probe_consec_fails');
             $fails = (int) ($marker['consec_fails'] ?? 0);
             $latency = $marker['latency_ms'] ?? null;

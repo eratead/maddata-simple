@@ -68,20 +68,43 @@ class SendHealthAlert extends Command
 
         $consecutive = (int) ($state['consecutive_non_ok'] ?? 0) + 1;
 
-        // Rule 1 — but rule 2 wins: unreadable state means no suppression.
+        // Rule 1 — but rule 2 wins: state we cannot read OR WRITE means no
+        // suppression. A store that accepts reads and silently drops writes
+        // would otherwise hold this branch forever and silence the alerter
+        // permanently, without ever saying so.
         if ($stateReadable && $consecutive < 2 && ! $this->option('force')) {
-            $this->comment("Non-OK observed once ({$snapshot->overall->value}) — holding one interval to rule out a deploy blip.");
+            if ($this->writeState($snapshot, $state, $consecutive, notified: false)) {
+                $this->comment("Non-OK observed once ({$snapshot->overall->value}) — holding one interval to rule out a deploy blip.");
+
+                return self::SUCCESS;
+            }
+
+            $this->warn('Alert state is not persistable — suppression cannot be trusted, alerting anyway.');
+        }
+
+        $notify = $this->option('force')
+            ? ['text' => 'Manual send.', 'urgent' => true]
+            : $this->reasonToNotify($snapshot, $stateReadable ? $state : null);
+
+        $reason = $notify['text'] ?? null;
+
+        if ($reason === null) {
+            $this->info('Already reported, nothing new — staying quiet.');
             $this->writeState($snapshot, $state, $consecutive, notified: false);
 
             return self::SUCCESS;
         }
 
-        $reason = $this->option('force')
-            ? 'Manual send.'
-            : $this->reasonToNotify($snapshot, $stateReadable ? $state : null);
+        // A floor under the flood vector only. Two checks straddling their
+        // thresholds and alternating produce a fresh "new failing check" on
+        // every run, which would otherwise be an email every five minutes
+        // forever. But an ESCALATION — the system got worse — is exactly what
+        // you want to hear immediately, so it is never delayed.
+        $floor = max(0, (int) config('health.min_notify_interval_minutes', 15)) * 60;
+        $lastSent = (int) ($state['last_sent_at'] ?? 0);
 
-        if ($reason === null) {
-            $this->info('Already reported, nothing new — staying quiet.');
+        if (! ($notify['urgent'] ?? false) && $lastSent > 0 && (now()->getTimestamp() - $lastSent) < $floor) {
+            $this->comment('Within the minimum notify interval — holding "'.$reason.'".');
             $this->writeState($snapshot, $state, $consecutive, notified: false);
 
             return self::SUCCESS;
@@ -119,12 +142,21 @@ class SendHealthAlert extends Command
             ? HealthFormat::age(max(0, now()->getTimestamp() - (int) $state['episode_started_at']))
             : 'an unknown period';
 
-        $this->send(new HealthAlertMail(
+        $sent = $this->send(new HealthAlertMail(
             snapshot: $snapshot,
             reason: "Everything recovered after {$duration}.",
             isRecovery: true,
             episodeStartedAt: $state['episode_started_at'] ?? null,
         ));
+
+        if (! $sent) {
+            // Rule 4 applies to recovery too: clearing the episode here would
+            // lose the notice permanently, leaving the operator believing the
+            // system is still broken.
+            $this->warn('Recovery notice could not be sent — keeping the episode open to retry.');
+
+            return self::SUCCESS;
+        }
 
         $this->clearState();
         $this->info('Recovery notice sent.');
@@ -134,30 +166,41 @@ class SendHealthAlert extends Command
 
     /**
      * Why this observation deserves an email — or null for "you already know".
+     *
+     * `urgent` marks the reasons that bypass the minimum-interval floor: the
+     * first notice of an episode, and any increase in severity.
+     *
+     * @return array{text: string, urgent: bool}|null
      */
-    private function reasonToNotify(HealthSnapshot $snapshot, ?array $state): ?string
+    private function reasonToNotify(HealthSnapshot $snapshot, ?array $state): ?array
     {
         if ($state === null || ($state['notified_at'] ?? null) === null) {
-            return 'New problem detected.';
+            return ['text' => 'New problem detected.', 'urgent' => true];
         }
 
         $notifiedStatus = HealthStatus::tryFrom((string) ($state['notified_status'] ?? '')) ?? HealthStatus::OK;
 
         if ($snapshot->overall->severity() > $notifiedStatus->severity()) {
-            return "Escalated from {$notifiedStatus->value} to {$snapshot->overall->value}.";
+            return [
+                'text' => "Escalated from {$notifiedStatus->value} to {$snapshot->overall->value}.",
+                'urgent' => true,
+            ];
         }
 
         $newKeys = $this->newFailingKeys($snapshot, (string) ($state['notified_signature'] ?? ''));
 
         if ($newKeys !== []) {
-            return 'New failing check'.(count($newKeys) === 1 ? '' : 's').': '.implode(', ', $newKeys).'.';
+            return [
+                'text' => 'New failing check'.(count($newKeys) === 1 ? '' : 's').': '.implode(', ', $newKeys).'.',
+                'urgent' => false,   // the alternating-checks flood vector
+            ];
         }
 
         $since = now()->getTimestamp() - (int) $state['notified_at'];
         $interval = max(1, (int) config('health.realert_hours', 6)) * 3600;
 
         if ($since >= $interval) {
-            return 'Still failing after '.HealthFormat::age($since).'.';
+            return ['text' => 'Still failing after '.HealthFormat::age($since).'.', 'urgent' => false];
         }
 
         return null;
@@ -224,10 +267,12 @@ class SendHealthAlert extends Command
         }
     }
 
-    private function writeState(HealthSnapshot $snapshot, ?array $previous, int $consecutive, bool $notified): void
+    /** @return bool whether the state was actually persisted */
+    private function writeState(HealthSnapshot $snapshot, ?array $previous, int $consecutive, bool $notified): bool
     {
         try {
             HealthMarkers::store()->forever(HealthMarkers::ALERT_STATE, [
+                'last_sent_at' => $notified ? now()->getTimestamp() : ($previous['last_sent_at'] ?? null),
                 'signature' => $snapshot->signature(),
                 'status' => $snapshot->overall->value,
                 'consecutive_non_ok' => $consecutive,
@@ -236,8 +281,12 @@ class SendHealthAlert extends Command
                 'notified_signature' => $notified ? $snapshot->signature() : ($previous['notified_signature'] ?? null),
                 'notified_status' => $notified ? $snapshot->overall->value : ($previous['notified_status'] ?? null),
             ]);
+
+            return true;
         } catch (Throwable $e) {
             Log::warning('Health alert state could not be written', ['exception' => $e::class]);
+
+            return false;
         }
     }
 

@@ -48,6 +48,11 @@ beforeEach(function () {
 
     HealthMarkers::store()->forget(HealthMarkers::ALERT_STATE);
 
+    // Pin uptime well past the boot-grace window. Without this these tests read
+    // the real /proc/uptime, so a CI container that has been up for under three
+    // minutes would suppress every alert and fail the whole file.
+    fakeUptime(86400);
+
     Mail::fake();
 });
 
@@ -117,25 +122,33 @@ it('nags again once the re-alert window has passed', function () {
     Mail::assertSent(HealthAlertMail::class, fn ($mail) => str_starts_with($mail->reason, 'Still failing after'));
 });
 
-it('alerts immediately when a new check starts failing', function () {
+it('holds a same-severity new failing check until the notify floor passes', function () {
     AlertableCheck::$status = HealthStatus::WARN;
     runAlert();
     runAlert();
     Mail::assertSentCount(1);
 
+    // Two checks straddling their thresholds and alternating would otherwise
+    // produce an email every five minutes forever.
     AlertableCheck::$extra = ['B9' => HealthStatus::WARN];
+    runAlert();
+    Mail::assertSentCount(1);
+
+    test()->travel(16)->minutes();
     runAlert();
 
     Mail::assertSentCount(2);
     Mail::assertSent(HealthAlertMail::class, fn ($mail) => $mail->reason === 'New failing check: B9.');
 });
 
-it('alerts on escalation from warn to crit', function () {
+it('never delays an escalation behind the notify floor', function () {
     AlertableCheck::$status = HealthStatus::WARN;
     runAlert();
     runAlert();
     Mail::assertSentCount(1);
 
+    // The system got worse. That is the one thing you must hear immediately,
+    // floor or no floor.
     AlertableCheck::$status = HealthStatus::CRIT;
     runAlert();
 

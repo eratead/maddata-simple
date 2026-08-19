@@ -29,6 +29,13 @@ return [
     /* How long a problem stays quiet before it nags again. */
     'realert_hours' => (int) env('HEALTH_REALERT_HOURS', 6),
 
+    /* Hard floor between any two alerts, whatever the reason. */
+    'min_notify_interval_minutes' => (int) env('HEALTH_MIN_NOTIFY_INTERVAL_MINUTES', 15),
+
+    /* How long a backup directory newer than the marker may be assumed still
+       in flight before it counts as a failed leftover (check B2). */
+    'backup_in_flight_grace_seconds' => (int) env('HEALTH_BACKUP_IN_FLIGHT_GRACE', 3600),
+
     /*
     | The check registry. Order here is the order results appear in the CLI
     | table; the map groups them by node instead. Phase 4 appends to this list.
@@ -87,7 +94,13 @@ return [
     | Snapshot caching. The scheduler rebuilds every minute off-path, so a
     | real request should never observe a miss; the TTL is the backstop.
     */
-    'snapshot_ttl' => (int) env('HEALTH_SNAPSHOT_TTL', 30),
+    /*
+    | Must be comfortably LONGER than the 60s rebuild cadence that fills it. At
+    | 30s it expired for half of every minute, so the first request each minute
+    | paid for a full inline rebuild. Freshness is reported by `generated_at`
+    | and policed by checks H1 and S1 — the TTL is not doing that job.
+    */
+    'snapshot_ttl' => (int) env('HEALTH_SNAPSHOT_TTL', 300),
     'snapshot_lock_seconds' => (int) env('HEALTH_SNAPSHOT_LOCK_SECONDS', 20),
 
     /*
@@ -137,6 +150,9 @@ return [
         // P1 — public probe. consec_fails is what turns it red, not one blip.
         'probe_latency_ms' => ['warn' => 800],
         'probe_consec_fails' => ['warn' => 1, 'crit' => 2],
+
+        /* P1 marker staleness — a probe that stopped running is unknown, not healthy. */
+        'probe_marker_age' => ['warn' => 300],
 
         // P2 — TLS certificate days remaining.
         'tls_days' => ['warn' => 21, 'crit' => 7],

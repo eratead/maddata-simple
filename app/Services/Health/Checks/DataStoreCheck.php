@@ -12,8 +12,11 @@ use Illuminate\Support\Facades\Redis;
  * D1-D3 — the data plane.
  *
  * D1 runs on the dedicated short-timeout connection (config/database.php
- * 'mysql_health'). Without that cap, a MySQL outage would hang every admin page
- * for the driver's default timeout instead of degrading the status pill.
+ * 'mysql_health'). Note what that actually buys: PDO::ATTR_TIMEOUT maps to
+ * MYSQL_OPT_CONNECT_TIMEOUT and bounds the CONNECT only. A MySQL that accepts
+ * connections but has stopped answering — lock storm, disk full, swap death —
+ * would still hang the query, which is the likelier outage. Hence the optimizer
+ * hint below, which bounds execution server-side.
  */
 class DataStoreCheck extends HealthCheck
 {
@@ -34,7 +37,8 @@ class DataStoreCheck extends HealthCheck
             $thresholds = $this->thresholds('mysql_latency_ms');
 
             $start = microtime(true);
-            DB::connection($connection)->select('select 1');
+            // MAX_EXECUTION_TIME is milliseconds and applies to SELECTs only.
+            DB::connection($connection)->select('select /*+ MAX_EXECUTION_TIME(1500) */ 1');
             $ms = (microtime(true) - $start) * 1000;
 
             return new HealthCheckResult(

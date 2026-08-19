@@ -20,8 +20,15 @@
 
 set -uo pipefail
 
+# awk's %.1f honours LC_NUMERIC: under a comma-decimal locale it emits "85,3",
+# which would make this file invalid JSON and blind EVERY host check at once.
+# Cron runs under C, but the runbook tells operators to run this by hand, and
+# an interactive session carries their locale.
+export LC_ALL=C
+
 # ─── Configuration ──────────────────────────────────────────────────────
 FACTS_OUT="${HEALTH_FACTS_PATH:-/run/maddata/host-facts.json}"
+mkdir -p "$(dirname "$FACTS_OUT")" 2>/dev/null || true
 BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/maddata}"
 TLS_CERT="${HEALTH_TLS_CERT:-/etc/letsencrypt/live/ad.maddata.media/fullchain.pem}"
 UNITS="${HEALTH_UNITS:-nginx php8.4-fpm mysql redis-server cron maddata-queue}"
@@ -32,6 +39,24 @@ UNITS="${HEALTH_UNITS:-nginx php8.4-fpm mysql redis-server cron maddata-queue}"
 # `schedule:run` boots PHP and briefly saturates a single-core box — sampling
 # there measures the monitoring's own overhead. See docs/runbooks/health-monitor.md.
 CPU_SAMPLE_SECONDS="${HEALTH_CPU_SAMPLE_SECONDS:-15}"
+
+# apt-check parses the whole APT package cache (~40-80MB) and costs 0.3-1.8s of
+# CPU. Security-update counts do not change minute to minute, so it is sampled
+# hourly and cached; the per-minute run just reads the cached number.
+APT_CHECK_INTERVAL="${HEALTH_APT_CHECK_INTERVAL:-3600}"
+SLOW_CACHE="$(dirname "$FACTS_OUT")/slow-facts.cache"
+
+# Worst case this script runs ~40s (CPU sample + apt-check) against a 60s cron.
+# Without a lock a slow run produces two concurrent instances fighting over the
+# same temp files.
+# Degrade rather than disappear: a host without flock keeps the previous
+# (unlocked) behaviour. Exiting here would mean no facts at all, which is a
+# far worse failure than an occasional overlap.
+if command -v flock >/dev/null 2>&1; then
+    if exec 9>"$(dirname "$FACTS_OUT")/.health-facts.lock" 2>/dev/null; then
+        flock -n 9 || { echo "another health-facts run is in progress" >&2; exit 0; }
+    fi
+fi
 
 mkdir -p "$(dirname "$FACTS_OUT")" 2>/dev/null || true
 
@@ -66,13 +91,22 @@ for unit in $UNITS; do
     units_json="${units_json}\"${unit}\":\"${state}\""
 done
 
-# ─── Pending security updates + reboot flag ─────────────────────────────
-pending_security=0
-if [ -x /usr/lib/update-notifier/apt-check ]; then
-    # apt-check prints "total;security" on stderr
-    pending_security=$(/usr/lib/update-notifier/apt-check 2>&1 | cut -d';' -f2)
-    [[ "$pending_security" =~ ^[0-9]+$ ]] || pending_security=0
+# ─── Pending security updates + nginx version (hourly, cached) ──────────
+# Both are expensive relative to everything else here and neither changes on a
+# per-minute timescale. Recomputed only when the cache has aged out.
+if [ ! -f "$SLOW_CACHE" ] || [ "$(( $(date +%s) - $(stat -c %Y "$SLOW_CACHE" 2>/dev/null || echo 0) ))" -ge "$APT_CHECK_INTERVAL" ]; then
+    _sec=0
+    if [ -x /usr/lib/update-notifier/apt-check ]; then
+        _sec=$(/usr/lib/update-notifier/apt-check 2>&1 | cut -d';' -f2)
+        [[ "$_sec" =~ ^[0-9]+$ ]] || _sec=0
+    fi
+    _ngx=$(nginx -v 2>&1 | sed -n 's|.*nginx/\([0-9.]*\).*|\1|p')
+    [ -z "$_ngx" ] && _ngx="unknown"
+    printf '%s %s\n' "$_sec" "$_ngx" > "$SLOW_CACHE".tmp && mv -f "$SLOW_CACHE".tmp "$SLOW_CACHE"
 fi
+read -r pending_security nginx_version < "$SLOW_CACHE" 2>/dev/null || { pending_security=0; nginx_version="unknown"; }
+[[ "$pending_security" =~ ^[0-9]+$ ]] || pending_security=0
+[ -z "${nginx_version:-}" ] && nginx_version="unknown"
 
 reboot_required=0
 [ -f /var/run/reboot-required ] && reboot_required=1
@@ -105,10 +139,16 @@ if [ -d "$BACKUP_ROOT" ]; then
     [ -n "$entries" ] && backups_json="[${entries}]"
 fi
 
-# ─── Versions ───────────────────────────────────────────────────────────
-nginx_version=$(nginx -v 2>&1 | sed -n 's|.*nginx/\([0-9.]*\).*|\1|p')
-[ -z "$nginx_version" ] && nginx_version="unknown"
+# ─── OS name ────────────────────────────────────────────────────────────
 os_name=$( (. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") || echo "unknown")
+
+# ─── Numeric guard ──────────────────────────────────────────────────────
+# These four are interpolated into JSON *number* positions. Anything
+# non-numeric makes the whole file unparseable, which blinds H1-H6, P2 and B2
+# simultaneously — the single most load-bearing failure mode in the monitor.
+num() { [[ "${1:-}" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] && printf '%s' "$1" || printf 'null'; }
+cpu_pct=$(num "$cpu_pct"); mem_pct=$(num "$mem_pct")
+disk_pct=$(num "$disk_pct"); tls_days=$(num "$tls_days")
 
 # ─── Atomic write ───────────────────────────────────────────────────────
 # Write to a temp file in the SAME directory then mv, so a reader can never
@@ -132,5 +172,9 @@ cat > "$TMP" <<JSON
 }
 JSON
 
-chmod 644 "$TMP"
+# 640 root:www-data — the file names the OS, nginx version and count of
+# unapplied security updates, which is a "how exploitable is this box" summary
+# no other local user needs.
+chgrp www-data "$TMP" 2>/dev/null || true
+chmod 640 "$TMP"
 mv -f "$TMP" "$FACTS_OUT"

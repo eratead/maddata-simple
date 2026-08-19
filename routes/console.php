@@ -6,6 +6,15 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
+/*
+| The scheduler's own overlap mutexes must NOT live in the store the app uses.
+| On production CACHE_STORE is unset, so it resolves to `database`: a MySQL
+| outage would make CacheEventMutex::create() throw, ScheduleRunCommand would
+| skip the event, and health:alert would go silent about the very outage it
+| exists to report. A file mutex has no such dependency.
+*/
+Schedule::useCache(env('SCHEDULE_CACHE_STORE', 'file'));
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -44,6 +53,14 @@ Schedule::command('digest:send-activity')
 |
 */
 
+// Check S1 first, deliberately: these tasks share one process, so whichever
+// is registered last is the first casualty of an OOM. The scheduler heartbeat
+// is the cheapest and the most load-bearing — if cron stops reaching Laravel,
+// nothing else here runs at all.
+Schedule::call(fn () => HealthMarkers::record(HealthMarkers::SCHEDULER_BEAT))
+    ->everyMinute()
+    ->name('health-scheduler-heartbeat');
+
 // These run IN-PROCESS via Schedule::call rather than Schedule::command.
 // Schedule::command() spawns a fresh `php artisan` process per task, and
 // production is a single-core droplet: three extra PHP boots a minute were
@@ -54,13 +71,13 @@ Schedule::command('digest:send-activity')
 Schedule::call(fn () => Artisan::call('health:refresh-snapshot'))
     ->everyMinute()
     ->name('health-refresh-snapshot')
-    ->withoutOverlapping();
+    ->withoutOverlapping(5);   // minutes — the default is 1440, so one SIGKILL would wedge this for a day
 
 // Check P1 — the stack as an outside user sees it.
 Schedule::call(fn () => Artisan::call('health:probe'))
     ->everyMinute()
     ->name('health-probe')
-    ->withoutOverlapping();
+    ->withoutOverlapping(5);
 
 // Check Q3 — proof the worker CONSUMES, not merely that systemd says "active".
 Schedule::job(new QueueHeartbeatJob)->everyMinute();
@@ -71,9 +88,8 @@ Schedule::job(new QueueHeartbeatJob)->everyMinute();
 Schedule::call(fn () => Artisan::call('health:alert'))
     ->everyFiveMinutes()
     ->name('health-alert')
-    ->withoutOverlapping();
+    ->withoutOverlapping(10);
 
-// Check S1 — proof cron reaches Laravel at all.
-Schedule::call(fn () => HealthMarkers::record(HealthMarkers::SCHEDULER_BEAT))
-    ->everyMinute()
-    ->name('health-scheduler-heartbeat');
+// Keeps check Q2's 24h window cheap: without pruning, failed_jobs grows without
+// bound and the check slows down in proportion to how sick the queue is.
+Schedule::command('queue:prune-failed --hours=168')->weekly();

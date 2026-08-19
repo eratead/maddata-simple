@@ -20,13 +20,25 @@ class HostFacts
 
     private bool $loaded = false;
 
+    private ?int $loadedAt = null;
+
+    private ?int $uptime = null;
+
+    /**
+     * Memo lives for one second: long enough that a single snapshot build reads
+     * the file once, short enough that a long-lived process (a queue worker, or
+     * Phase 3's header pill) can never serve facts from minutes ago. The
+     * invalidation duty used to sit in SystemHealthService, which made it easy
+     * to add a consumer and silently get stale data.
+     */
     public function read(): ?array
     {
-        if ($this->loaded) {
+        if ($this->loaded && $this->loadedAt === now()->getTimestamp()) {
             return $this->facts;
         }
 
         $this->loaded = true;
+        $this->loadedAt = now()->getTimestamp();
         $this->facts = $this->load();
 
         return $this->facts;
@@ -49,6 +61,10 @@ class HostFacts
      */
     public function bootedSecondsAgo(): ?int
     {
+        if ($this->uptime !== null) {
+            return $this->uptime;
+        }
+
         try {
             $path = config('health.uptime_path');
 
@@ -62,7 +78,7 @@ class HostFacts
                 return null;
             }
 
-            return (int) (float) $m[1];
+            return $this->uptime = (int) (float) $m[1];
         } catch (Throwable) {
             return null;
         }
@@ -85,7 +101,9 @@ class HostFacts
     public function flush(): void
     {
         $this->loaded = false;
+        $this->loadedAt = null;
         $this->facts = null;
+        $this->uptime = null;
     }
 
     private function load(): ?array

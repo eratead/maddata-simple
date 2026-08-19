@@ -38,7 +38,8 @@ it('emits nodes in config order and omits nodes with no checks', function () {
         result('B', HealthStatus::OK, 'edge'),
     ]);
 
-    // config('health.nodes') order is edge, app, workers, data, host, backups
+    // asserted against config('health.nodes') order, whatever it is — the
+    // point is that node order follows config and skips empty nodes
     expect(array_column($snapshot->nodes, 'key'))->toBe(['edge', 'backups']);
 });
 

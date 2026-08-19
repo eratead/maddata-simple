@@ -220,13 +220,18 @@ class BackupCheck extends HealthCheck
     }
 
     /**
-     * Drop any backup directory newer than the last completed backup.
+     * Drop any backup directory that is still being written.
      *
-     * The facts cron stats the backup directory every minute, including while
-     * a backup is being written — so during the nightly run the newest entry is
-     * a half-finished directory. Comparing that against the median reported a
-     * CRIT "the dump shrank" every single night. The marker is written last, so
-     * anything newer than it is still in flight.
+     * The facts cron stats the backup directory every minute, including
+     * mid-write, so during the nightly run the newest entry is a half-finished
+     * directory — which reported a CRIT "the dump shrank" every night.
+     *
+     * But "newer than the marker" alone is too broad: a backup that FAILS
+     * partway leaves a partial directory on disk with the previous night's
+     * marker still in place, and suppressing that forever would hide exactly
+     * the truncation B2 exists to catch. So a newer directory is treated as
+     * in-flight only while it is younger than the grace window; past that it
+     * is a failed leftover and counts.
      */
     private function completedOnly(array $backups, ?array $marker): array
     {
@@ -235,11 +240,14 @@ class BackupCheck extends HealthCheck
         }
 
         $completedAt = (int) $marker['ts'];
+        $graceEndsAt = now()->getTimestamp() - (int) config('health.backup_in_flight_grace_seconds', 3600);
 
-        return array_values(array_filter(
-            $backups,
-            fn ($backup) => (int) ($backup['ts'] ?? 0) <= $completedAt
-        ));
+        return array_values(array_filter($backups, function ($backup) use ($completedAt, $graceEndsAt) {
+            $ts = (int) ($backup['ts'] ?? 0);
+
+            return $ts <= $completedAt      // already accounted for by the marker
+                || $ts <= $graceEndsAt;     // too old to still be in flight — a failed leftover
+        }));
     }
 
     /** Newest first, as the facts script writes them. */
