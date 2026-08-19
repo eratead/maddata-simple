@@ -39,7 +39,8 @@ Rules:
 2. **Staging first, always** — deploy, run the **full test suite** on the upgraded runtime, then smoke the real app before production goes anywhere near it.
 3. **Restart what holds the runtime in memory.** `php8.4-fpm` and the queue worker both keep the old binary and extensions loaded until restarted; the app can look fine while half of it still runs the old PHP.
 4. **Check the extension list, not just `php -v`.** Laravel fails on a *missing extension* far more often than on a language change — compare `php -m` before and after.
-5. **Staging is not a perfect proxy here.** Staging runs Apache + mod_php on Ubuntu 22.04; production runs Nginx + PHP-FPM on 24.04, from a different starting version. Staging proves *the application code runs on the new PHP*; it does not prove the FPM restart path. Know which risk you have actually retired.
+5. **Check that staging can actually run the suite before relying on it.** Staging lacked `php8.4-sqlite3`, so the SQLite-in-memory test suite failed 705 tests with "could not find driver" — nothing to do with the upgrade. A staging box that cannot run the tests provides no validation, only the appearance of it.
+6. **Staging is not a perfect proxy here.** Staging runs Apache + mod_php on Ubuntu 22.04; production runs Nginx + PHP-FPM on 24.04, from a different starting version. Staging proves *the application code runs on the new PHP*; it does not prove the FPM restart path. Know which risk you have actually retired.
 
 ## `apt-check`'s security count is not actionable on its own
 
