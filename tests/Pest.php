@@ -95,3 +95,16 @@ function checksByKey(App\Services\Health\Checks\HealthCheck $check): array
 
     return $results;
 }
+
+/** Fake /proc/uptime so boot-grace behaviour is testable off Linux. */
+function fakeUptime(?int $seconds): void
+{
+    $path = sys_get_temp_dir().'/maddata-uptime-'.getmypid();
+
+    $seconds === null
+        ? @unlink($path)
+        : file_put_contents($path, $seconds.'.00 '.($seconds * 2).'.00');
+
+    config(['health.uptime_path' => $path]);
+    app(App\Services\Health\HostFacts::class)->flush();
+}

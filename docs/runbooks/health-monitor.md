@@ -159,6 +159,7 @@ whether this observation deserves an email.
 | One of several problems clears | Silent — a partial recovery is not news. |
 | Everything goes green | **Always** sends a recovery notice, with how long the episode lasted. A silent recovery is indistinguishable from a dead alerter. |
 | Its own state is unreadable | Skips suppression and alerts anyway. A cache outage is exactly the correlated failure it exists to report. |
+| The host booted moments ago | **Silent** for `HEALTH_BOOT_GRACE_SECONDS` (default 180). A reboot wipes the tmpfs facts file, so every host check briefly has no data and the system is indistinguishable from an outage. `--force` still sends. |
 | The mailer throws | Logs, does not crash, does not record the notification — the next tick retries. |
 
 **Configuration** (production `.env`):
@@ -190,7 +191,15 @@ systemctl start <queue unit>
 
 **Not alerting?** In order: is `HEALTH_ALERT_RECIPIENTS` set; did `health:alert`
 run (check S1, the scheduler heartbeat); has the problem been observed twice; is
-it inside the re-alert window (`--force` bypasses all of it).
+the host inside its post-boot grace window; is it inside the re-alert window
+(`--force` bypasses all of it).
+
+### Rebooting a host
+
+Nothing to do. `/run/maddata` is recreated by the facts cron within about a
+minute, markers live in the database cache and survive, the backup marker is on
+persistent storage, and both H1 and the alerter know to hold their judgement
+while the host is still coming up. Verified on staging and production.
 
 ### What this cannot tell you
 

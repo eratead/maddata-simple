@@ -7,6 +7,7 @@ use App\Enums\HealthStatus;
 use App\Mail\HealthAlertMail;
 use App\Services\Health\HealthFormat;
 use App\Services\Health\HealthMarkers;
+use App\Services\Health\HostFacts;
 use App\Services\Health\SystemHealthService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -43,8 +44,20 @@ class SendHealthAlert extends Command
 
     protected $description = 'Email operators when system health changes for the worse, or recovers.';
 
-    public function handle(SystemHealthService $health): int
+    public function handle(SystemHealthService $health, HostFacts $facts): int
     {
+        // A reboot wipes the tmpfs facts file, so for the first minute or two
+        // every host-derived check reports no data and the system is
+        // indistinguishable from an outage. Suppression by consecutive
+        // observations does not help: an escalation inside an existing episode
+        // alerts immediately, which is exactly what happened in production.
+        // Hold until the host has had a chance to describe itself.
+        if (! $this->option('force') && $facts->withinBootGrace()) {
+            $this->comment('Host booted '.HealthFormat::age((int) $facts->bootedSecondsAgo()).' ago — holding alerts until the first facts write.');
+
+            return self::SUCCESS;
+        }
+
         $snapshot = $health->snapshot();
 
         [$state, $stateReadable] = $this->readState();

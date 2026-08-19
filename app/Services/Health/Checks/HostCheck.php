@@ -36,6 +36,20 @@ class HostCheck extends HealthCheck
         return $this->guard('H1', 'Host facts freshness', 'host', function () {
             $ts = $this->facts->get('ts');
 
+            // A host that booted a minute ago has no facts YET. That is not
+            // the same claim as "the cron is dead", and reporting it as CRIT
+            // turns every reboot into a false outage.
+            if ($ts === null && $this->facts->withinBootGrace()) {
+                return new HealthCheckResult(
+                    key: 'H1',
+                    label: 'Host facts freshness',
+                    status: HealthStatus::STALE,
+                    node: 'host',
+                    value: 'host booted '.HealthFormat::age((int) $this->facts->bootedSecondsAgo()).' ago — awaiting first write',
+                    threshold: $this->describeAgeThreshold($this->thresholds('facts_age')),
+                );
+            }
+
             return $this->ageResult(
                 key: 'H1',
                 label: 'Host facts freshness',

@@ -40,6 +40,42 @@ class HostFacts
         return is_numeric($ts) ? max(0, now()->getTimestamp() - (int) $ts) : null;
     }
 
+    /**
+     * Seconds since the host booted, or null when it cannot be determined
+     * (non-Linux, or /proc unavailable).
+     *
+     * Read straight from /proc/uptime: a file read, consistent with the rest
+     * of the zero-grant design — nothing here executes a command.
+     */
+    public function bootedSecondsAgo(): ?int
+    {
+        try {
+            $path = config('health.uptime_path');
+
+            if (! is_string($path) || ! is_readable($path)) {
+                return null;
+            }
+
+            $raw = file_get_contents($path);
+
+            if ($raw === false || ! preg_match('/^\\s*([0-9.]+)/', $raw, $m)) {
+                return null;
+            }
+
+            return (int) (float) $m[1];
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /** True while the host is still within the post-boot grace window. */
+    public function withinBootGrace(): bool
+    {
+        $uptime = $this->bootedSecondsAgo();
+
+        return $uptime !== null && $uptime < (int) config('health.boot_grace_seconds', 180);
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->read()[$key] ?? $default;

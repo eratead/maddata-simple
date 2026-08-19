@@ -317,3 +317,34 @@ it('renders the recovery email', function () {
         ->toContain('Everything recovered after 2h.')
         ->toContain('The problem lasted 2h');
 });
+
+it('holds alerts while the host is still booting', function () {
+    fakeUptime(30);
+    AlertableCheck::$status = HealthStatus::CRIT;
+
+    runAlert();
+    runAlert();
+
+    // Consecutive-observation suppression does not cover this: at reboot an
+    // existing episode escalates, and escalations alert immediately. That is
+    // exactly how production sent a false outage alert after a routine reboot.
+    Mail::assertNothingSent();
+});
+
+it('resumes alerting once the boot grace window closes', function () {
+    fakeUptime(3600);
+    AlertableCheck::$status = HealthStatus::CRIT;
+
+    runAlert();
+    runAlert();
+
+    Mail::assertSent(HealthAlertMail::class);
+});
+
+it('still sends with --force during boot grace', function () {
+    fakeUptime(10);
+
+    runAlert(['--force' => true]);
+
+    Mail::assertSent(HealthAlertMail::class);
+});

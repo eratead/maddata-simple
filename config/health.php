@@ -66,6 +66,16 @@ return [
     'marker_store' => env('HEALTH_MARKER_STORE'),
 
     /*
+    | Boot grace. For the first minute or two after a restart the facts cron
+    | has not run yet, so every host-derived check has no data and the system
+    | looks exactly like an outage. Read from /proc/uptime — a plain file read,
+    | no shell. Checks stay honest ("recently booted"), and alerting holds its
+    | tongue until the window closes.
+    */
+    'uptime_path' => env('HEALTH_UPTIME_PATH', '/proc/uptime'),
+    'boot_grace_seconds' => (int) env('HEALTH_BOOT_GRACE_SECONDS', 180),
+
+    /*
     | Connections the data-store checks probe. 'mysql_health' is the
     | short-timeout clone defined in config/database.php; tests point these at
     | whatever the test suite actually runs on.
