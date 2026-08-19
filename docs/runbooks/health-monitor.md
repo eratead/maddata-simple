@@ -118,8 +118,17 @@ seed it once at deploy time so the monitor starts green:
 
 ```bash
 /var/www/maddata/scripts/backup-production.sh
-cat /run/maddata/backup-last.json
+cat /var/backups/maddata/backup-last.json
+
+# the marker must be readable by www-data — the scheduler builds the snapshot
+# as that user, and a root shell will NOT show you what it sees
+sudo -u www-data php artisan health:check
 ```
+
+**Always verify as `www-data`, not as root.** The scheduler, PHP-FPM and the
+alerter all run as `www-data`; checks that touch the filesystem can legitimately
+give a different answer to root, and root's answer is the one that does not
+matter.
 
 ### 4. Record the last restore drill
 

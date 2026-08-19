@@ -30,6 +30,37 @@ class BackupCheck extends HealthCheck
         $marker = $this->marker();
         $backups = $this->backupsFromFacts();
 
+        // "I cannot read the marker" and "the marker is not there" are
+        // different facts, and collapsing them cost a live false OUTAGE: the
+        // marker sat inside a 700 root directory, so the scheduler (www-data)
+        // reported CRIT while a root shell reported OK on the same box.
+        if ($marker === null && $this->markerExistsButUnreadable()) {
+            return [
+                new HealthCheckResult(
+                    key: 'B1',
+                    label: 'Local backup age',
+                    status: HealthStatus::STALE,
+                    node: 'backups',
+                    value: 'marker unreadable by '.(function_exists('posix_getpwuid') && function_exists('posix_geteuid')
+                        ? (posix_getpwuid(posix_geteuid())['name'] ?? 'this user')
+                        : 'this user').' — check directory permissions',
+                    threshold: 'needs traverse+read on '.dirname((string) config('health.backup_marker_path')),
+                    link: config('health.links.backups'),
+                ),
+                $this->sizeSanity($backups, null),
+                new HealthCheckResult(
+                    key: 'B3',
+                    label: 'Off-site backup',
+                    status: HealthStatus::STALE,
+                    node: 'backups',
+                    value: 'marker unreadable',
+                    threshold: 'needs traverse+read on '.dirname((string) config('health.backup_marker_path')),
+                    link: config('health.links.backups'),
+                ),
+                $this->restoreDrill(),
+            ];
+        }
+
         return [
             $this->localAge($marker, $backups),
             $this->sizeSanity($backups, $marker),
@@ -217,6 +248,21 @@ class BackupCheck extends HealthCheck
         $backups = $this->facts->get('backups');
 
         return is_array($backups) ? array_values($backups) : [];
+    }
+
+    /**
+     * The marker file is present but this process cannot read it — almost
+     * always a directory-permission problem rather than a backup problem.
+     */
+    private function markerExistsButUnreadable(): bool
+    {
+        try {
+            $path = config('health.backup_marker_path');
+
+            return is_string($path) && file_exists($path) && ! is_readable($path);
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private function marker(): ?array

@@ -36,9 +36,17 @@ fi
 
 if [ ! -d "$BACKUP_ROOT" ]; then
     echo "ERROR: BACKUP_ROOT not found: $BACKUP_ROOT" >&2
-    echo "Create it with: mkdir -p $BACKUP_ROOT && chmod 700 $BACKUP_ROOT" >&2
+    echo "Create it with: mkdir -p $BACKUP_ROOT && chown root:www-data $BACKUP_ROOT && chmod 750 $BACKUP_ROOT" >&2
     exit 1
 fi
+
+# The health monitor's marker lives in here and is read by PHP-FPM as www-data.
+# 750 root:www-data gives www-data traverse+read on the marker while each
+# backup SUBDIRECTORY stays 700 root:root — the archives themselves, including
+# the plaintext .env, remain unreadable to the web user. Re-applied every run so
+# a hand-created directory cannot silently break check B1.
+chgrp www-data "$BACKUP_ROOT" 2>/dev/null || true
+chmod 750 "$BACKUP_ROOT" 2>/dev/null || true
 
 # ─── Read DB credentials from .env ──────────────────────────────────────
 get_env() {

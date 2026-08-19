@@ -169,3 +169,35 @@ it('keeps the backup marker off tmpfs so it survives a reboot', function () {
         ->and($path)->not->toStartWith('/tmp/')
         ->and($path)->not->toStartWith('/dev/shm/');
 });
+
+it('reports an unreadable marker as stale, not as a missing backup', function () {
+    // The live production bug: the marker sat inside a 700 root directory, so
+    // the scheduler (www-data) read CRIT "marker missing" while a root shell
+    // read OK on the same box — and the alerter, running as www-data, fired.
+    // "I cannot read it" and "it is not there" are different facts.
+    $path = fakeBackupMarker(['ts' => now()->getTimestamp(), 'remote_ok' => true]);
+    fakeHostFacts(['ts' => now()->getTimestamp(), 'backups' => [['ts' => now()->getTimestamp(), 'bytes' => 1_000_000]]]);
+
+    chmod($path, 0000);
+
+    // root ignores permission bits, so this assertion is only meaningful as a
+    // non-root user; skip rather than assert something untrue.
+    if (is_readable($path)) {
+        chmod($path, 0644);
+        $this->markTestSkipped('running as root — permission bits are not enforced');
+    }
+
+    $checks = checksByKey(app(BackupCheck::class));
+    chmod($path, 0644);
+
+    expect($checks['B1']->status)->toBe(HealthStatus::STALE)
+        ->and($checks['B1']->value)->toContain('unreadable')
+        ->and($checks['B3']->status)->toBe(HealthStatus::STALE);
+});
+
+it('still reports a genuinely absent marker as critical', function () {
+    fakeBackupMarker(null);
+    fakeHostFacts(['ts' => now()->getTimestamp(), 'backups' => [['ts' => now()->getTimestamp(), 'bytes' => 1_000_000]]]);
+
+    expect(checksByKey(app(BackupCheck::class))['B1']->status)->toBe(HealthStatus::CRIT);
+});
