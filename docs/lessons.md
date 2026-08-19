@@ -58,3 +58,16 @@ for p in c.get_changes():
 ```
 
 Note also that Ubuntu publishes security fixes to `-updates` as well as `-security`, so the absence of a `-security` tag in `apt list --upgradable` does not prove the absence of security content — check the candidate's origins.
+
+## Verify as the UID that runs the code, not as root
+
+**Root ignores permission bits, so a root shell is the one user who cannot tell you whether a permission problem exists.** Recorded 2026-08-19, after an entire day of "25 of 26 checks green" turned out to be measured over SSH as root while `www-data` — which runs the scheduler, PHP-FPM and the alerter — saw a full OUTAGE and sent a false alarm.
+
+The mechanism: the health monitor's backup marker was moved into `/var/backups/maddata`, a directory the backup script prescribes as `700 root:root`. POSIX requires `+x` on every path component, so `www-data` could not traverse it; `is_readable()` returned false and the check reported `CRIT "marker missing"`. Root read the same file without trouble.
+
+Rules:
+
+1. **Any check that touches the filesystem must be verified as the service user**: `sudo -u www-data php artisan ...`. This applies to health checks, storage paths, cache paths, log writes and uploaded files.
+2. **A monitor whose answer depends on who asks is worse than no monitor**, because the operator's convenient vantage point (a root SSH session) is systematically the wrong one, and the wrong answer is the reassuring one.
+3. **Distinguish "cannot read" from "not there".** They are different facts with different fixes, and collapsing them turns a permission bug into a phantom data-loss alarm.
+4. **Enforce the permission in the script that depends on it**, not by hand — a hand-applied `chmod` is silently lost the next time the directory is recreated.
