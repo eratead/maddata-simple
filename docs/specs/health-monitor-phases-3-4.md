@@ -270,6 +270,18 @@ distinguish two states, verify that the data it reads can actually express both.
 A test whose answer is structurally fixed is worse than no test, because it reads
 like a finding.
 
+**Corrected after the tri-audit (2026-08-19).** The claim above — that an
+Oracle-repo MySQL "drops the marker and re-escalates to CRIT with nobody having
+to remember anything" — is **not true as implemented**. Oracle versions its own
+APT packages `8.0.36-1ubuntu22.04`, so the `ubuntu` substring matches and a
+runtime Canonical is *not* backporting for still reports "distro package, fixes
+backported". Sury's PHP builds have the same shape.
+
+The fact that actually decides whether backports arrive is the package's
+**archive origin**, not its version string — `apt-cache policy` would settle it,
+in the facts script where root can ask. That is the correct fix and it is not
+yet made; this note exists so the guarantee is not trusted further than it goes.
+
 ## 11. Check contracts
 
 All five extend `HealthCheck`, return `array<HealthCheckResult>` from `run()`, and **never throw** — every probe goes through `guard()`. All results carry `node: 'platform'`. Registered by appending to `config('health.checks')`.

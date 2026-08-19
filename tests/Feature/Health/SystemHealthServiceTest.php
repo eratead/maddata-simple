@@ -164,3 +164,20 @@ it('still builds a snapshot when the cache store is entirely unavailable', funct
     expect($snapshot->checks)->toHaveCount(1)
         ->and($snapshot->checks[0]->key)->toBe('T1');
 });
+
+it('tags a crashed check class to a node that alerts', function () {
+    /*
+     * Audit finding M-1. A check class throwing out of run() — a bad binding
+     * after a deploy, a fatal in a constructor — is the monitor telling you it
+     * is broken. Filing that under the digest-only `platform` node meant a
+     * crashed HostCheck or BackupCheck reached nobody until Monday.
+     */
+    config(['health.checks' => [ExplodingCheck::class]]);
+
+    $snapshot = app(SystemHealthService::class)->refresh();
+    $crashed = collect($snapshot->checks)->firstWhere('key', 'ExplodingCheck');
+
+    expect($crashed->status)->toBe(HealthStatus::CRIT)
+        ->and($crashed->node)->not->toBeIn((array) config('health.alert_excluded_nodes', []))
+        ->and($snapshot->alertStatus())->toBe(HealthStatus::CRIT);
+});

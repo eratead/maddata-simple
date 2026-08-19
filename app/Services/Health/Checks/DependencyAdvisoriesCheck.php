@@ -7,6 +7,7 @@ use App\Enums\HealthStatus;
 use App\Services\Health\HealthMarkers;
 use Composer\Semver\Semver;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -80,7 +81,9 @@ class DependencyAdvisoriesCheck extends HealthCheck
                     continue;
                 }
 
-                $installed[$package['name']] = [
+                // ??=, so a package present in both sections keeps its
+                // production severity instead of being capped as dev-only.
+                $installed[$package['name']] ??= [
                     'version' => ltrim((string) $package['version'], 'v'),
                     'dev' => $isDev,
                 ];
@@ -151,8 +154,15 @@ class DependencyAdvisoriesCheck extends HealthCheck
             // No TTL: this is the parachute for a feed outage, and an outage
             // lasting longer than the TTL is exactly when it is needed.
             $this->store()->forever(HealthMarkers::ADVISORIES_LAST, $advisories);
-        } catch (Throwable) {
-            // A cache we cannot write costs us the parachute, not the answer.
+        } catch (Throwable $e) {
+            // A cache we cannot write costs us the parachute, not the answer —
+            // but it must never do so silently. An unwritable cache turns this
+            // check into an outbound HTTPS call every 60 seconds forever, with
+            // no status change and no log line, until Packagist throttles us
+            // and d1 degrades to "feed unreachable" for a reason nobody can see.
+            Log::warning('Advisory cache write failed — d1 will re-query every rebuild', [
+                'exception' => $e::class,
+            ]);
         }
     }
 
@@ -238,6 +248,15 @@ class DependencyAdvisoriesCheck extends HealthCheck
             // Never silently present old data as current.
             $status = HealthStatus::worstOf($status, HealthStatus::WARN);
             $value .= ' — feed unreachable, last known result';
+        }
+
+        // Published for d4: lock drift only matters while something known-bad
+        // is in the tree.
+        try {
+            $this->store()->put(HealthMarkers::ADVISORIES_WORST, $status->value, now()->addDay());
+        } catch (Throwable) {
+            // d4 treats a missing value as "nothing known-bad", which is the
+            // conservative direction: it will not invent a warning.
         }
 
         return $this->result($status, $value, $threshold);

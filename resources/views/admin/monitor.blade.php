@@ -40,6 +40,8 @@
 
         <span class="ml-auto text-xs text-gray-400" x-text="`refreshed ${agoLabel()}`"></span>
 
+        <span x-show="throttled" x-cloak class="text-xs text-amber-700">refreshing too fast — try again in a moment</span>
+
         <button type="button" @click="refreshNow()" :disabled="refreshing"
                 class="text-xs font-semibold px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700
                        hover:bg-gray-50 disabled:opacity-50 disabled:cursor-wait cursor-pointer shrink-0">
@@ -60,7 +62,7 @@
                   d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
         </svg>
         <p class="text-sm font-semibold text-amber-800">
-            This snapshot is <span x-text="agoLabel()"></span> old — the scheduler may be down.
+            This snapshot is <span x-text="ageLabel()"></span> old — the scheduler may be down.
             What you see below is history, not the current state.
         </p>
     </div>
@@ -124,13 +126,21 @@
             opts: opts,
             error: false,
             refreshing: false,
+            throttled: false,
             now: Math.floor(Date.now() / 1000),
+            fetchedAt: Math.floor(Date.now() / 1000),
+            inflight: false,
             closed: {},
             timer: null,
             ticker: null,
 
             start() {
-                this.ticker = setInterval(() => { this.now = Math.floor(Date.now() / 1000); }, 1000);
+                this.ticker = setInterval(() => {
+                    // Gated too: polling already stops in a hidden tab, but an
+                    // ungated ticker keeps waking Alpine effects every second
+                    // and stops the browser idling the tab at all.
+                    if (! document.hidden) this.now = Math.floor(Date.now() / 1000);
+                }, 1000);
                 this.schedule();
                 document.addEventListener('visibilitychange', () => {
                     // Poll immediately on return: a backgrounded tab must not
@@ -149,15 +159,26 @@
             },
 
             async poll() {
+                // Rapid alt-tabbing fires visibilitychange repeatedly; without
+                // this the polls stack up and burn the 60/min budget.
+                if (this.inflight) return;
+                this.inflight = true;
+
                 try {
                     const res = await fetch(this.opts.dataUrl, { headers: { 'Accept': 'application/json' } });
+                    // A throttle is not a monitoring outage and must not look
+                    // like one — keep the last good state, say nothing.
+                    if (res.status === 429) return;
                     if (!res.ok) throw new Error(res.status);
                     this.state = await res.json();
+                    this.fetchedAt = Math.floor(Date.now() / 1000);
                     this.error = false;
                 } catch (e) {
                     // Keep the last good state. A monitor that blanks out when
                     // it cannot reach itself is worse than one that says so.
                     this.error = true;
+                } finally {
+                    this.inflight = false;
                 }
             },
 
@@ -171,9 +192,10 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         },
                     });
-                    if (res.status === 429) { this.error = false; alert('Refreshing too fast — try again in a moment.'); return; }
+                    if (res.status === 429) { this.throttled = true; setTimeout(() => this.throttled = false, 4000); return; }
                     if (!res.ok) throw new Error(res.status);
                     this.state = await res.json();
+                    this.fetchedAt = Math.floor(Date.now() / 1000);
                     this.error = false;
                 } catch (e) {
                     this.error = true;
@@ -201,17 +223,20 @@
             isOpen(key) { return !this.closed[key]; },
             toggle(key) { this.closed[key] = !this.closed[key]; },
 
+            // Server-computed age plus local elapsed time since we fetched it.
+            // Never browser-clock-vs-server-clock: a slow laptop clock used to
+            // hide the stale banner entirely.
             ageSeconds() {
-                const ts = Math.floor(new Date(this.state.generated_at).getTime() / 1000);
-                return Math.max(0, this.now - ts);
+                return (this.state.age_seconds ?? 0) + Math.max(0, this.now - this.fetchedAt);
             },
             isStale() { return this.ageSeconds() > this.opts.staleSeconds; },
-            agoLabel() {
+            ageLabel() {
                 const s = this.ageSeconds();
-                if (s < 60) return `${s}s ago`;
-                if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-                return `${Math.floor(s / 3600)}h ago`;
+                if (s < 60) return `${s}s`;
+                if (s < 3600) return `${Math.floor(s / 60)}m`;
+                return `${Math.floor(s / 3600)}h`;
             },
+            agoLabel() { return `${this.ageLabel()} ago`; },
             generatedAtLabel() {
                 return new Date(this.state.generated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             },

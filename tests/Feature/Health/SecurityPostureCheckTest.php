@@ -107,3 +107,16 @@ it('lets people log in even when the marker store is broken', function () {
     $this->post('/login', ['email' => $user->email, 'password' => 'wrong'])
         ->assertRedirect();
 });
+
+it('puts the failed-login burst on a node that can raise an alert', function () {
+    /*
+     * Audit finding M-2. X1 (expired-token housekeeping) belongs on the
+     * digest-only `platform` node. X2 does not: it is the one check that sees
+     * an attack happening now, and thresholds of 20 and 100 failures in 15
+     * minutes mean nothing if the result waits for a weekly email.
+     */
+    $excluded = (array) config('health.alert_excluded_nodes', []);
+
+    expect(posture('X2')->node)->not->toBeIn($excluded)
+        ->and(posture('X1')->node)->toBeIn($excluded);
+});

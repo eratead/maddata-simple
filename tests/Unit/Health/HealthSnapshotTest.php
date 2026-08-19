@@ -168,3 +168,34 @@ it('alerts on everything when the exclusion list is emptied', function () {
     expect($snapshot->alertStatus())->toBe(HealthStatus::CRIT)
         ->and($snapshot->digestable())->toBe([]);
 });
+
+/*
+|--------------------------------------------------------------------------
+| The split must not silence the monitor's own failures (audit M-1/M-2)
+|--------------------------------------------------------------------------
+|
+| Routing the `platform` node to the weekly digest was meant to stop composer
+| advisories paging anyone. It also, unintentionally, silenced two things that
+| must page: a check class crashing, and a live credential-stuffing attack.
+|
+*/
+
+it('alerts when a check class crashes, rather than filing it under dependencies', function () {
+    // SystemHealthService tags a crashed check class with this node. If that
+    // node is digest-only, "the monitor is broken" waits until Monday.
+    $snapshot = HealthSnapshot::fromResults([
+        result('HostCheck', HealthStatus::CRIT, 'app'),
+    ]);
+
+    expect($snapshot->alertStatus())->toBe(HealthStatus::CRIT)
+        ->and($snapshot->digestable())->toBe([]);
+});
+
+it('alerts on a failed-login burst', function () {
+    // X2 is the only check in the catalog that detects an attack in progress.
+    $snapshot = HealthSnapshot::fromResults([
+        result('X2', HealthStatus::CRIT, 'app'),
+    ]);
+
+    expect($snapshot->alertStatus())->toBe(HealthStatus::CRIT);
+});

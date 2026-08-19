@@ -174,6 +174,17 @@ final readonly class HealthSnapshot
         return [
             'overall' => $this->overall->value,
             'generated_at' => $this->generatedAt->toIso8601String(),
+            /*
+             * Server-computed age, additive to the contract.
+             *
+             * The page's stale badge is load-bearing — it is what stops a dead
+             * scheduler rendering a confidently green page. Deriving it from
+             * `generated_at` minus the BROWSER's clock meant an admin whose
+             * laptop ran five minutes slow saw "refreshed 0s ago" forever and
+             * never got the warning, defeating the badge via something entirely
+             * outside the server's control.
+             */
+            'age_seconds' => max(0, now()->getTimestamp() - $this->generatedAt->getTimestamp()),
             'nodes' => array_map(fn ($n) => [...$n, 'status' => $n['status']->value], $this->nodes),
             'checks' => array_map(fn (HealthCheckResult $c) => $c->toArray(), $this->checks),
         ];

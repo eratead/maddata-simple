@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Dtos\HealthSnapshot;
 use App\Http\Controllers\Controller;
 use App\Services\Health\SystemHealthService;
 use Illuminate\Contracts\View\View;
@@ -32,10 +33,22 @@ final class MonitorController extends Controller
         ]);
     }
 
-    /** Polled every few seconds by the page. Normally a single cache read. */
+    /**
+     * Polled by the page. A pure cache read — it never rebuilds.
+     *
+     * The scheduler rebuilds off-path every minute, so there is nothing for a
+     * poll to gain by doing it inline, and a great deal to lose: when the
+     * marker store is unreadable every poll from every tab would run the full
+     * check suite, outbound HTTPS included, inside an FPM worker.
+     *
+     * With nothing cached at all the page gets an empty STALE snapshot, which
+     * its own stale banner already knows how to render.
+     */
     public function data(): JsonResponse
     {
-        return response()->json($this->health->snapshot()->toArray());
+        return response()->json(
+            $this->health->cachedArray() ?? HealthSnapshot::fromResults([])->toArray()
+        );
     }
 
     /**

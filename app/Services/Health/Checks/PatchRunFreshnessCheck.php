@@ -42,9 +42,17 @@ class PatchRunFreshnessCheck extends HealthCheck
                 $value .= ' ('.$marker['note'].')';
             }
 
-            if ($status === HealthStatus::OK && $this->lockDrifted($marker)) {
+            /*
+             * Drift alone is not a finding. Warning on ANY lock change turns
+             * this amber after every routine `composer require` — amber for the
+             * good case, clearable only by running a command, which is the
+             * un-actionable-warning pattern this vertical keeps designing
+             * against. The spec couples it to d1: a changed lock matters when
+             * there is something known-bad in it.
+             */
+            if ($status === HealthStatus::OK && $this->lockDrifted($marker) && $this->advisoriesAreBad()) {
                 $status = HealthStatus::WARN;
-                $value .= ' — composer.lock has changed since';
+                $value .= ' — composer.lock has changed since, and d1 reports high-severity advisories';
             }
 
             return $this->result($status, $value, $described);
@@ -59,6 +67,16 @@ class PatchRunFreshnessCheck extends HealthCheck
             return is_array($marker) && isset($marker['ts']) ? $marker : null;
         } catch (Throwable) {
             return null;
+        }
+    }
+
+    /** Whether d1 last reported something worth acting on. */
+    private function advisoriesAreBad(): bool
+    {
+        try {
+            return $this->store()->get(HealthMarkers::ADVISORIES_WORST) === HealthStatus::CRIT->value;
+        } catch (Throwable) {
+            return false;
         }
     }
 

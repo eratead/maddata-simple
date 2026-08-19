@@ -106,16 +106,62 @@ class SystemHealthService
      * Status for the header pill. Cache-only by design: rendering a pill must
      * never trigger a rebuild and slow down an unrelated page. If there is no
      * snapshot to read, the pill honestly says it does not know.
+     *
+     * Reads alertStatus(), not overall — the same filter the alert mail uses.
+     *
+     * The pill is not the page. The page is pull: you open it deliberately and
+     * read every row, so it shows `overall` and stays completely honest. The
+     * pill is a push surface embedded in every admin page, and it has exactly
+     * one bit of information to spend. Production runs two runtimes past their
+     * upstream windows that only an OS migration can clear, so on `overall` the
+     * pill would read amber permanently from day one — and a real new warning,
+     * a failed backup upload or a job starting to fail, would produce no
+     * visible change at all. A signal that never changes is not a signal.
      */
     public function pillStatus(): HealthStatus
     {
         try {
-            $snapshot = $this->cached(HealthMarkers::SNAPSHOT)
-                ?? $this->cached(HealthMarkers::SNAPSHOT_LAST);
+            $payload = $this->cachedArray();
 
-            return $snapshot?->overall->forPill() ?? HealthStatus::STALE;
+            if ($payload === null) {
+                return HealthStatus::STALE;
+            }
+
+            // Hydrate rather than reading $payload['overall'] directly: the
+            // pill needs alertStatus(), which is a rollup over the checks and
+            // not a stored field. Still cheaper than the old path, which
+            // hydrated and then discarded the whole snapshot on every page.
+            return HealthSnapshot::fromArray($payload)->alertStatus()->forPill();
         } catch (Throwable) {
             return HealthStatus::STALE;
+        }
+    }
+
+    /**
+     * The cached snapshot as the array the UI polls — no DTO round trip, and
+     * crucially NO rebuild.
+     *
+     * Two audit findings meet here. Hydrating 37 results into objects just to
+     * call toArray() on them again is pure waste that grows with the check
+     * count. And more seriously: when the marker store itself is unreadable,
+     * the rebuilding read path had every poll from every open tab performing a
+     * full inline build — including d1's outbound HTTPS call, up to 8 seconds,
+     * inside an FPM worker. On a single-core box with a small worker pool that
+     * is the monitor taking the site down at the exact moment it should be
+     * reporting on it.
+     *
+     * Returns null when there is nothing cached; the caller decides what to
+     * show. Rebuilding is the scheduler's job, and the CLI's.
+     */
+    public function cachedArray(): ?array
+    {
+        try {
+            $payload = $this->store()->get(HealthMarkers::SNAPSHOT)
+                ?? $this->store()->get(HealthMarkers::SNAPSHOT_LAST);
+
+            return is_array($payload) ? $payload : null;
+        } catch (Throwable) {
+            return null;
         }
     }
 
@@ -143,7 +189,16 @@ class SystemHealthService
         try {
             $check = app($class);
 
-            return $check instanceof HealthCheck ? $check->run() : [];
+            if (! $check instanceof HealthCheck) {
+                // Silent before: a registry entry that resolved to the wrong
+                // thing produced zero results, zero logs, and a node that
+                // simply stopped existing on the map.
+                Log::error('Registered health check is not a HealthCheck', ['check' => $class]);
+
+                return [$this->crashed($class, 'not a health check')];
+            }
+
+            return $check->run();
         } catch (Throwable $e) {
             Log::error('Health check class failed', [
                 'check' => $class,
@@ -151,15 +206,30 @@ class SystemHealthService
                 'message' => $e->getMessage(),
             ]);
 
-            return [new HealthCheckResult(
-                key: class_basename($class),
-                label: class_basename($class),
-                status: HealthStatus::CRIT,
-                node: 'platform',
-                value: 'check failed',
-                threshold: class_basename($e),
-            )];
+            return [$this->crashed($class, 'check failed', class_basename($e))];
         }
+    }
+
+    /**
+     * The result for a check class that could not run at all.
+     *
+     * Tagged to `app`, NOT `platform`. Phase 4 turned `platform` into a
+     * delivery channel — the node routed to the weekly digest — so filing a
+     * crashed check there meant "the monitor is broken" reached nobody until
+     * Monday. Worse, because the crashed check's own results vanish from the
+     * snapshot, an open episode could drop to all-clear and send a RECOVERY
+     * notice for a problem that was still failing.
+     */
+    private function crashed(string $class, string $value, ?string $threshold = null): HealthCheckResult
+    {
+        return new HealthCheckResult(
+            key: class_basename($class),
+            label: 'Health check crashed: '.class_basename($class),
+            status: HealthStatus::CRIT,
+            node: 'app',
+            value: $value,
+            threshold: $threshold,
+        );
     }
 
     private function cached(string $key): ?HealthSnapshot

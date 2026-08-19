@@ -71,7 +71,19 @@ class OsPatchCheck extends HealthCheck
                 return $this->result(HealthStatus::OK, 'none pending', $described);
             }
 
-            $waiting = $since === null ? 0 : max(0, now()->getTimestamp() - $since);
+            if ($since === null) {
+                // The since-marker is how "unpatched for a month" is told apart
+                // from "unpatched since lunchtime". Without it we cannot judge,
+                // and reporting OK would let a 30-day backlog read green the
+                // moment the marker store hiccups.
+                return $this->result(
+                    HealthStatus::WARN,
+                    sprintf('%d pending — cannot tell for how long', $pending),
+                    $described,
+                );
+            }
+
+            $waiting = max(0, now()->getTimestamp() - $since);
 
             return $this->result(
                 $this->evaluateOver($waiting, $thresholds),
@@ -117,8 +129,9 @@ class OsPatchCheck extends HealthCheck
 
             return $firstSeen;
         } catch (Throwable) {
-            // No memory means no sustained-window judgement, which is a smaller
-            // failure than losing the check: report the raw count instead.
+            // No memory means no sustained-window judgement. The caller turns
+            // that into a WARN rather than an OK — not being able to measure is
+            // not the same as measuring zero.
             return null;
         }
     }

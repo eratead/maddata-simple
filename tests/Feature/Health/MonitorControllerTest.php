@@ -67,6 +67,8 @@ it('renders the monitor page for an admin', function () {
 });
 
 it('serves the snapshot JSON in the documented contract shape', function () {
+    app(App\Services\Health\SystemHealthService::class)->refresh();
+
     $this->actingAs(User::factory()->create(['is_admin' => true]))
         ->getJson(route('admin.monitor.data'))
         ->assertOk()
@@ -108,10 +110,31 @@ it('redirects guests away from all three endpoints', function () {
     $this->post(route('admin.monitor.refresh'))->assertRedirect();
 });
 
+it('never rebuilds from the polled endpoint, however cold the cache', function () {
+    /*
+     * Audit finding. When the marker store is unreadable, a rebuilding read
+     * path had every poll from every open tab running the full check suite —
+     * outbound HTTPS included — inside an FPM worker. On one core with a small
+     * pool that is the monitor taking the site down.
+     *
+     * Rebuilding belongs to the scheduler and the CLI. The page reads.
+     */
+    MonitorPageCheck::$status = HealthStatus::CRIT;
+
+    $response = $this->actingAs(User::factory()->create(['is_admin' => true]))
+        ->getJson(route('admin.monitor.data'))
+        ->assertOk();
+
+    // Nothing cached and nothing built: an empty snapshot, which the page's own
+    // stale banner already knows how to render.
+    expect($response->json('checks'))->toBe([])
+        ->and($response->json('overall'))->toBe('ok');
+});
+
 it('rebuilds on demand and returns a newer snapshot', function () {
     $admin = User::factory()->create(['is_admin' => true]);
 
-    $before = $this->actingAs($admin)->getJson(route('admin.monitor.data'))->json('generated_at');
+    $before = app(App\Services\Health\SystemHealthService::class)->refresh()->toArray()['generated_at'];
 
     $this->travel(5)->seconds();
 
@@ -123,7 +146,7 @@ it('rebuilds on demand and returns a newer snapshot', function () {
 it('serves the in-flight snapshot instead of stampeding when a rebuild already holds the lock', function () {
     $admin = User::factory()->create(['is_admin' => true]);
 
-    $cached = $this->actingAs($admin)->getJson(route('admin.monitor.data'))->json('generated_at');
+    $cached = app(App\Services\Health\SystemHealthService::class)->refresh()->toArray()['generated_at'];
 
     // Someone else — the scheduler, or another admin's click — is mid-rebuild.
     $lock = HealthMarkers::store()->lock(HealthMarkers::SNAPSHOT_LOCK, 20);
@@ -145,6 +168,8 @@ it('still answers 200 with a CRIT payload when every check explodes', function (
     HealthMarkers::store()->forget(HealthMarkers::SNAPSHOT);
     HealthMarkers::store()->forget(HealthMarkers::SNAPSHOT_LAST);
 
+    app(App\Services\Health\SystemHealthService::class)->refresh();
+
     // Resilience is THE property of this vertical, so it is asserted at the
     // HTTP boundary too — not only in the service unit test.
     $response = $this->actingAs(User::factory()->create(['is_admin' => true]))
@@ -156,6 +181,8 @@ it('still answers 200 with a CRIT payload when every check explodes', function (
 
 it('throttles the polled JSON endpoint', function () {
     $admin = User::factory()->create(['is_admin' => true]);
+
+    app(App\Services\Health\SystemHealthService::class)->refresh();
 
     for ($i = 0; $i < 60; $i++) {
         $this->actingAs($admin)->getJson(route('admin.monitor.data'))->assertOk();

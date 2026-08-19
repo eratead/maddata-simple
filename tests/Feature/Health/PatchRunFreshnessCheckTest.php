@@ -20,6 +20,7 @@ function markPatchRun(int $daysAgo, ?string $lockSha = null): void
 
 beforeEach(function () {
     HealthMarkers::store()->forget(HealthMarkers::PATCH_RUN);
+    HealthMarkers::store()->forget(HealthMarkers::ADVISORIES_WORST);
     fakeComposerLock(['packages' => [], 'packages-dev' => []]);
 });
 
@@ -49,10 +50,21 @@ it('goes critical after two months', function () {
     expect(d4()->status)->toBe(HealthStatus::CRIT);
 });
 
-it('warns when the lock has changed since the recorded patch run', function () {
+it('ignores lock drift while nothing known-bad is in the tree', function () {
     markPatchRun(daysAgo: 5, lockSha: 'a-lock-that-is-no-longer-deployed');
 
-    // The recorded run no longer describes what is deployed, however recent it is.
+    // Every `composer require` changes the lock. Warning on that alone would
+    // turn d4 amber for the GOOD case and keep it there until someone ran a
+    // command — the un-actionable warning this vertical keeps designing out.
+    expect(d4()->status)->toBe(HealthStatus::OK);
+});
+
+it('warns when the lock has drifted AND d1 reports high-severity advisories', function () {
+    HealthMarkers::store()->put(HealthMarkers::ADVISORIES_WORST, HealthStatus::CRIT->value, now()->addDay());
+    markPatchRun(daysAgo: 5, lockSha: 'a-lock-that-is-no-longer-deployed');
+
+    // Now the recorded patch run demonstrably does not describe what is
+    // deployed, and what is deployed has known criticals in it.
     expect(d4()->status)->toBe(HealthStatus::WARN)
         ->and(d4()->value)->toContain('composer.lock has changed');
 });

@@ -57,6 +57,12 @@ final class HealthMarkers
     public const ADVISORIES_LAST = 'health:deps:advisories:last';
 
     /**
+     * d1's worst severity, written each run so d4 can ask "is there anything
+     * known-bad in the current lock?" without re-evaluating the whole feed.
+     */
+    public const ADVISORIES_WORST = 'health:deps:advisories:worst';
+
+    /**
      * d3's since-marker: {count, first_seen}. apt only ever reports the CURRENT
      * pending count, so "unpatched for 30 days" has to be remembered here.
      */

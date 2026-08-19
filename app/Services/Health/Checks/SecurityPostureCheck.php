@@ -34,7 +34,9 @@ class SecurityPostureCheck extends HealthCheck
                 ->where('expires_at', '<', now())
                 ->count();
 
-            $warn = (int) ($this->thresholds('expired_tokens')['warn'] ?? 1);
+            // max(1, …): a configured 0 makes `$count >= 0` always true and pins
+            // this amber forever — an un-clearable warning is worse than none.
+            $warn = max(1, (int) ($this->thresholds('expired_tokens')['warn'] ?? 1));
 
             return new HealthCheckResult(
                 key: 'X1',
@@ -52,7 +54,11 @@ class SecurityPostureCheck extends HealthCheck
     {
         $minutes = max(1, (int) config('health.failed_login_window_minutes', 15));
 
-        return $this->guard('X2', "Failed logins ({$minutes}m)", 'platform', function () use ($minutes) {
+        // `app`, not `platform`: X1 is housekeeping and belongs on the weekly
+        // digest, but X2 is the only check in the catalog that sees an attack
+        // happening NOW. Thresholds of 20 and 100 failures in fifteen minutes
+        // mean nothing if the result waits until Monday morning.
+        return $this->guard('X2', "Failed logins ({$minutes}m)", 'app', function () use ($minutes) {
             $store = $this->store();
             $total = 0;
 
@@ -63,13 +69,23 @@ class SecurityPostureCheck extends HealthCheck
                 );
             }
 
+            /*
+             * Reclaim the buckets that have aged out of the window. The file
+             * store only unlinks an expired entry when something reads it, and
+             * nothing ever reads past minute 14 — so every minute containing a
+             * failed login otherwise leaves a file behind forever.
+             */
+            for ($i = $minutes; $i < $minutes + 6; $i++) {
+                $store->forget(HealthMarkers::AUTH_FAIL_PREFIX.now()->subMinutes($i)->format('YmdHi'));
+            }
+
             $thresholds = $this->thresholds('failed_login_burst');
 
             return new HealthCheckResult(
                 key: 'X2',
                 label: "Failed logins ({$minutes}m)",
                 status: $this->evaluateOver($total, $thresholds),
-                node: 'platform',
+                node: 'app',
                 value: $total === 0 ? 'none' : $total." in {$minutes}m",
                 threshold: $this->describeThreshold($thresholds),
             );

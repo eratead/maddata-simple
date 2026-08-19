@@ -31,6 +31,20 @@ return [
     |
     */
 
+    /*
+    | Store backing the rate limiter (throttle middleware, login throttling).
+    |
+    | Unset, this resolves to the DEFAULT store — `database` on production —
+    | which costs roughly 8 MySQL round trips per throttled request, including a
+    | SELECT … FOR UPDATE transaction. That was invisible until this app gained
+    | its first POLLED route: one always-open monitor tab is ~23,000 round trips
+    | a day, against an endpoint whose own work is a single file read.
+    |
+    | Set CACHE_LIMITER=redis on any host with phpredis. Left unset by default
+    | because staging has no phpredis extension and would break outright.
+    */
+    'limiter' => env('CACHE_LIMITER'),
+
     'stores' => [
 
         'array' => [

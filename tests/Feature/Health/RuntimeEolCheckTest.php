@@ -50,15 +50,28 @@ it('goes critical once security support has ended', function () {
 
 /*
 | Driven through the nginx entry, because its version comes from the facts file
-| and is therefore the one runtime a test can set to an arbitrary string.
+| and is therefore the one runtime a test can set freely.
+|
+| Note the fixtures below only ever use strings the facts script can actually
+| emit. An earlier version of this file fed nginx "1.24.0 (Ubuntu)", which the
+| script's own sed strips — proving a state production cannot reach.
 */
 it('warns rather than going critical when a past-EOL runtime is distro-packaged', function () {
     // Production's real case: MySQL 8.0.46-0ubuntu0.24.04.3 and Redis 7.0.15 are
     // both past their upstream windows AND both receive Canonical's backported
     // fixes. CRIT would claim an exposure that does not exist — and nothing
     // short of an OS upgrade could ever clear it.
-    eolTable([['product' => 'nginx', 'branch' => '1.24', 'security_support_until' => now()->subYear()->toDateString()]]);
-    fakeHostFacts(['ts' => now()->getTimestamp(), 'nginx_version' => '1.24.0 (Ubuntu)']);
+    eolTable([[
+        'product' => 'nginx',
+        'branch' => '1.24',
+        'security_support_until' => now()->subYear()->toDateString(),
+        'package' => ['nginx'],
+    ]]);
+    fakeHostFacts([
+        'ts' => now()->getTimestamp(),
+        'nginx_version' => '1.24.0',
+        'packages' => ['nginx' => '1.24.0-2ubuntu7.15'],
+    ]);
 
     expect(d2('d2-nginx')->status)->toBe(HealthStatus::WARN)
         ->and(d2('d2-nginx')->value)->toContain('upstream branch EOL')
@@ -101,9 +114,20 @@ it('trusts the installed package version when the runtime under-reports itself',
         ->and(d2('d2-nginx')->value)->toContain('upstream branch EOL');
 });
 
-it('falls back to the self-reported version when no package facts exist', function () {
-    // A host with no dpkg, or facts that predate this field, must degrade to the
-    // weaker test rather than to a wrong CRIT.
+it('degrades to the weaker self-report test when no package facts exist', function () {
+    /*
+     * Audit finding: the previous version of this test fed nginx
+     * "1.24.0 (Ubuntu)" and asserted WARN — but the facts script's
+     * `sed 's|.*nginx/\([0-9.]*\).*|\1|p'` captures only `[0-9.]*` and drops
+     * the vendor tag, so nginx's self-report can NEVER carry a distro marker.
+     * The test proved a state the production data path cannot reach, which is
+     * the exact defect docs/lessons.md was written about.
+     *
+     * What is actually true: without package facts, nginx has no evidence of
+     * being distro-built, so it degrades to CRIT. That is the honest weaker
+     * answer — MySQL, whose self-report does carry the suffix, is the runtime
+     * the fallback genuinely serves.
+     */
     eolTable([[
         'product' => 'nginx',
         'branch' => '1.24',
@@ -111,9 +135,9 @@ it('falls back to the self-reported version when no package facts exist', functi
         'package' => ['nginx'],
     ]]);
 
-    fakeHostFacts(['ts' => now()->getTimestamp(), 'nginx_version' => '1.24.0 (Ubuntu)']);
+    fakeHostFacts(['ts' => now()->getTimestamp(), 'nginx_version' => '1.24.0']);
 
-    expect(d2('d2-nginx')->status)->toBe(HealthStatus::WARN);
+    expect(d2('d2-nginx')->status)->toBe(HealthStatus::CRIT);
 });
 
 it('warns on a branch the table does not cover rather than passing it', function () {
