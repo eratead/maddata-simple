@@ -12,16 +12,22 @@ markers and rolls everything up into a snapshot. Nothing in the request path
 shells out, holds a sudo grant, or talks to systemd.
 
 ```
-root cron  ──1 min──▶ scripts/health-facts.sh    ──▶ /run/maddata/host-facts.json
-backup cron──03:00──▶ scripts/backup-production.sh ─▶ /run/maddata/backup-last.json
+root cron  ──1 min──▶ scripts/health-facts.sh    ──▶ /run/maddata/host-facts.json      (tmpfs)
+backup cron──03:00──▶ scripts/backup-production.sh ─▶ /var/backups/maddata/backup-last.json (persistent)
 laravel sched─1 min─▶ health:refresh-snapshot / health:probe / QueueHeartbeatJob
                              ▼
                      php artisan health:check
 ```
 
-`/run` is tmpfs, so the fact files vanish on reboot and are rebuilt within a
-minute. That is deliberate: a stale facts file surviving a reboot would be
-reported as current truth.
+`/run` is tmpfs, so the **host facts** vanish on reboot and are rebuilt within a
+minute. That is deliberate: facts are a live sample, and a stale one surviving a
+reboot would be reported as current truth.
+
+The **backup marker** is the opposite case and lives on persistent storage at
+`/var/backups/maddata/backup-last.json`, next to the backups it describes. It
+records that a backup *happened*, and that has to outlive a restart — when it
+briefly sat on tmpfs, a reboot made B1 report "backups are unverifiable" for the
+seventeen hours until the next nightly run.
 
 ---
 

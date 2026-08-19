@@ -207,7 +207,11 @@ echo "Backup ready at: $BACKUP_DIR"
 # Checks B1-B3 read this. Written last, so it only ever records a backup that
 # actually finished — the health monitor cross-checks it against the backup
 # directory itself, so a marker that never appears is detectable.
-MARKER_PATH="${HEALTH_BACKUP_MARKER_PATH:-/run/maddata/backup-last.json}"
+#
+# Lives with the backups, NOT on tmpfs: it records that a backup happened, and
+# that fact has to survive a reboot. (The host-facts file is the opposite case
+# — a live sample, where surviving a reboot would mean reporting stale truth.)
+MARKER_PATH="${HEALTH_BACKUP_MARKER_PATH:-/var/backups/maddata/backup-last.json}"
 LOCAL_BYTES=$(du -sb "$BACKUP_DIR" 2>/dev/null | cut -f1 || echo 0)
 [[ "$LOCAL_BYTES" =~ ^[0-9]+$ ]] || LOCAL_BYTES=0
 

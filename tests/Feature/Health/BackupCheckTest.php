@@ -156,3 +156,16 @@ it('still catches a genuinely truncated backup once it completes', function () {
     expect(backupChecks(['ts' => $completedAt, 'remote_ok' => true], $backups)['B2']->status)
         ->toBe(HealthStatus::CRIT);
 });
+
+it('keeps the backup marker off tmpfs so it survives a reboot', function () {
+    // Regression guard. The marker originally sat in /run alongside the
+    // host-facts file; a production reboot wiped it and B1 reported
+    // "backups are unverifiable" for the seventeen hours until the next
+    // nightly run. Facts are a live sample and SHOULD die with a reboot;
+    // the marker is a record of a past event and must not.
+    $path = config('health.backup_marker_path');
+
+    expect($path)->not->toStartWith('/run/')
+        ->and($path)->not->toStartWith('/tmp/')
+        ->and($path)->not->toStartWith('/dev/shm/');
+});

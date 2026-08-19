@@ -47,7 +47,16 @@ return [
     | these files — it never writes them and never shells out. See §7.
     */
     'facts_path' => env('HEALTH_FACTS_PATH', '/run/maddata/host-facts.json'),
-    'backup_marker_path' => env('HEALTH_BACKUP_MARKER_PATH', '/run/maddata/backup-last.json'),
+
+    /*
+    | The backup marker deliberately does NOT live on tmpfs alongside the facts
+    | file. The facts are a live SAMPLE — losing them on reboot is correct, and
+    | keeping a stale one would be actively wrong. The marker is a RECORD of a
+    | past event, and losing it made B1 report "backups are unverifiable" for
+    | the seventeen hours between a reboot and the next nightly run. It lives
+    | next to the backups it describes, and survives restarts with them.
+    */
+    'backup_marker_path' => env('HEALTH_BACKUP_MARKER_PATH', '/var/backups/maddata/backup-last.json'),
 
     /*
     | Cache store holding the snapshot and all check markers. null = the
