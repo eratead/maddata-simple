@@ -748,12 +748,19 @@ The original V0.1–V0.6 tasks below pick up unchanged once F6 confirms the fix.
 **Added:** 2026-08-19
 **Context:** Production (`ad.maddata.media`, single droplet) has no health checks, no monitoring and no alerting today — only Laravel's bare `/up`. Design ported down from the erate-v2 fleet monitor, which has been in production since 2026-07-23.
 **Order:** Phases are independently shippable. HM-0 first — it is 5 minutes of work and covers the one failure mode no on-droplet code can ever catch.
-**Status:** Phases 1 and 2 built and green locally (2026-08-19) — 155 health tests, full suite 713 passing. Remaining: the droplet-side steps (HM-1.15, HM-2.4) and the external watcher (HM-0.1).
+**Status (2026-08-19):** Phases 1 and 2 built, deployed to staging and production, both on `0fb7a34`. Full suite 715 passing.
+Production reads DEGRADED / 3 failing: a pending reboot (real, needs a decision) and two scheduled-job markers that self-clear on their first run.
+Remaining: `HEALTH_ALERT_RECIPIENTS` + the forced alert test (HM-2.4), and the external watcher (HM-0.1).
+
+**Found by deploying and watching it** — both fixed in `0fb7a34`:
+- H2 read a steady 100% CPU on a 98%-idle box. Production is single-core, and the facts cron sampled one second at `:00`, exactly when `schedule:run` boots PHP — it was measuring the monitoring's own overhead. Health tasks now run in-process, CPU averages over 15s, and the cron is offset by 25s.
+- B2 read "dump shrank to 47% of median" because the facts cron stats the backup directory mid-write. Would have fired a false alarm every night at 03:00 once alerting was on.
+- The production TLS certificate lives under `new.ad.maddata.media/`, not `ad.maddata.media/` — P2 would have been STALE forever without the crontab override.
 
 ### Phase 0 — External watcher (no code)
 
 - [ ] **HM-0.1** Register `https://ad.maddata.media/up` with a free external uptime monitor (UptimeRobot / healthchecks.io / DO Monitoring), 1-minute interval, alerting to the operator's email + phone. This is the only thing that can detect a dead droplet, dead network, or dead PHP-FPM. Record the monitor name/URL in `docs/runbooks/health-monitor.md` when HM-1.13 creates it.
-- [ ] **HM-0.2** Confirm on the prod droplet (needed verbatim by later tasks, spec open questions 2 & 3): the queue worker's **systemd unit name**, and the actual `QUEUE_CONNECTION` / `CACHE_STORE` values in `/var/www/maddata/.env`. Write the answers into the spec's §11 before starting HM-1.
+- [x] **HM-0.2** *(done 2026-08-19 — `maddata-queue` and `php8.4-fpm` guesses were both correct; `CACHE_STORE` is unset so it defaults to `database`, now pinned via `HEALTH_MARKER_STORE`; `QUEUE_CONNECTION=database`.)* Confirm on the prod droplet (needed verbatim by later tasks, spec open questions 2 & 3): the queue worker's **systemd unit name**, and the actual `QUEUE_CONNECTION` / `CACHE_STORE` values in `/var/www/maddata/.env`. Write the answers into the spec's §11 before starting HM-1.
 
 ### Phase 1 — Spine, host facts, core checks, CLI
 
@@ -771,7 +778,7 @@ The original V0.1–V0.6 tasks below pick up unchanged once F6 confirms the fix.
 - [x] **HM-1.12** `scripts/backup-production.sh` — write `/run/maddata/backup-last.json` `{ts, local_bytes, remote_ok, remote_bytes}` on completion. Feeds B1–B3. Do not change any existing backup behavior.
 - [x] **HM-1.13** `app/Console/Commands/RunHealthCheck.php` — `health:check {--json} {--fail-on=warn|crit}`, human table or JSON, **exit code reflects worst status**. Plus `docs/runbooks/health-monitor.md`: tmpfs dir creation, the two crontab lines, env vars, and what each CRIT means and what to do about it.
 - [x] **HM-1.14** Tests: one file per check class in `tests/Feature/Health/` covering threshold boundaries (69/70/71%), STALE and missing-marker paths; `SystemHealthServiceTest` asserting **each dependency throwing still yields a built snapshot** with a CRIT on the right node; `RunHealthCheckTest` exit codes; `PublicProbeTest` with `Http::fake()` for success/fail/timeout incl. `consec_fails` reset. No test may execute a shell command — use fixture JSON.
-- [ ] **HM-1.15** Deploy Phase 1 — **blocked on droplet access, everything else in Phase 1 is done.** Provision `/run/maddata`, install the facts script + root crontab, set the `.env` values from HM-0.2, seed the backup marker (`scripts/backup-production.sh` once — until it runs, B1 correctly reads CRIT), record the 2026-07-12 restore drill, then verify `php artisan health:check` returns all-green. Full steps: [docs/runbooks/health-monitor.md](../runbooks/health-monitor.md). `docs/architecture_map.md` §18 is already updated.
+- [x] **HM-1.15** Deploy Phase 1 — **done 2026-08-19** (staging then production; both on `0fb7a34`). Was: Provision `/run/maddata`, install the facts script + root crontab, set the `.env` values from HM-0.2, seed the backup marker (`scripts/backup-production.sh` once — until it runs, B1 correctly reads CRIT), record the 2026-07-12 restore drill, then verify `php artisan health:check` returns all-green. Full steps: [docs/runbooks/health-monitor.md](../runbooks/health-monitor.md). `docs/architecture_map.md` §18 is already updated.
 
 ### Phase 2 — Alerting
 
