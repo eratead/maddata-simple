@@ -740,3 +740,61 @@ The original V0.1–V0.6 tasks below pick up unchanged once F6 confirms the fix.
 - [ ] **M8.2** Delete `docs/legal/privacy-policy.md`, `terms-of-service.md`, `privacy-policy.html`, `terms-of-service.html`, `_md2html.py` from the `maddata-simple` repo. Marketing repo is now canonical for legal content. Commit message: `Remove legal drafts; canonical copies live in maddata-marketing`.
 - [ ] **M8.3** Snapshot the WordPress droplet one more time, then destroy it in DigitalOcean. Cancel any WP-only DO charges.
 - [ ] **M8.4** Restore the `maddata.media` apex DNS TTL to a normal value (3600).
+
+---
+
+## System Health Monitor
+**Spec:** [system-health-monitor.md](../specs/system-health-monitor.md)
+**Added:** 2026-08-19
+**Context:** Production (`ad.maddata.media`, single droplet) has no health checks, no monitoring and no alerting today — only Laravel's bare `/up`. Design ported down from the erate-v2 fleet monitor, which has been in production since 2026-07-23.
+**Order:** Phases are independently shippable. HM-0 first — it is 5 minutes of work and covers the one failure mode no on-droplet code can ever catch.
+**Status:** Phases 1 and 2 built and green locally (2026-08-19) — 155 health tests, full suite 713 passing. Remaining: the droplet-side steps (HM-1.15, HM-2.4) and the external watcher (HM-0.1).
+
+### Phase 0 — External watcher (no code)
+
+- [ ] **HM-0.1** Register `https://ad.maddata.media/up` with a free external uptime monitor (UptimeRobot / healthchecks.io / DO Monitoring), 1-minute interval, alerting to the operator's email + phone. This is the only thing that can detect a dead droplet, dead network, or dead PHP-FPM. Record the monitor name/URL in `docs/runbooks/health-monitor.md` when HM-1.13 creates it.
+- [ ] **HM-0.2** Confirm on the prod droplet (needed verbatim by later tasks, spec open questions 2 & 3): the queue worker's **systemd unit name**, and the actual `QUEUE_CONNECTION` / `CACHE_STORE` values in `/var/www/maddata/.env`. Write the answers into the spec's §11 before starting HM-1.
+
+### Phase 1 — Spine, host facts, core checks, CLI
+
+- [x] **HM-1.1** `config/health.php` — node label map, every threshold from spec §3 (env-overridable), facts/marker file paths, probe URL, alert recipients, `realert_hours`. No thresholds hardcoded in check classes, ever.
+- [x] **HM-1.2** `config/database.php` — add a `mysql_health` connection: clone of `mysql` plus `PDO::ATTR_TIMEOUT => 2`. Without this, a MySQL outage hangs every admin page instead of degrading the pill (erate-v2 scar tissue).
+- [x] **HM-1.3** `app/Enums/HealthStatus.php` — `OK/WARN/CRIT/STALE`, `worstOf()`, `forPill()` (STALE→WARN), `colorToken()`, `label()`. Unit-tested (`tests/Unit/Health/HealthStatusTest.php`).
+- [x] **HM-1.4** `app/Dtos/HealthCheckResult.php` + `app/Dtos/HealthSnapshot.php` per spec §4. Document `HealthSnapshot::toArray()` in-file as the JSON contract the UI polls. Unit test the worst-of rollup and node grouping.
+- [x] **HM-1.5** `app/Services/Health/Checks/HealthCheck.php` — abstract base with `run(): array` and the `guard()` wrapper that turns any thrown probe into a CRIT result tagged to its real node. **No check class may ever throw.**
+- [x] **HM-1.6** `scripts/health-facts.sh` — root cron, every minute. vmstat CPU (NOT loadavg/nproc), mem %, disk root %, systemd unit states, `/var/run/reboot-required`, `apt-check` security count, TLS `-enddate` days remaining, newest `/var/backups/maddata` dir mtime + size. Atomic write (temp + `mv`) to `/run/maddata/host-facts.json`, mode 644. Numbers and states only — no IPs, no secrets. Script itself mode 700 root.
+- [x] **HM-1.7** `app/Services/Health/HostFacts.php` — the only reader of the facts file. `read(): ?array`, `ageSeconds(): ?int`. No shell execution anywhere in the app, ever.
+- [x] **HM-1.8** `app/Services/Health/SystemHealthService.php` — `snapshot()` (30s cache + `Cache::lock` single-flight + no-TTL `health:snapshot:last` fallback), `refresh()`, `pillStatus()` (never throws). Pin the cache store explicitly per HM-0.2; do not inherit the default.
+- [x] **HM-1.9** Check classes `HostCheck` (H1–H6), `DataStoreCheck` (D1–D3), `QueueCheck` (Q1–Q3), `SchedulerCheck` (S1–S2b), `EdgeProbeCheck` (P1–P2), `BackupCheck` (B1–B4) — spec §3 thresholds, registered in `SystemHealthService`.
+- [x] **HM-1.10** `app/Jobs/QueueHeartbeatJob.php` + `app/Console/Commands/PublicProbe.php` (`health:probe`, 3s curl of `/up`, `consec_fails` tracking) + `app/Console/Commands/RefreshHealthSnapshot.php` (`health:refresh-snapshot`).
+- [x] **HM-1.11** `routes/console.php` — schedule `health:refresh-snapshot`, `health:probe`, and the `QueueHeartbeatJob` dispatch everyMinute (`withoutOverlapping`), plus a `Schedule::call()` scheduler-heartbeat marker. Add one success-marker line each to `UpdateCampaignStatuses` and `SendActivityDigest` (feeds S2a/S2b) — smallest possible touch to existing commands.
+- [x] **HM-1.12** `scripts/backup-production.sh` — write `/run/maddata/backup-last.json` `{ts, local_bytes, remote_ok, remote_bytes}` on completion. Feeds B1–B3. Do not change any existing backup behavior.
+- [x] **HM-1.13** `app/Console/Commands/RunHealthCheck.php` — `health:check {--json} {--fail-on=warn|crit}`, human table or JSON, **exit code reflects worst status**. Plus `docs/runbooks/health-monitor.md`: tmpfs dir creation, the two crontab lines, env vars, and what each CRIT means and what to do about it.
+- [x] **HM-1.14** Tests: one file per check class in `tests/Feature/Health/` covering threshold boundaries (69/70/71%), STALE and missing-marker paths; `SystemHealthServiceTest` asserting **each dependency throwing still yields a built snapshot** with a CRIT on the right node; `RunHealthCheckTest` exit codes; `PublicProbeTest` with `Http::fake()` for success/fail/timeout incl. `consec_fails` reset. No test may execute a shell command — use fixture JSON.
+- [ ] **HM-1.15** Deploy Phase 1 — **blocked on droplet access, everything else in Phase 1 is done.** Provision `/run/maddata`, install the facts script + root crontab, set the `.env` values from HM-0.2, seed the backup marker (`scripts/backup-production.sh` once — until it runs, B1 correctly reads CRIT), record the 2026-07-12 restore drill, then verify `php artisan health:check` returns all-green. Full steps: [docs/runbooks/health-monitor.md](../runbooks/health-monitor.md). `docs/architecture_map.md` §18 is already updated.
+
+### Phase 2 — Alerting
+
+- [x] **HM-2.1** `app/Console/Commands/SendHealthAlert.php` (`health:alert`, everyFiveMinutes) + `app/Mail/HealthAlertMail.php` following the existing `ActivityDigestMail` pattern. Signature-based state in the persistent cache store; fire on transition-to-worse or after `realert_hours`; recovery notice on return to all-OK.
+- [x] **HM-2.2** Flap suppression: CRIT requires **2 consecutive** non-OK observations (a deploy restart resolves inside one interval). If the suppression state's own read/write throws, **skip suppression and alert anyway** — fail toward alerting. Mail failures logged, never thrown.
+- [x] **HM-2.3** Tests: transition fires; repeat inside the window does not; re-alert after the window does; recovery notice fires; one CRIT observation suppressed, two not; unreadable suppression state still alerts; mailer throwing does not fail the command.
+- [ ] **HM-2.4** Deploy-side — **blocked on droplet access.** Set `HEALTH_ALERT_RECIPIENTS` in the prod `.env`, then force one real alert end-to-end with `php artisan health:alert --force` to prove mail actually lands, and again after stopping the queue worker for 15 minutes to prove the state machine fires unprompted. An untested alert path is not an alert path. (Scheduling is already committed in `routes/console.php`; the full state machine was driven end-to-end locally against the log mailer.)
+
+### Phase 3 — Admin surface
+
+- [ ] **HM-3.1** `app/Http/Controllers/Admin/MonitorController.php` — thin `index()` + `data()`. Routes `/admin/monitor` and `/admin/monitor/data` inside the existing `admin`-middleware group in `routes/web.php`; add `throttle:60,1` to `data()` (it is polled).
+- [ ] **HM-3.2** `resources/views/admin/monitor.blade.php` + `components/monitor/node-card.blade.php` + `kpi-tile.blade.php` — spec §6 layout. Tailwind + design-system tokens only, no JS libraries. All dynamic data into Alpine via `@js()`.
+- [ ] **HM-3.3** Alpine polling of `/admin/monitor/data` every 30s, `document.hidden`-aware; on fetch failure show a banner and keep the last snapshot (never blank). "Refreshed Ns ago" ticker.
+- [ ] **HM-3.4** Header status pill for admins only — reads the cached snapshot via `pillStatus()`, links to `/admin/monitor`, gray "Unknown" on any exception. Must never break an unrelated page. Cross-link from `/admin/system-status`.
+- [ ] **HM-3.5** Tests (`MonitorControllerTest`): admin 200 + JSON shape; **agency manager 403 on both the page and the JSON endpoint**; guest 302. Pill renders for admin, absent for non-admin.
+
+### Phase 4 — Dependency & version currency
+
+- [ ] **HM-4.1** `config/dependency_maintenance.php` — static support-window table for PHP, MySQL, Redis, Nginx (`[product, branch, security_support_until]`) plus a `reviewed_at` date.
+- [ ] **HM-4.2** `DependencyAdvisoriesCheck` (d1) — deployed `composer.lock` (packages **and** packages-dev) vs the Packagist security-advisories API, matched with `composer/semver` (already in the vendor tree). 24h cached. Feed-down → last-known-good, else WARN "advisory feed unreachable". **Never GREEN on a dead feed.** Unrated severity counts as high.
+- [ ] **HM-4.3** `RuntimeEolCheck` (d2) — live versions vs the HM-4.1 table; WARN <90d to end of security support, CRIT past it; also WARN when `reviewed_at` is >6 months old (a stale table is its own failure).
+- [ ] **HM-4.4** `OsPatchCheck` (d3) — reads `pending_security` / `reboot_required` from the facts file. "Sustained >7d / >30d" tracked check-side in a persisted since-marker, because `apt-check` only reports the current count.
+- [ ] **HM-4.5** `PatchRunFreshnessCheck` (d4) + `deps:mark-patch-run` command writing `{ts, lock_sha, note}`. WARN >35d or lock_sha drift while d1 shows highs; CRIT >60d.
+- [ ] **HM-4.6** `SecurityPostureCheck` (X1 expired Sanctum tokens, X2 failed-login burst).
+- [ ] **HM-4.7** Enable `unattended-upgrades` on prod with the **security pocket only** and `Automatic-Reboot "false"`. Keep a `.bak` of the prior config. Provisioning-time step — the deploy flow never runs `apt`. Document in the runbook.
+- [ ] **HM-4.8** Tests for d1–d4 and X1/X2 incl. feed-down, stale-table, sustained-window and never-marked paths. Update `docs/architecture_map.md` and the spec's §3 catalog.

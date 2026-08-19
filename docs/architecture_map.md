@@ -40,6 +40,7 @@
 15. [Frontend — CSS & Design System](#15-frontend--css--design-system)
 16. [Tests](#16-tests)
 17. [Service Providers & Bootstrap](#17-service-providers--bootstrap)
+18. [System Health Monitor](#18-system-health-monitor)
 
 ---
 
@@ -79,6 +80,10 @@
 | `app/Services/ActivityLogger.php` | Single-purpose helper that resolves the correct `campaign_id` from any polymorphic subject (Campaign, Creative, or CreativeFile) and writes an ActivityLog row. Also dispatches a 2-hour digest email to users who have opted into activity notifications. Keeps observer code thin by centralising write logic. |
 | `app/Services/CampaignMetricsService.php` | Extracts all campaign metrics computation from DashboardController. Accepts a Campaign with optional date range and returns structured arrays for summary stats, chart data, placement data, and budget calculations. Shared by both `DashboardController::show()` and `exportExcel()`. |
 | `app/Services/ReportImportService.php` | Handles the full Excel report import pipeline: reads the uploaded file, parses headers, detects dates and video fields, bulk-inserts PlacementData rows, upserts CampaignData summary, and invalidates Report API cache via a version-counter pattern. |
+| `app/Services/Health/SystemHealthService.php` | Orchestrates every registered health check into a `HealthSnapshot`. Caches the snapshot for 30s behind a single-flight `Cache::lock`, with a no-TTL last-known-good copy served while a rebuild is in flight. Never throws: a check class that blows up degrades to one CRIT result and the snapshot still builds. See §18. |
+| `app/Services/Health/HostFacts.php` | The only reader of `/run/maddata/host-facts.json`, the file the root cron writes. Memoized (registered as a singleton) so one snapshot build touches disk once. Returns null rather than throwing on a missing or malformed file. |
+| `app/Services/Health/HealthMarkers.php` | Single source of truth for every health cache key, plus `store()` and `record()`. Markers are written by one class and read by another, so a typo would surface as a permanently STALE check rather than an error — both ends name the key from here. |
+| `app/Services/Health/HealthFormat.php` | Value formatting (durations, percentages, bytes, milliseconds) shared by the check classes, the CLI table and — from Phase 3 — the admin map. |
 | `app/Services/GeoReferenceService.php` | Resolves country, region, and city reference lists for the campaign targeting UI. Resolution order per call: (1) 7-day cache; (2) upstream `countriesnow.space` with a 5-second timeout; (3) static JSON fallback from `storage/app/geo/`. Logs `geo.fallback_used` to the `ai` channel on fallback. Israel cities include both Hebrew and English entries in the same flat array to support bilingual autocomplete. |
 
 ---
@@ -225,6 +230,11 @@ Standard Laravel Breeze controllers under `app/Http/Controllers/Auth/`:
 |------|---------------|
 | `app/Console/Commands/UpdateCampaignStatuses.php` | Scheduled Artisan command. Queries campaigns where `start_date` = today and status is `paused` → sets to `active`. Queries campaigns where `end_date` < today and status is `active` → sets to `paused`. Intended to run daily via the Laravel scheduler. |
 | `app/Console/Commands/MigrateAgenciesData.php` | One-time data migration command (`php artisan migrate:agencies-data`). Reads distinct `agency` strings from the `clients` table, creates corresponding `Agency` records via `firstOrCreate`, and backfills `agency_id` on each client. Must be run after the `create_agencies_table` and `add_agency_id_to_clients_table` migrations but before the `drop_agency_string_from_clients_table` cleanup migration. |
+| `app/Console/Commands/RunHealthCheck.php` | `php artisan health:check` — the answer to "is production OK?" over SSH. Renders a failing-first table or `--json`, and exits non-zero per `--fail-on=warn\|crit` so it composes with cron and deploy gates. Rebuilds by default; `--cached` reads the cached snapshot. |
+| `app/Console/Commands/RefreshHealthSnapshot.php` | `health:refresh-snapshot`, scheduled every minute. Rebuilds the snapshot off-path so a real admin request is always just a cache read. |
+| `app/Console/Commands/PublicProbe.php` | `health:probe`, scheduled every minute. Curls the public HTTPS URL from outside the framework and records `{ok, latency_ms, checked_at, consec_fails}` for check P1. Always exits 0 — a failing probe is data for the monitor, not a broken command. |
+| `app/Console/Commands/MarkRestoreDrill.php` | `health:mark-restore-drill` — records that a backup restore drill was actually performed (check B4). Run at the end of the backup-restore runbook. |
+| `app/Console/Commands/SendHealthAlert.php` | `health:alert`, scheduled every five minutes. Transition-based operator alerting: nothing fires on a single observation (deploy blips), a persisting problem nags every `realert_hours`, a new failing check re-alerts immediately, and recovery always sends a notice. Fails toward alerting when its own state is unreadable, and never records a notification it failed to send. See §18. |
 | `app/Console/Commands/SendActivityDigest.php` | Scheduled Artisan command (`php artisan digest:send-activity`). Reads `last_activity_digest_sent_at` from cache, finds all `ActivityLog` rows since that timestamp, and queues an `ActivityDigestMail` to every active opted-in user. Always updates the cache timestamp on completion so the next run only covers new activity. Registered to run every two hours via `routes/console.php`. Replaces the previous in-request `ActivityLogger::checkAndSendDigest()` coupling. |
 
 ---
@@ -530,3 +540,75 @@ Standard Laravel Breeze controllers under `app/Http/Controllers/Auth/`:
 ---
 
 *Last updated: 2026-04-16 — AI Campaign Assistant cities hotfix: added `GeoReferenceService`, `GeoReferenceController`, `/api/geo/*` routes, bilingual Israel static dataset, `ai` log channel in `config/logging.php`, structured logging in `CampaignAssistantController`, plus `GeoReferenceControllerTest` and `CampaignAssistantLoggingTest`.*
+
+---
+
+## 18. System Health Monitor
+
+**Spec:** `docs/specs/system-health-monitor.md` · **Runbook:** `docs/runbooks/health-monitor.md`
+
+Answers "is production OK?" from a CLI, and (Phase 2/3) by email and an admin
+page. Design ported down from the erate-v2 fleet monitor and scaled to MadData's
+single droplet.
+
+**The structural idea:** a root OS cron writes host facts to a JSON file on
+tmpfs; the app only ever reads it. PHP-FPM never shells out, never holds a sudo
+grant, and never talks to systemd or apt. Because the facts path has no Redis,
+MySQL or Laravel in it, it still reports correctly when those are exactly what
+is broken.
+
+### Contracts
+
+| File | Responsibility |
+|------|---------------|
+| `app/Enums/HealthStatus.php` | `OK`/`WARN`/`CRIT`/`STALE` with a `worstOf()` combinator, `forPill()` (STALE→WARN), design-system colour tokens and shell exit codes. STALE outranks OK so blind checks are visible, but never outranks CRIT so it cannot mask a real outage. |
+| `app/Dtos/HealthCheckResult.php` | One row of the check catalog: key, label, status, node, value, threshold, link. `node` must be the node the check really belongs to — a CRIT tagged to the wrong node is invisible on the map. |
+| `app/Dtos/HealthSnapshot.php` | The whole system at one instant. `toArray()` **is** the JSON contract consumed by `health:check --json` and (Phase 3) the admin poller. The cache stores this array rather than the object, so a deploy that changes the class cannot fatal on unserialize. Also exposes `failing()` (worst first) and `signature()` (Phase 2 alert de-duplication). |
+| `app/Services/Health/Checks/HealthCheck.php` | Abstract base. **`run()` must never throw** — `guard()` turns any throwable into a CRIT tagged to the check's real node. Also holds inclusive threshold evaluation (`evaluateOver`/`evaluateUnder`) and the age-since-marker shape most of the catalog uses. |
+
+### Check classes
+
+| File | Checks | Responsibility |
+|------|--------|---------------|
+| `app/Services/Health/Checks/HostCheck.php` | H1–H6 | Everything from the facts file: file freshness (CRIT when missing — a monitor that has gone blind is worse than none), CPU/memory/disk, systemd unit states each tagged to its own node, pending reboot. |
+| `app/Services/Health/Checks/EdgeProbeCheck.php` | P1–P2 | Reads the probe marker (never curls inline, so a snapshot build cannot block on the network) and TLS days remaining. Two consecutive probe failures, not one blip, is what escalates to CRIT. |
+| `app/Services/Health/Checks/DataStoreCheck.php` | D1–D3 | MySQL reachability on the dedicated 2s-timeout `mysql_health` connection, Redis memory against its own ceiling, and campaign-data freshness. D3 is informational and can never reach CRIT — uploads are manual, so "stale" often just means nobody uploaded. |
+| `app/Services/Health/Checks/QueueCheck.php` | Q1–Q3 | Depth, failures in the last 24h, and the worker heartbeat. Q3 is the load-bearing one: systemd reports "active" for a wedged worker, and only a job that executes disproves that. |
+| `app/Services/Health/Checks/SchedulerCheck.php` | S1–S2b | Cron→Laravel heartbeat plus per-job success markers, so a scheduler whose jobs all throw stops looking healthy. |
+| `app/Services/Health/Checks/BackupCheck.php` | B1–B4 | Backup age, off-site upload, restore-drill age, and size-vs-median. B2 catches the failure a naive "did it run?" check misses: mysqldump exiting 0 having written half a database. |
+
+### Alerting (Phase 2)
+
+| File | Responsibility |
+|------|---------------|
+| `app/Console/Commands/SendHealthAlert.php` | The state machine. Keeps one "episode" record — what is failing, since when, and whether anyone has been told — in `HealthMarkers::ALERT_STATE`, and decides from it whether this observation deserves an email. Four rules: no alert on a single observation; fail toward alerting when its own state is unreadable; silence must be earned (re-alert timer, new-failure re-alert, mandatory recovery notice); a send that throws is logged and left un-recorded so the next tick retries. |
+| `app/Mail/HealthAlertMail.php` | The mailable. **Deliberately not `ShouldQueue`**, unlike `ActivityDigestMail` — a queued alert would sit in the queue forever exactly when the queue worker is what died, which is one of the failures it exists to report. Subject line is ASCII so it survives SMS and pager gateways. |
+| `resources/views/emails/health_alert.blade.php` | Status banner tinted by severity, a failing-checks-only table (key, label, node, value, threshold), and a pointer to the runbook. Recovery mode reports how long the episode lasted instead. |
+
+Alert recipients come from `HEALTH_ALERT_RECIPIENTS` (comma-separated), not from
+the `receive_activity_notifications` user flag: health mail is operations, not
+product, and has to reach someone even when the database is what is sick.
+
+**Honest limit:** if the droplet, the network or SMTP is down, none of this
+fires. Detecting that requires an external watcher on `/up` — see the runbook.
+
+### Supporting files
+
+| File | Responsibility |
+|------|---------------|
+| `app/Jobs/QueueHeartbeatJob.php` | Dispatched onto the real queue every minute; writes its marker only when it actually executes. Does no work and holds no state — it must never be the job that poisons the queue it watches. |
+| `scripts/health-facts.sh` | Root OS cron, every minute. Real CPU via `vmstat` (loadavg runs well above true utilization and produces false CRITs), memory, disk, systemd states, `apt-check` security count, TLS expiry, backup-dir stats → atomic write to `/run/maddata/host-facts.json`. Degrades to `null` fields rather than failing. |
+| `scripts/backup-production.sh` | *(modified)* Writes `/run/maddata/backup-last.json` on completion, feeding B1–B3. |
+| `config/health.php` | Every threshold, node label, systemd unit→node map, file path and the check registry. No threshold is ever hardcoded in a check class. |
+| `config/database.php` | *(modified)* Adds the `mysql_health` connection — a clone of `mysql` with `PDO::ATTR_TIMEOUT => 2`, so a MySQL outage degrades the pill instead of hanging every admin page. |
+| `routes/console.php` | *(modified)* Schedules the refresh, probe and heartbeat every minute, and records the business jobs' success markers via `->onSuccess()` — so the marker means "completed", not "started". |
+| `app/Providers/AppServiceProvider.php` | *(modified)* Registers `HostFacts` as a singleton so one snapshot build reads the facts file once. |
+
+### Tests
+
+`tests/Unit/Health/` (enum + snapshot DTO) and `tests/Feature/Health/` (one file
+per check class, plus `SystemHealthServiceTest`), with the command tests in
+`tests/Feature/Commands/`. Shared fixtures live in `tests/Pest.php`
+(`fakeHostFacts`, `fakeBackupMarker`, `checksByKey`) — **no test executes a shell
+command.** `SystemHealthServiceTest` explicitly asserts the resilience property:
+a check class that throws still yields a built snapshot.

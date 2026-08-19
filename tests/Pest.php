@@ -45,3 +45,53 @@ function something()
 {
     // ..
 }
+
+/*
+|--------------------------------------------------------------------------
+| System health helpers
+|--------------------------------------------------------------------------
+|
+| The health checks read two files written by root cron on the droplet. Tests
+| point the config at a temp file instead — no test ever executes a shell
+| command to produce them.
+|
+*/
+
+function fakeHostFacts(?array $facts): string
+{
+    $path = sys_get_temp_dir().'/maddata-host-facts-'.getmypid().'.json';
+
+    $facts === null
+        ? @unlink($path)
+        : file_put_contents($path, json_encode($facts));
+
+    config(['health.facts_path' => $path]);
+    app(App\Services\Health\HostFacts::class)->flush();
+
+    return $path;
+}
+
+function fakeBackupMarker(?array $marker): string
+{
+    $path = sys_get_temp_dir().'/maddata-backup-marker-'.getmypid().'.json';
+
+    $marker === null
+        ? @unlink($path)
+        : file_put_contents($path, json_encode($marker));
+
+    config(['health.backup_marker_path' => $path]);
+
+    return $path;
+}
+
+/** Index a check run by check key, so assertions read like the catalog. */
+function checksByKey(App\Services\Health\Checks\HealthCheck $check): array
+{
+    $results = [];
+
+    foreach ($check->run() as $result) {
+        $results[$result->key] = $result;
+    }
+
+    return $results;
+}

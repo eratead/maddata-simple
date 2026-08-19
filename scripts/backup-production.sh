@@ -151,6 +151,9 @@ DO_SECRET_ACCESS_KEY=$(get_env DO_SECRET_ACCESS_KEY)
 DO_SPACES_ENDPOINT=$(get_env DO_SPACES_ENDPOINT)
 : "${DO_SPACES_ENDPOINT:=fra1.digitaloceanspaces.com}"
 
+REMOTE_OK=false
+REMOTE_BYTES=0
+
 if [ -n "$DO_BUCKET" ] && [ -n "$DO_ACCESS_KEY_ID" ] && [ -n "$DO_SECRET_ACCESS_KEY" ] && command -v s3cmd >/dev/null; then
     echo "[4/4] Uploading off-site to s3://$DO_BUCKET/backups/$TIMESTAMP/"
     s3() {
@@ -163,6 +166,11 @@ if [ -n "$DO_BUCKET" ] && [ -n "$DO_ACCESS_KEY_ID" ] && [ -n "$DO_SECRET_ACCESS_
     if s3 put "$DB_ARCHIVE" "$ENV_ARCHIVE" "$STORAGE_ARCHIVE" "$MANIFEST" \
           "s3://$DO_BUCKET/backups/$TIMESTAMP/"; then
         echo "Off-site upload:    s3://$DO_BUCKET/backups/$TIMESTAMP/" >> "$MANIFEST"
+        REMOTE_OK=true
+        # || echo 0 matters: set -e + pipefail would abort the whole backup
+        # run if du hiccuped, purely to record a stat nobody depends on.
+        REMOTE_BYTES=$(du -cb "$DB_ARCHIVE" "$ENV_ARCHIVE" "$STORAGE_ARCHIVE" "$MANIFEST" 2>/dev/null | tail -1 | cut -f1 || echo 0)
+        [[ "$REMOTE_BYTES" =~ ^[0-9]+$ ]] || REMOTE_BYTES=0
 
         # Remote retention: delete backup prefixes older than N days
         CUTOFF=$(date -u -d "-$REMOTE_RETENTION_DAYS days" +%Y%m%d_%H%M%S)
@@ -194,3 +202,27 @@ echo "=== Backup complete ==="
 cat "$MANIFEST"
 echo ""
 echo "Backup ready at: $BACKUP_DIR"
+
+# ─── Health marker ──────────────────────────────────────────────────────
+# Checks B1-B3 read this. Written last, so it only ever records a backup that
+# actually finished — the health monitor cross-checks it against the backup
+# directory itself, so a marker that never appears is detectable.
+MARKER_PATH="${HEALTH_BACKUP_MARKER_PATH:-/run/maddata/backup-last.json}"
+LOCAL_BYTES=$(du -sb "$BACKUP_DIR" 2>/dev/null | cut -f1 || echo 0)
+[[ "$LOCAL_BYTES" =~ ^[0-9]+$ ]] || LOCAL_BYTES=0
+
+if mkdir -p "$(dirname "$MARKER_PATH")" 2>/dev/null; then
+    MARKER_TMP="${MARKER_PATH}.tmp.$$"
+    cat > "$MARKER_TMP" <<MARKER
+{
+  "ts": $(date +%s),
+  "backup_dir": "$BACKUP_DIR",
+  "local_bytes": $LOCAL_BYTES,
+  "remote_ok": $REMOTE_OK,
+  "remote_bytes": $REMOTE_BYTES
+}
+MARKER
+    chmod 644 "$MARKER_TMP"
+    mv -f "$MARKER_TMP" "$MARKER_PATH"
+    echo "Health marker written: $MARKER_PATH"
+fi
