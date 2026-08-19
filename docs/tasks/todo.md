@@ -752,10 +752,12 @@ The original V0.1–V0.6 tasks below pick up unchanged once F6 confirms the fix.
 Production reads DEGRADED / 3 failing: a pending reboot (real, needs a decision) and two scheduled-job markers that self-clear on their first run.
 Remaining: `HEALTH_ALERT_RECIPIENTS` + the forced alert test (HM-2.4), and the external watcher (HM-0.1).
 
-**Found by deploying and watching it** — both fixed in `0fb7a34`:
+**Found by deploying and watching it** — all fixed and redeployed:
 - H2 read a steady 100% CPU on a 98%-idle box. Production is single-core, and the facts cron sampled one second at `:00`, exactly when `schedule:run` boots PHP — it was measuring the monitoring's own overhead. Health tasks now run in-process, CPU averages over 15s, and the cron is offset by 25s.
 - B2 read "dump shrank to 47% of median" because the facts cron stats the backup directory mid-write. Would have fired a false alarm every night at 03:00 once alerting was on.
 - The production TLS certificate lives under `new.ad.maddata.media/`, not `ad.maddata.media/` — P2 would have been STALE forever without the crontab override.
+- **Rebooting production (`cdde032`)** wiped the backup marker, which sat on tmpfs next to the facts file. B1 went CRIT "backups unverifiable" although backups were fine, and would have stayed there for 17 hours. Facts are a live sample and *should* die with a reboot; the marker is a record of a past event and must not. Now at `/var/backups/maddata/backup-last.json`.
+- **The same reboot sent a genuine false alarm (`2166e7b`)** — for ~85s the wiped facts file made every host check STALE and H1 CRIT, a signature indistinguishable from the host being down. Consecutive-observation suppression could not help: the box was already in a DEGRADED episode, and escalations inside an episode alert immediately by design. H1 and `health:alert` now both read `/proc/uptime` and hold judgement for `HEALTH_BOOT_GRACE_SECONDS` (180).
 
 ### Phase 0 — External watcher (no code)
 
@@ -785,7 +787,7 @@ Remaining: `HEALTH_ALERT_RECIPIENTS` + the forced alert test (HM-2.4), and the e
 - [x] **HM-2.1** `app/Console/Commands/SendHealthAlert.php` (`health:alert`, everyFiveMinutes) + `app/Mail/HealthAlertMail.php` following the existing `ActivityDigestMail` pattern. Signature-based state in the persistent cache store; fire on transition-to-worse or after `realert_hours`; recovery notice on return to all-OK.
 - [x] **HM-2.2** Flap suppression: CRIT requires **2 consecutive** non-OK observations (a deploy restart resolves inside one interval). If the suppression state's own read/write throws, **skip suppression and alert anyway** — fail toward alerting. Mail failures logged, never thrown.
 - [x] **HM-2.3** Tests: transition fires; repeat inside the window does not; re-alert after the window does; recovery notice fires; one CRIT observation suppressed, two not; unreadable suppression state still alerts; mailer throwing does not fail the command.
-- [ ] **HM-2.4** Deploy-side — **blocked on droplet access.** Set `HEALTH_ALERT_RECIPIENTS` in the prod `.env`, then force one real alert end-to-end with `php artisan health:alert --force` to prove mail actually lands, and again after stopping the queue worker for 15 minutes to prove the state machine fires unprompted. An untested alert path is not an alert path. (Scheduling is already committed in `routes/console.php`; the full state machine was driven end-to-end locally against the log mailer.)
+- [x] **HM-2.4** *(done 2026-08-19 — `HEALTH_ALERT_RECIPIENTS=gurovm@gmail.com` on production only; a forced alert was delivered through Resend with no errors, and a real unprompted alert fired during the reboot, which is how the boot-grace gap was found.)* Was: Set `HEALTH_ALERT_RECIPIENTS` in the prod `.env`, then force one real alert end-to-end with `php artisan health:alert --force` to prove mail actually lands, and again after stopping the queue worker for 15 minutes to prove the state machine fires unprompted. An untested alert path is not an alert path. (Scheduling is already committed in `routes/console.php`; the full state machine was driven end-to-end locally against the log mailer.)
 
 ### Phase 3 — Admin surface
 
