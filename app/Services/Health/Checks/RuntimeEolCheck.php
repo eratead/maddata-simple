@@ -99,20 +99,46 @@ class RuntimeEolCheck extends HealthCheck
             $days = (int) now()->startOfDay()->diffInDays($end, false);
             $warnDays = (int) config('dependency_maintenance.thresholds.eol_warn_days', 90);
 
+            /*
+             * A distro-packaged runtime past its UPSTREAM window is a different
+             * fact from an unpatched one. Ubuntu ships MySQL 8.0 and Redis 7.0
+             * in 24.04 main and backports security fixes for the LTS lifetime,
+             * so the box is not exposed today — the branch is simply frozen and
+             * a migration needs planning.
+             *
+             * CRIT would be a lie there, and a permanent one: nothing short of
+             * an OS upgrade could clear it, which is how a monitor trains people
+             * to ignore it. So it warns, and says exactly what is true.
+             *
+             * Detected from the version string rather than configured, because
+             * that is the actual fact on the box: install MySQL from Oracle's
+             * own repo and the marker disappears, which correctly escalates this
+             * back to CRIT without anyone remembering to update a flag.
+             */
+            $distroPackaged = (bool) preg_match('/ubuntu|debian|\bdeb\d/i', $version);
+
             $status = match (true) {
-                $days < 0 => HealthStatus::CRIT,
+                $days < 0 => $distroPackaged ? HealthStatus::WARN : HealthStatus::CRIT,
                 $days <= $warnDays => HealthStatus::WARN,
                 default => HealthStatus::OK,
             };
 
-            $value = $days < 0
-                ? sprintf('%s — security support ended %s (%d days ago)', $version, $until, abs($days))
-                : sprintf('%s — supported until %s (%d days)', $version, $until, $days);
+            $value = match (true) {
+                $days < 0 && $distroPackaged => sprintf(
+                    '%s — upstream branch EOL since %s (%d days); distro package, fixes backported (see d3) — plan a migration',
+                    $version, $until, abs($days),
+                ),
+                $days < 0 => sprintf('%s — security support ended %s (%d days ago)', $version, $until, abs($days)),
+                default => sprintf('%s — supported until %s (%d days)', $version, $until, $days),
+            };
 
             return new HealthCheckResult(
                 key: $key, label: $label, status: $status, node: 'platform',
                 value: $value,
-                threshold: sprintf('warn ≤%dd to end of security support · crit past it', $warnDays),
+                threshold: sprintf(
+                    'warn ≤%dd to end of security support · crit past it (warn if distro-backported)',
+                    $warnDays,
+                ),
             );
         });
     }

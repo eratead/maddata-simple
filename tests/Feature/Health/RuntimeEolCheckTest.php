@@ -48,6 +48,34 @@ it('goes critical once security support has ended', function () {
         ->and(d2('d2-php')->value)->toContain('security support ended');
 });
 
+/*
+| Driven through the nginx entry, because its version comes from the facts file
+| and is therefore the one runtime a test can set to an arbitrary string.
+*/
+it('warns rather than going critical when a past-EOL runtime is distro-packaged', function () {
+    // Production's real case: MySQL 8.0.46-0ubuntu0.24.04.3 and Redis 7.0.15 are
+    // both past their upstream windows AND both receive Canonical's backported
+    // fixes. CRIT would claim an exposure that does not exist — and nothing
+    // short of an OS upgrade could ever clear it.
+    eolTable([['product' => 'nginx', 'branch' => '1.24', 'security_support_until' => now()->subYear()->toDateString()]]);
+    fakeHostFacts(['ts' => now()->getTimestamp(), 'nginx_version' => '1.24.0 (Ubuntu)']);
+
+    expect(d2('d2-nginx')->status)->toBe(HealthStatus::WARN)
+        ->and(d2('d2-nginx')->value)->toContain('upstream branch EOL')
+        ->and(d2('d2-nginx')->value)->toContain('plan a migration');
+});
+
+it('still goes critical for a past-EOL runtime built from upstream', function () {
+    eolTable([['product' => 'nginx', 'branch' => '1.24', 'security_support_until' => now()->subYear()->toDateString()]]);
+    fakeHostFacts(['ts' => now()->getTimestamp(), 'nginx_version' => '1.24.0']);
+
+    // No distro marker in the version string — nobody is backporting for you.
+    // Detected from the version itself, so swapping to an upstream build
+    // escalates this without anyone remembering to flip a config flag.
+    expect(d2('d2-nginx')->status)->toBe(HealthStatus::CRIT)
+        ->and(d2('d2-nginx')->value)->toContain('security support ended');
+});
+
 it('warns on a branch the table does not cover rather than passing it', function () {
     eolTable([['product' => 'php', 'branch' => '5.6', 'security_support_until' => '2099-01-01']]);
 

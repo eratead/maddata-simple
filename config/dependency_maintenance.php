@@ -44,6 +44,11 @@ return [
         ['product' => 'mysql', 'branch' => '8.4', 'security_support_until' => '2032-04-30', 'source' => 'endoflife.date/mysql (Oracle Lifetime Support, LTS)'],
 
         // https://endoflife.date/redis
+        // 7.0 is what Ubuntu 24.04 ships and what production runs. Upstream
+        // ended it on 2024-07-29, so d2 reports it — but as a WARN, because the
+        // deployed build is the distro package and Canonical backports fixes to
+        // 24.04 main. The check detects that from the version string itself.
+        ['product' => 'redis', 'branch' => '7.0', 'security_support_until' => '2024-07-29', 'source' => 'endoflife.date/redis'],
         ['product' => 'redis', 'branch' => '7.2', 'security_support_until' => '2029-12-01', 'source' => 'endoflife.date/redis'],
         ['product' => 'redis', 'branch' => '7.4', 'security_support_until' => '2029-12-01', 'source' => 'endoflife.date/redis'],
         ['product' => 'redis', 'branch' => '8.0', 'security_support_until' => '2026-12-01', 'source' => 'endoflife.date/redis'],

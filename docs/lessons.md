@@ -71,3 +71,33 @@ Rules:
 2. **A monitor whose answer depends on who asks is worse than no monitor**, because the operator's convenient vantage point (a root SSH session) is systematically the wrong one, and the wrong answer is the reassuring one.
 3. **Distinguish "cannot read" from "not there".** They are different facts with different fixes, and collapsing them turns a permission bug into a phantom data-loss alarm.
 4. **Enforce the permission in the script that depends on it**, not by hand — a hand-applied `chmod` is silently lost the next time the directory is recreated.
+
+## `npm run build` is part of the deploy whenever Blade or Tailwind changed
+
+`/public/build` is gitignored, so compiled assets exist only on each server. A
+deploy that runs `git pull && composer install` and clears caches ships the new
+markup against the **old** stylesheet — and because Tailwind only emits classes
+it can see at build time, any new utility class is simply absent. The page
+renders, so nothing errors; it just comes out unstyled, which is the kind of
+failure that reaches users before it reaches a log.
+
+Recorded 2026-08-19, deploying the health monitor's admin page: the documented
+"code-only deploy" recipe had no build step, and the page relies on
+`bg-emerald-500` / `bg-amber-500` / `bg-red-500` for its entire meaning.
+
+Rules:
+
+1. **If the change touches `resources/`, the deploy runs `npm ci && npm run build`.**
+   Composer-only deploys are for PHP-only changes.
+2. **Prove it took**, rather than trusting that the command ran:
+   `grep -c 'bg-emerald-500' public/build/assets/*.css` — a specific new class
+   from this change, not a class that was already there.
+3. **Never interpolate Tailwind class names.** `bg-{$token}-500` and
+   `` `bg-${token}-500` `` are invisible to the JIT compiler, so they survive
+   every local test and vanish in production. Map tokens to complete literals.
+4. **Expect a brief 500 window.** `npm run build` empties and rewrites
+   `manifest.json` in place, so live requests landing in that ~5s gap fail with
+   "Vite manifest not found". It self-resolves and one was observed on the
+   production deploy. If that ever becomes unacceptable, build to a temp
+   directory and swap it in atomically — but do not mistake the log line for a
+   deploy failure.

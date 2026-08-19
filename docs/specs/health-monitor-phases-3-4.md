@@ -234,6 +234,23 @@ auditable. Dates sourced at build time: PHP from php.net/supported-versions,
 MySQL and Redis from endoflife.date (Oracle Lifetime Support / Redis release
 policy).
 
+**Second refinement, after the production deploy (2026-08-19).** The first real
+run reported `d2-mysql` CRIT — "security support ended 2026-04-30 (111 days
+ago)" — against `8.0.46-0ubuntu0.24.04.3`, and `d2-redis` WARN "branch not in
+the support table" against `7.0.15`, whose upstream window closed in July 2024.
+Both are true upstream and both are **Ubuntu packages**: 24.04 ships them in
+`main`, where Canonical backports security fixes for the LTS lifetime. The box
+is not exposed; the branch is frozen and a migration needs planning. Those are
+different facts and deserve different severities — and a CRIT that only an OS
+upgrade can clear is the permanent-red version of the amber trap in §11 d3.
+
+So a runtime past its upstream window reports **WARN when the version string
+carries a distro marker** (`ubuntu`, `debian`, `debN`) and CRIT otherwise, with
+a value that says which case it is. Detected from the version string rather than
+a config flag deliberately: that is the actual fact on the box, so installing
+MySQL from Oracle's own repo drops the marker and re-escalates to CRIT with
+nobody having to remember anything.
+
 ## 11. Check contracts
 
 All five extend `HealthCheck`, return `array<HealthCheckResult>` from `run()`, and **never throw** — every probe goes through `guard()`. All results carry `node: 'platform'`. Registered by appending to `config('health.checks')`.
