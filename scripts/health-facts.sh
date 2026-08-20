@@ -122,6 +122,7 @@ if [ ! -f "$SLOW_CACHE" ] || [ "$(( $(date +%s) - $(stat -c %Y "$SLOW_CACHE" 2>/
     fi
     _ngx=$(nginx -v 2>&1 | sed -n 's|.*nginx/\([0-9.]*\).*|\1|p')
     [ -z "$_ngx" ] && _ngx="unknown"
+    : > "$SLOW_CACHE".tmp && chmod 640 "$SLOW_CACHE".tmp
     printf '%s %s\n' "$_sec" "$_ngx" > "$SLOW_CACHE".tmp && mv -f "$SLOW_CACHE".tmp "$SLOW_CACHE"
 fi
 read -r pending_security nginx_version < "$SLOW_CACHE" 2>/dev/null || { pending_security="null"; nginx_version="unknown"; }
@@ -144,14 +145,20 @@ if [ ! -f "$PKG_CACHE" ] || [ "$(( $(date +%s) - $(stat -c %Y "$PKG_CACHE" 2>/de
     if command -v dpkg-query >/dev/null 2>&1; then
         for _p in redis-server mysql-server mysql-server-8.0 mysql-server-8.4 nginx nginx-core; do
             _pv=$(LC_ALL=C dpkg-query -W -f='${Version}' "$_p" 2>/dev/null) || _pv=""
-            # Quote-strip: these land inside JSON string values.
-            _pv=${_pv//\"/}
+            # These land inside JSON string values. Restrict to the charset
+            # Debian policy allows in a version rather than only stripping
+            # quotes — a backslash or control byte would break the file, and a
+            # malformed facts file blinds every host check at once.
+            _pv=${_pv//[^A-Za-z0-9.:+~-]/}
             if [ -n "$_pv" ]; then
                 [ -n "$_pkgs" ] && _pkgs="${_pkgs},"
                 _pkgs="${_pkgs}\"${_p}\":\"${_pv}\""
             fi
         done
     fi
+    # Same 0640 rationale as the facts file itself: these hold the OS/package
+    # inventory, which is a "how exploitable is this box" summary.
+    : > "$PKG_CACHE".tmp && chmod 640 "$PKG_CACHE".tmp
     printf '{%s}\n' "$_pkgs" > "$PKG_CACHE".tmp && mv -f "$PKG_CACHE".tmp "$PKG_CACHE"
 fi
 packages_json=$(cat "$PKG_CACHE" 2>/dev/null) || packages_json="{}"
@@ -212,6 +219,9 @@ pending_security=$(num "$pending_security")
 # Write to a temp file in the SAME directory then mv, so a reader can never
 # observe a half-written file and conclude the host is unhealthy.
 TMP="${FACTS_OUT}.tmp.$$"
+# Mode BEFORE content: `cat >` creates at the default umask, so setting 640
+# afterwards left a window where any local user could read it.
+: > "$TMP" && chmod 640 "$TMP"
 cat > "$TMP" <<JSON
 {
   "ts": $(date +%s),
